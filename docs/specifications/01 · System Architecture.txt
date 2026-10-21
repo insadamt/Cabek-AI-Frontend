@@ -1,0 +1,29 @@
+01 · System Architecture
+01 · System Architecture
+Objective: make existing expertise available through FastAPI without rewriting trained
+models or business calculations.
+
+System map
+
+
+
+
+Responsibilities
+ Component                                     Owns
+
+ React                                         Search, filters, viewer, display
+
+ FastAPI                                       Dossier access, scan request, status, media
+
+ Scan service                                  Orchestrate inference → pricing → save
+
+ Expertise engine                              Damage/part matching, severity, decision,
+                                               totals
+
+ AutoEstimate client                           Used-part price lookup
+
+ Filesystem                                    Photos + completed analysis
+
+
+Next: @02 · Frontend UX · @03 · AI & Pricing
+

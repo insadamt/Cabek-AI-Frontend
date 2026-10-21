@@ -1,0 +1,153 @@
+.scan-panel {
+  padding: 40px 50px 27px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+.scan-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.scan-orbit {
+  display: grid;
+  place-items: center;
+  height: 75px;
+  width: 75px;
+  border: 1px solid #dedede;
+  border-radius: 24px;
+  background: #f4f4f4;
+  outline: 1px solid #f0f0f0;
+  outline-offset: 7px;
+  margin-bottom: 26px;
+}
+.scan-heading h2 {
+  font-size: 28px;
+  letter-spacing: -1px;
+  font-weight: 500;
+  margin-top: 13px;
+}
+.scan-heading p {
+  font-size: 13px;
+  color: #6e6e6e;
+  line-height: 1.9;
+  margin-top: 11px;
+  max-width: 460px;
+}
+.scan-stages {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 0;
+  margin: 37px 0;
+}
+.scan-stages li {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  color: #6e6e6e;
+}
+.scan-stages li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: calc(50% + 22px);
+  right: calc(-50% + 22px);
+  height: 1px;
+  background: #e4e4e4;
+}
+.scan-stages li > span {
+  height: 35px;
+  width: 35px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e1e1e1;
+  background: white;
+  border-radius: 50%;
+}
+.scan-stages li strong {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+.scan-stages .stage-current {
+  color: #222;
+}
+.scan-stages .stage-current > span {
+  background: #222;
+  border-color: #222;
+  color: white;
+}
+.scan-stages .stage-done {
+  color: #555;
+}
+.scan-stages .stage-done > span {
+  background: #eee;
+}
+.scan-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #6e6e6e;
+}
+.scan-progress-meta strong {
+  font-size: 13px;
+  color: #333;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.progress-track {
+  height: 5px;
+  background: #ededed;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-track > span {
+  height: 100%;
+  display: block;
+  background: #323232;
+  border-radius: 10px;
+  transition: width 0.3s ease-out;
+}
+.progress-track.indeterminate::after {
+  content: '';
+  display: block;
+  width: 25%;
+  height: 100%;
+  background: #777;
+  border-radius: 10px;
+  position: absolute;
+  left: 0;
+  animation: progress-slide 2.4s ease-in-out infinite;
+}
+.scan-timings {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6e6e6e;
+  margin-top: 12px;
+  min-height: 14px;
+}
+.scan-continue {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  color: #6e6e6e;
+  font-size: 12px;
+}
+.preview-footnote {
+  text-align: center;
+  font-size: 12px;
+  color: #6e6e6e;
+  margin-top: 14px;
+}

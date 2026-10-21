@@ -1,0 +1,194 @@
+@keyframes progress-slide {
+  0% {
+    left: -25%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+@media (max-width: 1100px) {
+  .preparation-layout {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 14px;
+  }
+  .vehicle-form {
+    padding: 20px;
+  }
+  .form-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .result-top-grid {
+    gap: 14px;
+  }
+  .part-amount {
+    min-width: 90px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 900px) {
+  .preparation-layout {
+    grid-template-columns: 1fr;
+  }
+  .launch-panel {
+    max-width: none;
+  }
+  .vehicle-facts {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 0;
+  }
+  .vehicle-facts > div:nth-child(odd) {
+    padding-left: 0;
+  }
+  .vehicle-facts > div:nth-child(even) {
+    border: 0;
+  }
+  .result-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .result-side {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: stretch;
+  }
+  .report-card {
+    flex-wrap: wrap;
+    align-content: center;
+  }
+  .result-photos h2 {
+    font-size: 23px;
+  }
+}
+@media (max-width: 767px) {
+  .back-link {
+    margin-bottom: 23px;
+  }
+  .dossier-page-heading {
+    align-items: flex-start;
+  }
+  .dossier-header-actions {
+    gap: 5px;
+  }
+  .dossier-header-actions .status-badge {
+    font-size: 10px;
+    padding: 5px 7px;
+  }
+  .dossier-page-heading h1 {
+    font-size: 27px;
+  }
+  .vehicle-facts {
+    padding: 17px 0;
+  }
+  .vehicle-facts > div {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .form-fields {
+    gap: 10px;
+  }
+  .vehicle-form {
+    padding: 20px;
+  }
+  .panel-heading h2 {
+    font-size: 14px;
+  }
+  .panel-heading p {
+    font-size: 11px;
+  }
+  .photo-overview {
+    padding: 23px 20px;
+    gap: 15px;
+  }
+  .photo-overview h2 {
+    font-size: 14px;
+  }
+  .photo-overview p {
+    font-size: 11px;
+  }
+  .scan-panel {
+    padding: 29px 19px 23px;
+  }
+  .scan-heading h2 {
+    font-size: 23px;
+  }
+  .scan-stages {
+    margin: 27px 0;
+  }
+  .scan-stages li strong {
+    font-size: 10px;
+  }
+  .scan-continue {
+    font-size: 11px;
+    line-height: 1.7;
+    align-items: flex-start;
+  }
+  .scan-continue .tiny-dot {
+    margin-top: 6px;
+  }
+  .financial-summary {
+    padding: 23px;
+  }
+  .estimated-total {
+    font-size: 39px;
+  }
+  .estimated-incomplete {
+    font-size: 26px;
+  }
+  .result-side {
+    display: flex;
+  }
+  .result-photos {
+    padding: 23px;
+  }
+  .result-photos > div {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .result-photos h2 {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .result-photos p {
+    font-size: 11px;
+  }
+  .part-card {
+    padding: 0 15px;
+  }
+  .part-card > summary {
+    flex-wrap: wrap;
+    gap: 11px;
+    padding: 18px 0;
+  }
+  .part-icon {
+    width: 35px;
+    height: 35px;
+  }
+  .part-identity {
+    flex: 1;
+  }
+  .part-identity > strong {
+    font-size: 13px;
+  }
+  .part-identity > span {
+    font-size: 10px;
+  }
+  .part-decision {
+    order: 4;
+    margin-left: 46px;
+  }
+  .part-amount {
+    order: 5;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .damage-table > div {
+    gap: 8px;
+    font-size: 11px;
+  }
+  .saved-result-note {
+    align-items: flex-start;
+    font-size: 10px;
+    line-height: 1.8;
+  }
+}

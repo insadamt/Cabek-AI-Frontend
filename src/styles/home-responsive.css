@@ -1,0 +1,77 @@
+@media (max-width: 650px) {
+  .home-frame {
+    border-width: 2px;
+  }
+  .home-header {
+    height: 85px;
+    padding: 0 12px;
+    align-items: flex-end;
+    padding-bottom: 8px;
+  }
+  .home-wordmark {
+    height: 37px;
+    min-width: 190px;
+    font-size: 23px;
+  }
+  .home-navigation a {
+    padding: 4px 8px;
+    font-size: 8px;
+  }
+  .home-list-link {
+    height: 25px;
+  }
+  .carousel-backdrop-word {
+    top: 23%;
+    font-size: 23vw;
+  }
+  .carousel-stage {
+    inset: 90px 0 70px;
+  }
+  .carousel-folder-slot {
+    width: 65vw;
+    top: 50%;
+  }
+  .carousel-edge {
+    width: 23px;
+    height: 120px;
+  }
+  .carousel-edge svg {
+    width: 16px;
+  }
+  .folder-tab {
+    border-radius: 6px 13px 0 0;
+  }
+  .folder-label {
+    bottom: 13px;
+    left: 15px;
+    max-width: calc(100% - 30px);
+    font-size: 7px;
+    letter-spacing: 0.5px;
+  }
+  .home-open-dossier {
+    bottom: 15%;
+    width: 36px;
+    height: 36px;
+  }
+  .carousel-counter {
+    right: 15px;
+    bottom: 15px;
+    font-size: 9px;
+  }
+}
+@media (max-height: 450px) {
+  .carousel-folder-slot {
+    width: 35vh;
+  }
+  .carousel-stage {
+    inset: 50px 0 30px;
+  }
+  .home-open-dossier {
+    bottom: 5%;
+    width: 30px;
+    height: 30px;
+  }
+  .carousel-edge {
+    height: 90px;
+  }
+}

@@ -1,0 +1,146 @@
+.dossier-carousel {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+.carousel-backdrop-word {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  font-size: 20vw;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.07em;
+  color: transparent;
+  -webkit-text-stroke: 1px #dedede;
+  pointer-events: none;
+  user-select: none;
+}
+.carousel-stage {
+  position: absolute;
+  inset: 70px 0 80px;
+  perspective: 1400px;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+.carousel-dragging .carousel-stage {
+  cursor: grabbing;
+}
+.carousel-folder-slot {
+  --folder-scale: 0.72;
+  --folder-turn: calc(var(--folder-position) * -25deg);
+  --folder-lean: calc(var(--folder-position) * 7deg);
+  position: absolute;
+  left: 50%;
+  top: 51%;
+  width: clamp(250px, 31vw, 450px);
+  aspect-ratio: 1.36;
+  padding: 0;
+  background: transparent;
+  cursor: inherit;
+  transform: translate(
+      calc(-50% + var(--folder-position) * 34vw + var(--drag-distance) * 0.5),
+      -50%
+    )
+    rotateY(var(--folder-turn)) rotateZ(var(--folder-lean)) scale(var(--folder-scale));
+  transition:
+    transform 0.6s cubic-bezier(0.22, 0.8, 0.2, 1),
+    filter 0.6s;
+  filter: blur(1.2px);
+}
+.carousel-folder-slot.is-active {
+  --folder-scale: 1;
+  --folder-turn: calc(-8deg + var(--folder-tilt-y));
+  --folder-lean: -4deg;
+  filter: none;
+}
+.carousel-folder-slot.is-active .dossier-folder {
+  transform: rotateX(var(--folder-tilt-x));
+}
+/* Keep the folder's perspective when the shared button press style is applied. */
+.carousel-folder-slot:active:not(:disabled) {
+  transform: translate(
+      calc(-50% + var(--folder-position) * 34vw + var(--drag-distance) * 0.5),
+      -50%
+    )
+    rotateY(var(--folder-turn)) rotateZ(var(--folder-lean)) scale(var(--folder-scale));
+}
+.carousel-dragging .carousel-folder-slot {
+  transition-duration: 0.08s;
+}
+.dossier-folder {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  filter: drop-shadow(6px 23px 12px #00000019);
+}
+.folder-tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 37%;
+  height: 18%;
+  border: 1px solid #b6a17c;
+  border-bottom: 0;
+  border-radius: 9px 20px 0 0;
+  background: linear-gradient(135deg, #dac8a5, #d4bd94);
+}
+.folder-back {
+  position: absolute;
+  inset: 12% 0 0;
+  background: linear-gradient(140deg, #ddcba8, #c6ae82);
+  border: 1px solid #b6a17c;
+  border-radius: 0 10px 7px 7px;
+}
+.folder-cover {
+  position: absolute;
+  inset: 22% -1px -1px;
+  background: linear-gradient(145deg, #eddfc1 0%, #e5d3ae 55%, #dcc69e 100%);
+  border: 1px solid #c4ae86;
+  border-top-color: #f8efd9;
+  border-radius: 6px 9px 7px 7px;
+  box-shadow: inset 0 1px 1px #fff8;
+}
+.folder-label {
+  position: absolute;
+  bottom: 19px;
+  left: 22px;
+  max-width: calc(100% - 44px);
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #746344;
+}
+.carousel-edge {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 34px;
+  height: 150px;
+  display: grid;
+  place-items: center;
+  background: var(--home-ink);
+  color: white;
+}
+.carousel-edge:active:not(:disabled) {
+  transform: translateY(-50%);
+}
+.carousel-edge:focus-visible {
+  outline-offset: -6px;
+  outline-color: white;
+}
+.carousel-edge-previous {
+  left: 0;
+  clip-path: polygon(0 0, 100% 20%, 100% 80%, 0 100%);
+  padding-right: 7px;
+}
+.carousel-edge-next {
+  right: 0;
+  clip-path: polygon(100% 0, 0 20%, 0 80%, 100% 100%);
+  padding-left: 7px;
+}

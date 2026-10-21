@@ -1,0 +1,47 @@
+06 · Delivery Roadmap
+06 · Delivery Roadmap
+Sequence: reference parity first; then backend; then React. Each phase has a measurable
+completion gate.
+
+Phase map
+
+
+
+
+Tasks and exit criteria
+ Phase                           Work                               Exit condition
+
+ 0 · Baseline                    Select demo dossiers,              Reference fixtures approved
+                                 snapshot engine costs +
+                                 images, lock JSON fields
+
+ 1 · Service                     Extract Streamlit                  Python callable produces full
+                                 orchestration, reuse all 3         analysis without Streamlit
+                                 models, automate occasion
+                                 pricing, extract PDF
+
+ 2 · API                         Implement folder discovery,        Scan survives
+                                 lock/status, durable artifacts,    refresh/restart; 409 after
+                                 3 endpoints, safe media            success
+
+ 3 · React                       Dashboard, stats/search,           Entire demo flow works
+                                 progress, results, viewer,         without Streamlit
+                                 part cards, PDF
+
+ 4 · QA                          Compare parity, partial-cost       Acceptance matrix passes
+                                 cases, failures, cross-OS
+                                 paths, usability
+
+
+
+Practical checkpoints
+ • [ ] Baseline: two or three real demo folders exercised and results recorded.
+ • [ ] Python: model results + decisions + C2/T1/AutoEstimate reconciled.
+ • [ ] Storage: complete files reopen after backend restart.
+ • [ ] API: /docs tested for success, progress, conflict, errors.
+
+ • [ ] UI: compact responsive pages and image slider usable by keyboard.
+ • [ ] PDF: saved values match JSON and remain marked provisional.
+ • [ ] Handoff: setup steps, env vars, expected demo fixtures documented.
+Next: @07 · Quality & Risks (unavailable) · @CABEK AI V1 | Plan Hub
+

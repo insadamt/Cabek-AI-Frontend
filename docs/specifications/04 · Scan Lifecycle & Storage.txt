@@ -1,0 +1,33 @@
+04 · Scan Lifecycle & Storage
+04 · Scan Lifecycle & Storage
+Invariant: one dossier → one successful scan → durable results. The button is disabled
+and the API rejects subsequent requests.
+
+State machine
+
+
+
+
+ State                       Button                       View
+ not_analyzed                Analyze enabled              Dossier overview
+
+ queued / processing         Disabled                     Real progress / ETA
+
+ completed                   Disabled permanently         Cached detail + PDF
+ failed                      Retry allowed                Sanitized failure message
+Per-dossier structure
+data/dossiers/<ID>/
+  metadata.json
+  photos/                        # original; immutable
+  analysis/
+    status.json                  # state + progress + ETA
+    result.json                  # final output, written last
+    annotated/
+      <photo>_pieces.png
+      <photo>_dommages.png
+    report.pdf
+  Important: No rescans Once completed, don't delete or overwrite results through
+  React or the scan API. Changed photos/models may require a future controlled
+  administrative migration, not a V1 user action.
+Next: @05 · API Contracts · @07 · Quality & Risks (unavailable)
+
