@@ -1,8 +1,11 @@
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
-import { navigate } from '../../hooks/useNavigation';
+import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
+import { AnalysisAction } from './AnalysisAction';
 import { useDossierCarousel } from '../../hooks/useDossierCarousel';
+import { transitionHomeView } from '../../lib/homeViewTransition';
 import { vehicleName } from '../../lib/format';
+import { getVisibleDossierNumber } from '../../lib/carousel';
 import type { DossierSummary } from '../../types';
 import { DossierFolder } from './DossierFolder';
 
@@ -30,8 +33,35 @@ export function DossierCarousel({
   onSelect,
   onStep,
 }: DossierCarouselProps) {
-  const { gestureHandlers, progress, dragging, animating, animateStep, tilt, canSelect } =
-    useDossierCarousel(onStep, total > 1);
+  const analysis = useHomeAnalysis();
+  const {
+    gestureHandlers,
+    progress,
+    dragging,
+    animating,
+    animateStep,
+    stopMotion,
+    tilt,
+    canSelect,
+  } = useDossierCarousel(onStep, total > 1, (steps, event) => {
+    const tappedPosition = getVisibleDossierNumber(activePosition, steps, total) - 1;
+    const tappedIndex = indices ? indices.indexOf(tappedPosition) : tappedPosition - offset;
+    const tappedDossier = dossiers[tappedIndex];
+    if (!tappedDossier) return;
+    const folder = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('.dossier-folder'),
+    ).find((element) => element.dataset.dossierId === tappedDossier.dossier_id);
+    if (!folder) return;
+    const bounds = folder.getBoundingClientRect();
+    if (
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= bounds.top &&
+      event.clientY <= bounds.bottom
+    ) {
+      setOpenedDossierId(tappedDossier.dossier_id);
+    }
+  });
   const [openedDossierId, setOpenedDossierId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,10 +69,11 @@ export function DossierCarousel({
   }, [dragging]);
 
   useEffect(() => {
-    if (!openedDossierId) return;
+    if (!openedDossierId || analysis.busy) return;
 
     function returnDocumentOnOutsidePress(event: globalThis.PointerEvent) {
       const target = event.target;
+      if (target instanceof Element && target.closest('[data-flip-id="home-action"]')) return;
       const pressedFolder = target instanceof Element ? target.closest('.dossier-folder') : null;
       if (pressedFolder?.getAttribute('data-dossier-id') !== openedDossierId) {
         setOpenedDossierId(null);
@@ -51,15 +82,19 @@ export function DossierCarousel({
 
     document.addEventListener('pointerdown', returnDocumentOnOutsidePress);
     return () => document.removeEventListener('pointerdown', returnDocumentOnOutsidePress);
-  }, [openedDossierId]);
+  }, [openedDossierId, analysis.busy]);
 
   function browseDossiers(direction: number) {
     setOpenedDossierId(null);
     animateStep(direction);
   }
 
-  const activeDossier = dossiers[activeIndex];
   const activePosition = indices?.[activeIndex] ?? offset + activeIndex;
+  const visibleDossierNumber = getVisibleDossierNumber(activePosition, progress, total);
+  const visibleDossierIndex = indices
+    ? indices.indexOf(visibleDossierNumber - 1)
+    : visibleDossierNumber - 1 - offset;
+  const visibleDossier = dossiers[visibleDossierIndex];
 
   return (
     <section
@@ -68,7 +103,9 @@ export function DossierCarousel({
       aria-roledescription="carrousel"
       tabIndex={0}
       onKeyDown={(event) => {
+        if (analysis.busy) return;
         if (event.key === 'Escape') setOpenedDossierId(null);
+        if (event.target instanceof HTMLInputElement) return;
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
           event.currentTarget.focus({ preventScroll: true });
@@ -79,7 +116,8 @@ export function DossierCarousel({
       <h1 className="carousel-backdrop-word">DOSSIERS</h1>
       <div
         className="carousel-stage"
-        {...gestureHandlers}
+        {...(analysis.busy ? {} : gestureHandlers)}
+        inert={analysis.busy}
         style={
           {
             '--folder-tilt-x': `${tilt.x}deg`,
@@ -117,7 +155,6 @@ export function DossierCarousel({
                   !dragging &&
                   !animating
                 }
-                onRequestClose={() => setOpenedDossierId(null)}
                 onSelect={() => {
                   if (index !== activeIndex || dragging || animating || !canSelect()) return;
                   onSelect(index);
@@ -131,7 +168,7 @@ export function DossierCarousel({
       <button
         className="carousel-edge carousel-edge-previous"
         onClick={() => browseDossiers(-1)}
-        disabled={total < 2}
+        disabled={total < 2 || analysis.busy}
         aria-label="Dossier précédent"
       >
         <ChevronLeft size={22} strokeWidth={1.2} />
@@ -139,25 +176,48 @@ export function DossierCarousel({
       <button
         className="carousel-edge carousel-edge-next"
         onClick={() => browseDossiers(1)}
-        disabled={total < 2}
+        disabled={total < 2 || analysis.busy}
         aria-label="Dossier suivant"
       >
         <ChevronRight size={22} strokeWidth={1.2} />
       </button>
-      <a
-        className="home-open-dossier"
-        href={`/dossiers/${encodeURIComponent(activeDossier.dossier_id)}`}
-        aria-label={`Ouvrir le dossier ${activeDossier.dossier_id}`}
-        onClick={(event) => {
-          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-          event.preventDefault();
-          navigate(event.currentTarget.getAttribute('href')!);
-        }}
-      >
-        <ArrowUpRight size={22} strokeWidth={1.2} />
-      </a>
+      <div className="home-bottom-bar">
+        <form
+          className="home-folder-search"
+          data-flip-id="home-search"
+          role="search"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (analysis.busy) return;
+            const search = String(new FormData(event.currentTarget).get('search') ?? '').trim();
+            transitionHomeView(`/?${new URLSearchParams({ search })}`);
+          }}
+        >
+          <Search size={17} aria-hidden="true" />
+          <input
+            disabled={analysis.busy}
+            name="search"
+            type="search"
+            aria-label="Rechercher un dossier"
+            placeholder="Rechercher un dossier…"
+          />
+          <button type="submit" aria-label="Rechercher">
+            <ArrowUpRight size={18} aria-hidden="true" />
+          </button>
+        </form>
+        <AnalysisAction
+          className="home-open-dossier"
+          dossier={visibleDossier}
+          beforeActivate={() => {
+            // Commit the visible folder before launching so a settling swipe cannot change the target.
+
+            stopMotion();
+            onSelect(visibleDossierIndex);
+          }}
+        />
+      </div>
       <span className="carousel-counter" aria-live="polite">
-        {String(activePosition + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        {String(visibleDossierNumber).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </span>
     </section>
   );

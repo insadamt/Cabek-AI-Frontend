@@ -70,9 +70,11 @@ export async function findDossierSummary(id: string, signal?: AbortSignal) {
   }
 }
 
-export function startScan(id: string): Promise<DossierResponse> {
+export function startScan(id: string, signal?: AbortSignal): Promise<DossierResponse> {
   if (isPreview) return Promise.reject(new ApiError('preview_only'));
-  return request(() => client.post(`/api/dossiers/${encodeURIComponent(id)}/scan`));
+  return request(() =>
+    client.post(`/api/dossiers/${encodeURIComponent(id)}/scan`, undefined, { signal }),
+  );
 }
 
 export function listBrands(signal?: AbortSignal): Promise<VehicleOption[]> {

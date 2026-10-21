@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react';
 interface DragOrigin {
   pointerId: number;
   x: number;
+  pointerStartX: number;
+  interruptedMotion: boolean;
   y: number;
   lastX: number;
   lastTime: number;
@@ -11,7 +13,11 @@ interface DragOrigin {
   spacing: number;
 }
 
-export function useDossierCarousel(onStep: (direction: number) => void, enabled = true) {
+export function useDossierCarousel(
+  onStep: (direction: number) => void,
+  enabled = true,
+  onMotionTap?: (steps: number, event: PointerEvent<HTMLElement>) => void,
+) {
   const dragOrigin = useRef<DragOrigin | null>(null);
   const suppressSelection = useRef(false);
   const motion = useRef({ progress: 0 });
@@ -51,6 +57,18 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
     setTilt({ x: 0, y: 0 });
   }
 
+  function stopMotion() {
+    animation.current?.kill();
+    animation.current = null;
+    dragOrigin.current = null;
+    motion.current.progress = 0;
+    targetProgress.current = 0;
+    setProgress(0);
+    setDragging(false);
+    setAnimating(false);
+    setTilt({ x: 0, y: 0 });
+  }
+
   function animateStep(direction: number) {
     if (!enabled) return;
 
@@ -61,6 +79,8 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
 
   function startDrag(event: PointerEvent<HTMLElement>) {
     if (!enabled || !event.isPrimary || event.button !== 0) return;
+    const interruptedMotion =
+      animation.current?.isActive() === true || motion.current.progress !== 0;
     animation.current?.kill();
     suppressSelection.current = false;
     setAnimating(false);
@@ -73,6 +93,8 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
     dragOrigin.current = {
       pointerId: event.pointerId,
       x: event.clientX + motion.current.progress * spacing,
+      pointerStartX: event.clientX,
+      interruptedMotion,
       y: event.clientY,
       lastX: event.clientX,
       lastTime: event.timeStamp,
@@ -85,13 +107,14 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
     const origin = dragOrigin.current;
     if (origin) {
       const distance = event.clientX - origin.x;
+      const pointerDistance = event.clientX - origin.pointerStartX;
 
       // Leave vertical gestures to the page until horizontal intent is established.
 
       if (
         !suppressSelection.current &&
-        Math.abs(event.clientY - origin.y) > Math.abs(distance) &&
-        Math.abs(distance) < 12
+        Math.abs(event.clientY - origin.y) > Math.abs(pointerDistance) &&
+        Math.abs(pointerDistance) < 12
       ) {
         // Native vertical scrolling must not start a settling animation or dismiss the paper.
 
@@ -99,7 +122,7 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
         else settleGesture(Math.round(motion.current.progress));
         return;
       }
-      if (Math.abs(distance) > 6 || suppressSelection.current) {
+      if (Math.abs(pointerDistance) > 6 || suppressSelection.current) {
         event.currentTarget.setPointerCapture(event.pointerId);
         suppressSelection.current = true;
         setDragging(true);
@@ -126,8 +149,19 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
     if (!origin || origin.pointerId !== event.pointerId) return;
     // A plain click must reach the folder without starting a zero-distance settling animation.
 
-    if (!suppressSelection.current && motion.current.progress === 0) {
-      dragOrigin.current = null;
+    if (!suppressSelection.current) {
+      if (origin.interruptedMotion) {
+        const nearestSteps = Math.round(motion.current.progress);
+        stopMotion();
+
+        // Consume the following click so it cannot activate the old folder after this tap.
+
+        suppressSelection.current = true;
+        if (nearestSteps) onStep(nearestSteps);
+        onMotionTap?.(nearestSteps, event);
+      } else {
+        dragOrigin.current = null;
+      }
       return;
     }
     const velocity = event.timeStamp - origin.lastTime < 80 ? origin.velocity : 0;
@@ -146,6 +180,7 @@ export function useDossierCarousel(onStep: (direction: number) => void, enabled 
     dragging,
     animating,
     animateStep,
+    stopMotion,
     tilt,
     canSelect: () => !suppressSelection.current,
     gestureHandlers: {

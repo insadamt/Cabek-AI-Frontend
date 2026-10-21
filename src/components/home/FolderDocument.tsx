@@ -1,4 +1,3 @@
-import { X } from 'lucide-react';
 import { useFolderDocumentMotion } from '../../hooks/useFolderDocumentMotion';
 import { shortStatusLabels } from '../../lib/format';
 import type { DossierSummary } from '../../types';
@@ -8,7 +7,6 @@ interface FolderDocumentProps {
   documentId: string;
   isOpen: boolean;
   onMotionChange: (moving: boolean) => void;
-  onRequestClose: () => void;
 }
 
 export function FolderDocument({
@@ -16,7 +14,6 @@ export function FolderDocument({
   documentId,
   isOpen,
   onMotionChange,
-  onRequestClose,
 }: FolderDocumentProps) {
   const { vehicle } = dossier;
   const documentElement = useFolderDocumentMotion({ isOpen, onMotionChange });
@@ -29,54 +26,38 @@ export function FolderDocument({
       aria-label={`Fiche véhicule ${dossier.dossier_id}`}
       aria-hidden={!isOpen}
     >
-      <button
-        type="button"
-        className="folder-document-close"
-        aria-label="Ranger la fiche véhicule"
-        tabIndex={isOpen ? 0 : -1}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation();
-          onRequestClose();
-        }}
-      >
-        <X size={18} aria-hidden="true" />
-      </button>
       <header className="folder-document-header">
-        <span className="folder-document-brand">
-          cabek<span>ai.</span>
-        </span>
-        <span>FICHE VÉHICULE</span>
+        <img className="folder-document-logo" src="/brand/cabek-logo.png" alt="Cabek" />
+        <span className="folder-document-reference">{dossier.dossier_id}</span>
       </header>
-      <p className="folder-document-reference">{dossier.dossier_id}</p>
+      <div className="folder-document-identity">
+        <p className="folder-document-make">{vehicle.marque || 'Marque non renseignée'}</p>
+        <h2>{vehicle.modele || 'Modèle non renseigné'}</h2>
+        <div className="folder-document-summary">
+          <span>
+            <span className="folder-document-year-label">Année </span>
+            {vehicle.annee || 'Non renseignée'}
+          </span>
+          <span className={`folder-document-status status-${dossier.status}`}>
+            <span aria-hidden="true" />
+            {shortStatusLabels[dossier.status]}
+          </span>
+        </div>
+      </div>
       <dl className="folder-document-fields">
-        <div>
-          <dt>Marque</dt>
-          <dd>{vehicle.marque || 'Non renseignée'}</dd>
-        </div>
-        <div>
-          <dt>Modèle</dt>
-          <dd>{vehicle.modele || 'Non renseigné'}</dd>
-        </div>
         <div className="folder-document-registration">
           <dt>Immatriculation</dt>
-          <dd>{vehicle.matricule || 'Non renseignée'}</dd>
-        </div>
-        <div>
-          <dt>Année</dt>
-          <dd>{vehicle.annee || 'Non renseignée'}</dd>
-        </div>
-        <div>
-          <dt>Photographies</dt>
-          <dd>{dossier.photo_count}</dd>
+          <dd>
+            <bdi>{vehicle.matricule || 'Non renseignée'}</bdi>
+          </dd>
         </div>
       </dl>
       <footer className="folder-document-footer">
-        <span className={`folder-document-status status-${dossier.status}`}>
-          <span aria-hidden="true" />
-          {shortStatusLabels[dossier.status]}
+        <span>
+          <strong>{dossier.photo_count}</strong>{' '}
+          {dossier.photo_count === 1 ? 'photographie' : 'photographies'}
         </span>
-        <span>CABEK / DOSSIER</span>
+        <span>Fiche véhicule</span>
       </footer>
     </article>
   );

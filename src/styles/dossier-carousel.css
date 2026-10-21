@@ -96,3 +96,18 @@
   clip-path: polygon(100% 0, 0 20%, 0 80%, 100% 100%);
   padding-left: 7px;
 }
+
+/* A readable sheet must not inherit the carousel's 3D tilt or blur texture. */
+
+.carousel-folder-slot.is-active {
+  filter: none;
+  will-change: auto;
+}
+.carousel-folder-slot.is-active:has(.folder-mouth-open) {
+  --folder-turn: 0deg;
+  --folder-lean: 0deg;
+}
+.carousel-folder-slot.is-active .folder-mouth-open {
+  transform: none;
+  filter: none;
+}

@@ -1,5 +1,7 @@
 import { LayoutGrid } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
+import { HomeAnalysisProvider, useHomeAnalysis } from '../../hooks/useHomeAnalysis';
+import { AnalysisIsland } from './AnalysisIsland';
 import { navigate } from '../../hooks/useNavigation';
 
 function navigateFromLink(event: MouseEvent<HTMLAnchorElement>) {
@@ -9,13 +11,14 @@ function navigateFromLink(event: MouseEvent<HTMLAnchorElement>) {
   navigate(event.currentTarget.getAttribute('href')!);
 }
 
-export function HomeFrame({ children }: { children: ReactNode }) {
+function HomeFrameContent({ children }: { children: ReactNode }) {
+  const { busy } = useHomeAnalysis();
   return (
     <div className="home-shell">
       <a href="#main-content" className="skip-link">
         Aller au contenu
       </a>
-      <div className="home-frame">
+      <div className={`home-frame ${busy ? 'home-analysis-busy' : ''}`}>
         <header className="home-header">
           <nav aria-label="Navigation principale" className="home-navigation">
             <a href="/" aria-current="page" onClick={navigateFromLink}>
@@ -25,14 +28,7 @@ export function HomeFrame({ children }: { children: ReactNode }) {
               Dossiers
             </a>
           </nav>
-          <a
-            className="home-wordmark"
-            href="/"
-            onClick={navigateFromLink}
-            aria-label="CABEK AI — Accueil"
-          >
-            cabek<span>ai</span>.
-          </a>
+          <AnalysisIsland />
           <a
             className="home-list-link"
             href="/dossiers"
@@ -47,5 +43,13 @@ export function HomeFrame({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
+  );
+}
+
+export function HomeFrame({ children }: { children: ReactNode }) {
+  return (
+    <HomeAnalysisProvider>
+      <HomeFrameContent>{children}</HomeFrameContent>
+    </HomeAnalysisProvider>
   );
 }

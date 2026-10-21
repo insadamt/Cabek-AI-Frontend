@@ -1,0 +1,41 @@
+/* Shared meanings keep status colors consistent across lists and vehicle sheets. */
+
+.status-not_analyzed {
+  --status-surface: #f1f5f9;
+  --status-ink: #475569;
+  --status-border: #cbd5e1;
+}
+.status-completed {
+  --status-surface: #ecfdf3;
+  --status-ink: #166534;
+  --status-border: #bbf7d0;
+}
+.status-processing {
+  --status-surface: #eff6ff;
+  --status-ink: #1d4ed8;
+  --status-border: #bfdbfe;
+}
+.status-queued {
+  --status-surface: #fffbeb;
+  --status-ink: #92400e;
+  --status-border: #fde68a;
+}
+.status-failed {
+  --status-surface: #fef2f2;
+  --status-ink: #b91c1c;
+  --status-border: #fecaca;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 7px;
+  white-space: nowrap;
+  background: var(--status-surface, #f2f2f2);
+  color: var(--status-ink, #626262);
+  border: 1px solid var(--status-border, transparent);
+}

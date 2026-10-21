@@ -26,8 +26,7 @@
     left: 6%;
     width: 88%;
     padding: 14px;
-    max-height: min(62svh, 360px);
-    overflow: hidden;
+    --document-max-height: min(62svh, 360px);
     font-size: 14px;
     line-height: 1.4;
   }
@@ -37,12 +36,8 @@
     touch-action: pan-y;
   }
   .folder-document-header {
-    padding-right: 32px;
     font-size: 8px;
     letter-spacing: 0.5px;
-  }
-  .folder-document-brand {
-    font-size: 21px;
   }
   .folder-document-reference {
     font-size: 9px;
@@ -86,24 +81,6 @@
     font-size: 11px;
   }
 }
-@media (hover: none), (pointer: coarse) {
-  .folder-document-close {
-    position: absolute;
-    display: grid;
-    place-items: center;
-    top: 2px;
-    right: 2px;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    background: transparent;
-    color: #505c53;
-    border-radius: 50%;
-  }
-  .folder-document-header {
-    padding-right: 32px;
-  }
-}
 @media (max-height: 450px) and (orientation: landscape) {
   .carousel-stage {
     inset: 70px 0 calc(76px + env(safe-area-inset-bottom));
@@ -124,8 +101,7 @@
     left: 4%;
     width: 92%;
     padding: 10px;
-    max-height: calc(100svh - 150px);
-    overflow: hidden;
+    --document-max-height: calc(100svh - 150px);
     font-size: 12px;
   }
   .folder-document.is-open {
@@ -137,15 +113,11 @@
     font-size: 7px;
     padding-bottom: 6px;
   }
-  .folder-document-brand {
-    font-size: 19px;
-  }
   .folder-document-reference {
     margin: 6px 0;
     font-size: 8px;
   }
   .folder-document-fields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   .folder-document-fields dt {
@@ -184,5 +156,21 @@
     bottom: calc(28px + env(safe-area-inset-bottom));
     transform: none;
     font-size: 11px;
+  }
+}
+
+@media (max-height: 450px) and (orientation: landscape) {
+  .folder-document-identity {
+    padding: 10px 0;
+  }
+  .folder-document-identity h2 {
+    font-size: 22px;
+  }
+  .folder-document-summary {
+    margin-top: 8px;
+  }
+  .folder-document-fields dd {
+    padding: 8px;
+    font-size: 16px;
   }
 }

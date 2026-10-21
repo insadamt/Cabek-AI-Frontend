@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { DossierCarousel } from '../components/home/DossierCarousel';
+import { HomeSearchResults } from '../components/home/HomeSearchResults';
 import { HomeFrame } from '../components/home/HomeFrame';
 import { useNavigation } from '../hooks/useNavigation';
 import { useResource } from '../hooks/useResource';
@@ -9,7 +10,7 @@ import type { DossierQuery } from '../types';
 
 const dossiersPerPage = 12;
 
-export function Home() {
+function HomeCarousel() {
   const { searchParams } = useNavigation();
   const requestedSlide = Number(searchParams.get('slide') ?? 0);
   const slide = Number.isSafeInteger(requestedSlide) && requestedSlide >= 0 ? requestedSlide : 0;
@@ -44,7 +45,7 @@ export function Home() {
   }, []);
 
   return (
-    <HomeFrame>
+    <>
       {data && data.items.length > 0 ? (
         <DossierCarousel
           dossiers={data.items}
@@ -74,6 +75,26 @@ export function Home() {
         <button className="home-retry" onClick={resource.refresh}>
           Réessayer
         </button>
+      )}
+    </>
+  );
+}
+
+export function Home() {
+  const { searchParams } = useNavigation();
+
+  // Presence of the query enables the grid even when an empty search requests all folders.
+
+  const requestedOffset = Number(searchParams.get('offset') ?? 0);
+  const offset =
+    Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
+  return (
+    <HomeFrame>
+      <div className="home-carousel-view" hidden={searchParams.has('search')}>
+        <HomeCarousel />
+      </div>
+      {searchParams.has('search') && (
+        <HomeSearchResults search={searchParams.get('search') ?? ''} offset={offset} />
       )}
     </HomeFrame>
   );

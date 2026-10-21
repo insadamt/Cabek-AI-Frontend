@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { vehicleName } from '../../lib/format';
 import type { DossierSummary } from '../../types';
 import { FolderDocument } from './FolderDocument';
@@ -14,7 +15,7 @@ interface DossierFolderProps {
   isActive: boolean;
   isOpen: boolean;
   onSelect: () => void;
-  onRequestClose: () => void;
+  onDocumentMotionChange?: (moving: boolean) => void;
 }
 
 export function DossierFolder({
@@ -22,13 +23,26 @@ export function DossierFolder({
   isActive,
   isOpen,
   onSelect,
-  onRequestClose,
+  onDocumentMotionChange,
 }: DossierFolderProps) {
+  const analysis = useHomeAnalysis();
+  const analysisSession =
+    analysis.session?.dossier.dossier_id === dossier.dossier_id ? analysis.session : null;
+  const documentOpen = analysisSession
+    ? analysisSession.phase === 'uploading'
+      ? isOpen
+      : !['stowing', 'done', 'error', 'idle'].includes(analysisSession.phase)
+    : isOpen;
+  const documentAway =
+    !!analysisSession && ['ingesting', 'working', 'returning'].includes(analysisSession.phase);
   const folderId = useId().replace(/:/g, '');
   const folderElement = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [documentMoving, setDocumentMoving] = useState(false);
-  const mouthOpen = (isActive && hovered) || isOpen || documentMoving;
+  const mouthOpen =
+    analysisSession && analysis.busy
+      ? (documentOpen && analysisSession.phase !== 'working') || documentMoving
+      : (isActive && hovered) || documentOpen || documentMoving;
 
   useLayoutEffect(() => {
     if (!isActive) setHovered(false);
@@ -54,6 +68,8 @@ export function DossierFolder({
       className={`dossier-folder ${mouthOpen ? 'folder-mouth-open' : ''}`}
       data-dossier-id={dossier.dossier_id}
       data-active={isActive}
+      data-document-away={documentAway || undefined}
+      data-analysis-active={(!!analysisSession && analysis.busy) || undefined}
       inert={!isActive}
       onPointerEnter={(event) => {
         if (isActive && event.pointerType !== 'touch') setHovered(true);
@@ -73,15 +89,12 @@ export function DossierFolder({
       <div className="folder-back" style={{ clipPath: `url(#${folderId}-back)` }} />
       {/* The sheet moves within the pocket so both folder faces keep their shared bottom edge. */}
       <FolderDocument
-        dossier={dossier}
+        dossier={{ ...dossier, status: analysis.resolveStatus(dossier) }}
         documentId={`${folderId}-document`}
-        isOpen={isOpen}
-        onMotionChange={setDocumentMoving}
-        onRequestClose={() => {
-          onRequestClose();
-          folderElement.current
-            ?.querySelector<HTMLButtonElement>('.folder-cover')
-            ?.focus({ preventScroll: true });
+        isOpen={documentOpen}
+        onMotionChange={(moving) => {
+          setDocumentMoving(moving);
+          onDocumentMotionChange?.(moving);
         }}
       />
       <button
@@ -91,11 +104,14 @@ export function DossierFolder({
         aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.dossier_id}`}
         aria-pressed={isActive}
         aria-disabled={!isActive}
-        aria-expanded={isOpen}
+        aria-expanded={documentOpen && !documentAway}
         aria-controls={`${folderId}-document`}
         tabIndex={isActive ? 0 : -1}
         onClick={() => {
-          if (isActive) onSelect();
+          if (isActive && !analysis.busy) {
+            analysis.revealDocument(dossier.dossier_id);
+            onSelect();
+          }
         }}
       >
         <svg

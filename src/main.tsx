@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles/fonts.css';
 import App from './App';
 import './styles/base.css';
+import './styles/status.css';
 import './styles/layout.css';
 import './styles/overview.css';
 import './styles/dashboard.css';
@@ -19,6 +20,10 @@ import './styles/folder-glass.css';
 import './styles/folder-document.css';
 import './styles/home-responsive.css';
 import './styles/folder-mobile.css';
+import './styles/home-actions.css';
+import './styles/home-search.css';
+import './styles/analysis-island.css';
+import './styles/analysis-motion.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

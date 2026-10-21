@@ -97,6 +97,10 @@
 .home-open-dossier:hover {
   background: #ebebeb;
 }
+.home-open-dossier[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .carousel-counter {
   position: absolute;
   right: 23px;

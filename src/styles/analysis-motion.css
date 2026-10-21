@@ -1,0 +1,189 @@
+/* ============================================================
+   Material fusion, contact feedback and action micro animations
+   ============================================================ */
+
+.analysis-flight-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+.analysis-flying-document {
+  overflow: hidden;
+  background: white;
+  will-change: transform;
+}
+.analysis-flying-document::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 10;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    #161616 0%,
+    #161616 calc(var(--fusion-front, -12%) - 8%),
+    #161616dd var(--fusion-front, -12%),
+    transparent calc(var(--fusion-front, -12%) + 8%)
+  );
+  pointer-events: none;
+}
+.dossier-folder[data-document-away='true'] > .folder-document {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Keep the flight's source flat while the empty folder closes its mouth. */
+
+.carousel-folder-slot.is-active:has([data-analysis-active='true']) {
+  --folder-turn: 0deg;
+  --folder-lean: 0deg;
+}
+.carousel-folder-slot.is-active .dossier-folder[data-analysis-active='true'] {
+  transform: none;
+  filter: none;
+}
+.ai-activity-island[data-fusion='absorbing'] .island-surface {
+  animation: island-absorb-contact 420ms ease-out;
+}
+.ai-activity-island[data-fusion='releasing'] .island-surface {
+  animation: island-release-contact 480ms ease-out;
+}
+.ai-activity-island[data-fusion='absorbing'] .island-pixel-grid i {
+  animation: island-pixel-gather 420ms ease-in-out both;
+}
+.is-success .island-success-mark {
+  stroke-dasharray: 32;
+  animation: analysis-check 400ms ease-out both;
+}
+.home-analysis-busy .home-folder-search {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.home-bottom-bar .home-open-dossier[data-action='working'],
+.home-bottom-bar .home-open-dossier[data-action='working']:hover,
+.home-selected-action[data-action='working'],
+.home-selected-action[data-action='working']:hover {
+  background: #e9f2df;
+  color: #365522;
+  cursor: progress;
+  opacity: 1;
+}
+.home-bottom-bar .home-open-dossier[data-action='done'],
+.home-selected-action[data-action='done'] {
+  background: #a7e36f;
+  color: #203b16;
+}
+.analysis-upload-icon {
+  animation: analysis-upload 560ms ease-in-out both;
+}
+.analysis-done-check {
+  stroke-dasharray: 32;
+  animation: analysis-check 450ms ease-out both;
+}
+@keyframes island-pixel-morph {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    background: #f7a0d4;
+  }
+  25% {
+    opacity: 0.35;
+    transform: scale(0.55) translateY(2px);
+    background: #ffb36b;
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(0.9);
+    background: #bb9aff;
+  }
+  75% {
+    opacity: 0.5;
+    transform: scale(0.5) translateX(2px);
+    background: #80dfe8;
+  }
+}
+@keyframes island-pixel-gather {
+  45% {
+    transform: translate(var(--pixel-gather-x), var(--pixel-gather-y)) scale(0.8);
+    background: #b6f0e3;
+  }
+}
+@keyframes island-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+@keyframes island-text-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes island-progress-wait {
+  to {
+    transform: translateX(315%);
+  }
+}
+@keyframes analysis-upload {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  65% {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+  66% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes analysis-check {
+  from {
+    stroke-dashoffset: 32;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes island-absorb-contact {
+  40% {
+    transform: scaleX(1.035);
+    filter: drop-shadow(0 6px 10px #00000022);
+  }
+  75% {
+    transform: scaleX(0.99);
+  }
+}
+@keyframes island-release-contact {
+  35% {
+    transform: scaleX(0.975);
+    filter: drop-shadow(0 10px 14px #0000001c);
+  }
+  70% {
+    transform: scaleX(1.015);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .analysis-upload-icon,
+  .analysis-done-check {
+    animation: none;
+  }
+}
