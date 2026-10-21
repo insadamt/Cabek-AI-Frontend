@@ -1,6 +1,6 @@
 # Folder home
 
-The home fills the viewport with glass dossier folders. Hovering the selected folder opens its pocket and reveals the top of a paper vehicle sheet. Clicking, tapping, or activating the folder with Enter/Space lifts that sheet above the front face. It shows marque, modèle, immatriculation, year, photo count, status, and the dossier reference from the existing list response. Missing vehicle fields use explicit “Non renseigné(e)” labels. The paper stays out while interacting with it or its folder. Clicking outside, pressing Escape, or switching folders returns it to the pocket.
+The home fills the viewport with glass dossier folders. Only the centered, settled folder accepts hover, clicks, taps, and keyboard focus. Side folders are inert previews; swipes and arrows bring them into the center. Hovering the selected folder opens its pocket and reveals the top of a paper vehicle sheet. Clicking, tapping, or activating the folder with Enter/Space lifts that sheet above the front face. It shows marque, modèle, immatriculation, year, photo count, status, and the dossier reference from the existing list response. Missing vehicle fields use explicit “Non renseigné(e)” labels. The paper stays out while interacting with it or its folder. Clicking outside, pressing Escape, or switching folders returns it to the pocket.
 
 The pocket opening changes shape on hover while its bottom contour stays fixed against the rear face. Extraction first lifts the paper clear of the pocket, moves it in front of the cover, and then lowers it into a readable position overlapping the folder. Closing reverses that same persistent timeline: the paper rises from its front position, changes layers at the pocket mouth, then slides inside. Interrupting a return plays forward from its current progress. The pocket stays open until the reverse finishes. The timeline remeasures on paper, folder, and viewport resizing. The folder keeps the same position and size throughout opening and return. Reduced motion jumps directly to the requested end state. Closed sheets are hidden from assistive technology, and the folder button exposes its expanded state. The home never fetches image previews or full dossier results; photographs remain in the dossier comparison viewer.
 
@@ -15,7 +15,9 @@ Folder selection is preserved in the `slide` URL parameter without adding a hist
 ## Manual test checklist
 
 - [ ] On desktop, compare the lower outline closed, hovered, and pressed; it should remain a single edge with no dark strip or separate rear corner.
-- [ ] Hover the selected folder: its mouth opens, but the paper stays inside.
+- [ ] Hover or tap either side folder: it should remain closed and should not change selection.
+- [ ] Swipe starting over a side preview: browsing should still work.
+- [ ] Hover the centered folder after movement settles: its mouth opens, but the paper stays inside.
 - [ ] Click or tap it: the paper clears the pocket, then rests visibly in front of the cover with all details readable.
 - [ ] Click the paper or folder again: the paper stays out.
 - [ ] Click outside or press Escape: closing follows the opening path in exact reverse, including the layer change at the mouth.

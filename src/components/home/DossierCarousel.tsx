@@ -110,7 +110,7 @@ export function DossierCarousel({
             >
               <DossierFolder
                 dossier={dossier}
-                isActive={index === activeIndex}
+                isActive={index === activeIndex && !dragging && !animating}
                 isOpen={
                   openedDossierId === dossier.dossier_id &&
                   index === activeIndex &&
@@ -119,7 +119,7 @@ export function DossierCarousel({
                 }
                 onRequestClose={() => setOpenedDossierId(null)}
                 onSelect={() => {
-                  if (!canSelect() || animating) return;
+                  if (index !== activeIndex || dragging || animating || !canSelect()) return;
                   onSelect(index);
                   setOpenedDossierId(dossier.dossier_id);
                 }}

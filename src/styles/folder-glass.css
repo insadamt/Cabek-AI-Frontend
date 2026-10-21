@@ -2,6 +2,11 @@
   perspective: 950px;
   filter: drop-shadow(2px 30px 22px #00000030);
 }
+/* Let drags over side previews reach the stage without activating a folder. */
+
+.dossier-folder[data-active='false'] {
+  pointer-events: none;
+}
 .folder-shape-definitions {
   position: absolute;
   width: 0;

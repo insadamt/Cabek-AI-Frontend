@@ -31,6 +31,10 @@ export function DossierFolder({
   const mouthOpen = (isActive && hovered) || isOpen || documentMoving;
 
   useLayoutEffect(() => {
+    if (!isActive) setHovered(false);
+  }, [isActive]);
+
+  useLayoutEffect(() => {
     // Morph only the pocket mouth; the bottom contour stays attached to the rear face.
 
     const outlines = folderElement.current!.querySelectorAll('.folder-front-outline');
@@ -49,8 +53,10 @@ export function DossierFolder({
       ref={folderElement}
       className={`dossier-folder ${mouthOpen ? 'folder-mouth-open' : ''}`}
       data-dossier-id={dossier.dossier_id}
+      data-active={isActive}
+      inert={!isActive}
       onPointerEnter={(event) => {
-        if (event.pointerType !== 'touch') setHovered(true);
+        if (isActive && event.pointerType !== 'touch') setHovered(true);
       }}
       onPointerLeave={() => setHovered(false)}
     >
@@ -84,10 +90,13 @@ export function DossierFolder({
         style={{ clipPath: `url(#${folderId}-shape)` }}
         aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.dossier_id}`}
         aria-pressed={isActive}
+        aria-disabled={!isActive}
         aria-expanded={isOpen}
         aria-controls={`${folderId}-document`}
         tabIndex={isActive ? 0 : -1}
-        onClick={onSelect}
+        onClick={() => {
+          if (isActive) onSelect();
+        }}
       >
         <svg
           className="folder-glass-surface"
