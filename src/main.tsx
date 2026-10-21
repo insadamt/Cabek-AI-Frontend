@@ -15,7 +15,10 @@ import './styles/dossier-responsive.css';
 import './styles/viewer.css';
 import './styles/home.css';
 import './styles/dossier-carousel.css';
+import './styles/folder-glass.css';
+import './styles/folder-document.css';
 import './styles/home-responsive.css';
+import './styles/folder-mobile.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

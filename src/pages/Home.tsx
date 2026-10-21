@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { DossierCarousel } from '../components/home/DossierCarousel';
 import { HomeFrame } from '../components/home/HomeFrame';
 import { useNavigation } from '../hooks/useNavigation';
 import { useResource } from '../hooks/useResource';
-import { isPreview, listDossiers } from '../lib/api';
+import { isPreview } from '../lib/api';
+import { loadHomeDossierWindow } from '../lib/homeDossiers';
 import type { DossierQuery } from '../types';
 
 const dossiersPerPage = 12;
@@ -16,12 +17,17 @@ export function Home() {
   const query: DossierQuery = { search: '', status: 'all', offset, limit: dossiersPerPage };
   const resource = useResource(
     JSON.stringify(query),
-    (signal) => listDossiers(query, signal),
+    (signal) => loadHomeDossierWindow(query, signal),
     (data) =>
       !isPreview && data && data.counts.processing + data.counts.queued > 0 ? 10_000 : undefined,
   );
-  const data = resource.data;
-  const activeIndex = Math.min(slide - offset, Math.max(0, (data?.items.length ?? 1) - 1));
+  const previousWindow = useRef(resource.data);
+  if (resource.data) previousWindow.current = resource.data;
+
+  // Keep the prefetched neighbor mounted while its page becomes the current window.
+
+  const data = resource.data ?? previousWindow.current;
+  const activeIndex = Math.max(0, data?.indices.indexOf(slide) ?? 0);
 
   function selectSlide(nextSlide: number) {
     const params = new URLSearchParams();
@@ -44,10 +50,13 @@ export function Home() {
           dossiers={data.items}
           activeIndex={activeIndex}
           total={data.total}
-          offset={offset}
-          onSelect={(index) => selectSlide(offset + index)}
+          offset={0}
+          indices={data.indices}
+          onSelect={(index) => selectSlide(data.indices[index])}
           onStep={(direction) =>
-            selectSlide((offset + activeIndex + direction + data.total) % data.total)
+            selectSlide(
+              (((data.indices[activeIndex] + direction) % data.total) + data.total) % data.total,
+            )
           }
         />
       ) : (

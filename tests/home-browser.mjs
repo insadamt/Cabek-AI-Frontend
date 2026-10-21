@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { createFixture, mockApi } from './fixtures.mjs';
 
 export async function runHomeBrowserChecks({ newPage, check, previewOrigin, liveOrigin }) {
   const home = await newPage({ viewport: { width: 1440, height: 900 } });
@@ -13,7 +14,7 @@ export async function runHomeBrowserChecks({ newPage, check, previewOrigin, live
     await expect(home.locator('.carousel-folder-slot')).toHaveCount(3);
     await home.getByRole('button', { name: 'Dossier suivant', exact: true }).click();
     await expect(activeFolder).toHaveAccessibleName(/Dacia Sandero/);
-    await activeFolder.focus();
+    await activeFolder.getByRole('button', { name: /Sélectionner/ }).focus();
     await home.keyboard.press('ArrowRight');
     await expect(activeFolder).toHaveAccessibleName(/Peugeot 208/);
     await home.keyboard.press('ArrowLeft');
@@ -87,6 +88,86 @@ export async function runHomeBrowserChecks({ newPage, check, previewOrigin, live
     await expect(mobile.getByRole('heading', { name: 'Vos dossiers, simplement.' })).toBeVisible();
     await mobile.close();
   });
+
+  await check(
+    'Long drags follow the pointer across multiple folders and loop backwards',
+    async () => {
+      const continuous = await newPage({ viewport: { width: 1440, height: 900 } });
+      await continuous.goto(previewOrigin);
+      await expect(continuous.locator('.carousel-folder-slot.is-active')).toHaveAccessibleName(
+        /Renault Clio/,
+      );
+      await continuous.mouse.move(1250, 700);
+      await continuous.mouse.down();
+      await continuous.mouse.move(210, 700, { steps: 30 });
+      await expect(continuous.locator('.dossier-carousel')).toHaveClass(/carousel-tracking/);
+      await continuous.waitForTimeout(100);
+      await continuous.mouse.up();
+      await expect(continuous.locator('.carousel-folder-slot.is-active')).toHaveAccessibleName(
+        /Peugeot 208/,
+      );
+      await continuous.goto(previewOrigin);
+      await continuous.getByRole('button', { name: 'Dossier précédent', exact: true }).click();
+      await expect(continuous.locator('.carousel-counter')).toHaveText('09 / 09');
+      await continuous.getByRole('button', { name: 'Dossier suivant', exact: true }).click();
+      await expect(continuous.locator('.carousel-counter')).toHaveText('01 / 09');
+      await continuous.close();
+    },
+  );
+
+  await check('Arrow buttons animate the same track and preserve rapid clicks', async () => {
+    const arrows = await newPage();
+    await arrows.goto(previewOrigin);
+    await expect(arrows.locator('.carousel-counter')).toHaveText('01 / 09');
+    await arrows.getByRole('button', { name: 'Dossier suivant', exact: true }).click();
+    await expect(arrows.locator('.dossier-carousel')).toHaveClass(/carousel-tracking/);
+    const incoming = arrows.getByRole('group', { name: /Sélectionner Dacia Sandero,/ });
+    await expect
+      .poll(() =>
+        incoming.evaluate((element) => {
+          const position = Number(element.style.getPropertyValue('--folder-position'));
+          return position > 0 && position < 1;
+        }),
+      )
+      .toBeTruthy();
+    await expect(arrows.locator('.carousel-counter')).toHaveText('02 / 09');
+    await arrows.locator('.carousel-edge-next').evaluate((button) => {
+      button.click();
+      button.click();
+    });
+    await expect(arrows.locator('.carousel-counter')).toHaveText('04 / 09');
+    await arrows.getByRole('button', { name: 'Dossier précédent', exact: true }).click();
+    await expect(arrows.locator('.dossier-carousel')).toHaveClass(/carousel-tracking/);
+    await expect(arrows.locator('.carousel-counter')).toHaveText('03 / 09');
+    await arrows.close();
+  });
+
+  await check(
+    'Live folders do not fetch photo previews; dossier comparison still opens',
+    async () => {
+      const page = await newPage();
+      const fixture = createFixture();
+      fixture.status = 'completed';
+      await mockApi(page, fixture);
+      const mediaRequests = [];
+      page.on('request', (request) => {
+        if (/\/photos(?:\?|$)|\/images\//.test(request.url())) mediaRequests.push(request.url());
+      });
+      await page.goto(liveOrigin);
+      const cover = page.locator('.folder-cover');
+      await expect(cover).toBeVisible();
+      await cover.hover();
+      await cover.click();
+      await page.waitForTimeout(650);
+      await expect(page.locator('.dossier-folder img')).toHaveCount(0);
+      expect(mediaRequests).toEqual([]);
+      expect(fixture.resultReadCount).toBe(0);
+      await page.getByRole('link', { name: 'Ouvrir le dossier TEST-001' }).click();
+      await page.getByRole('button', { name: 'Comparer les photos' }).click();
+      await expect(page.locator('.images-ready')).toBeVisible();
+      await page.close();
+    },
+  );
 
   await check('Carousel arrows cross API pages, wrap and recover from errors', async () => {
     const paginated = await newPage();

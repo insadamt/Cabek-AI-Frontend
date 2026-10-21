@@ -1,4 +1,5 @@
 .dossier-carousel {
+  --carousel-spacing-ratio: 0.34;
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -30,46 +31,34 @@
   cursor: grabbing;
 }
 .carousel-folder-slot {
-  --folder-scale: 0.72;
-  --folder-turn: calc(var(--folder-position) * -25deg);
-  --folder-lean: calc(var(--folder-position) * 7deg);
+  --folder-scale: calc(1 - var(--folder-distance) * 0.28);
+  --folder-turn: calc(-8deg + var(--folder-position) * -22deg);
+  --folder-lean: calc(-4deg + var(--folder-position) * 7deg);
   position: absolute;
   left: 50%;
   top: 51%;
-  width: clamp(250px, 31vw, 450px);
+  width: clamp(280px, 35vw, 510px);
   aspect-ratio: 1.36;
   padding: 0;
   background: transparent;
   cursor: inherit;
   transform: translate(
-      calc(-50% + var(--folder-position) * 34vw + var(--drag-distance) * 0.5),
+      calc(-50% + var(--folder-position) * var(--carousel-spacing-ratio) * 100vw),
       -50%
     )
     rotateY(var(--folder-turn)) rotateZ(var(--folder-lean)) scale(var(--folder-scale));
   transition:
     transform 0.6s cubic-bezier(0.22, 0.8, 0.2, 1),
     filter 0.6s;
-  filter: blur(1.2px);
-}
-.carousel-folder-slot.is-active {
-  --folder-scale: 1;
-  --folder-turn: calc(-8deg + var(--folder-tilt-y));
-  --folder-lean: -4deg;
-  filter: none;
+  filter: blur(calc(var(--folder-distance) * 1px));
+  will-change: transform;
 }
 .carousel-folder-slot.is-active .dossier-folder {
   transform: rotateX(var(--folder-tilt-x));
 }
-/* Keep the folder's perspective when the shared button press style is applied. */
-.carousel-folder-slot:active:not(:disabled) {
-  transform: translate(
-      calc(-50% + var(--folder-position) * 34vw + var(--drag-distance) * 0.5),
-      -50%
-    )
-    rotateY(var(--folder-turn)) rotateZ(var(--folder-lean)) scale(var(--folder-scale));
-}
+.carousel-tracking .carousel-folder-slot,
 .carousel-dragging .carousel-folder-slot {
-  transition-duration: 0.08s;
+  transition: none;
 }
 .dossier-folder {
   position: relative;
@@ -77,43 +66,6 @@
   height: 100%;
   text-align: left;
   filter: drop-shadow(6px 23px 12px #00000019);
-}
-.folder-tab {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 37%;
-  height: 18%;
-  border: 1px solid #b6a17c;
-  border-bottom: 0;
-  border-radius: 9px 20px 0 0;
-  background: linear-gradient(135deg, #dac8a5, #d4bd94);
-}
-.folder-back {
-  position: absolute;
-  inset: 12% 0 0;
-  background: linear-gradient(140deg, #ddcba8, #c6ae82);
-  border: 1px solid #b6a17c;
-  border-radius: 0 10px 7px 7px;
-}
-.folder-cover {
-  position: absolute;
-  inset: 22% -1px -1px;
-  background: linear-gradient(145deg, #eddfc1 0%, #e5d3ae 55%, #dcc69e 100%);
-  border: 1px solid #c4ae86;
-  border-top-color: #f8efd9;
-  border-radius: 6px 9px 7px 7px;
-  box-shadow: inset 0 1px 1px #fff8;
-}
-.folder-label {
-  position: absolute;
-  bottom: 19px;
-  left: 22px;
-  max-width: calc(100% - 44px);
-  overflow-wrap: anywhere;
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: #746344;
 }
 .carousel-edge {
   position: absolute;

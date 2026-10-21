@@ -38,9 +38,6 @@
   .carousel-edge svg {
     width: 16px;
   }
-  .folder-tab {
-    border-radius: 6px 13px 0 0;
-  }
   .folder-label {
     bottom: 13px;
     left: 15px;
@@ -61,7 +58,8 @@
 }
 @media (max-height: 450px) {
   .carousel-folder-slot {
-    width: 35vh;
+    width: 50vh;
+    top: 78%;
   }
   .carousel-stage {
     inset: 50px 0 30px;

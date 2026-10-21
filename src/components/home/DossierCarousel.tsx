@@ -1,5 +1,5 @@
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { navigate } from '../../hooks/useNavigation';
 import { useDossierCarousel } from '../../hooks/useDossierCarousel';
 import { vehicleName } from '../../lib/format';
@@ -11,20 +11,14 @@ interface DossierCarouselProps {
   activeIndex: number;
   total: number;
   offset: number;
+  indices?: number[];
   onSelect: (index: number) => void;
   onStep: (direction: number) => void;
 }
 
-function getRelativePosition(
-  index: number,
-  activeIndex: number,
-  count: number,
-  isEntireCollection: boolean,
-) {
-  let position = index - activeIndex;
-  if (isEntireCollection && position > count / 2) position -= count;
-  if (isEntireCollection && position < -count / 2) position += count;
-  return position;
+function getRelativePosition(index: number, activeIndex: number, count: number) {
+  const position = index - activeIndex;
+  return ((((position + count / 2) % count) + count) % count) - count / 2;
 }
 
 export function DossierCarousel({
@@ -32,23 +26,53 @@ export function DossierCarousel({
   activeIndex,
   total,
   offset,
+  indices,
   onSelect,
   onStep,
 }: DossierCarouselProps) {
-  const { gestureHandlers, dragDistance, tilt, canSelect } = useDossierCarousel(onStep);
+  const { gestureHandlers, progress, dragging, animating, animateStep, tilt, canSelect } =
+    useDossierCarousel(onStep, total > 1);
+  const [openedDossierId, setOpenedDossierId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (dragging) setOpenedDossierId(null);
+  }, [dragging]);
+
+  useEffect(() => {
+    if (!openedDossierId) return;
+
+    function returnDocumentOnOutsidePress(event: globalThis.PointerEvent) {
+      const target = event.target;
+      const pressedFolder = target instanceof Element ? target.closest('.dossier-folder') : null;
+      if (pressedFolder?.getAttribute('data-dossier-id') !== openedDossierId) {
+        setOpenedDossierId(null);
+      }
+    }
+
+    document.addEventListener('pointerdown', returnDocumentOnOutsidePress);
+    return () => document.removeEventListener('pointerdown', returnDocumentOnOutsidePress);
+  }, [openedDossierId]);
+
+  function browseDossiers(direction: number) {
+    setOpenedDossierId(null);
+    animateStep(direction);
+  }
+
   const activeDossier = dossiers[activeIndex];
+  const activePosition = indices?.[activeIndex] ?? offset + activeIndex;
 
   return (
     <section
-      className={`dossier-carousel ${dragDistance ? 'carousel-dragging' : ''}`}
+      className={`dossier-carousel ${dragging ? 'carousel-dragging' : ''} ${animating || progress !== 0 ? 'carousel-tracking' : ''}`}
       aria-label="Parcourir les dossiers"
       aria-roledescription="carrousel"
       tabIndex={0}
       onKeyDown={(event) => {
+        if (event.key === 'Escape') setOpenedDossierId(null);
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
           event.currentTarget.focus({ preventScroll: true });
-          onStep(event.key === 'ArrowRight' ? 1 : -1);
+          browseDossiers(event.key === 'ArrowRight' ? 1 : -1);
         }
       }}
     >
@@ -58,7 +82,6 @@ export function DossierCarousel({
         {...gestureHandlers}
         style={
           {
-            '--drag-distance': `${dragDistance}px`,
             '--folder-tilt-x': `${tilt.x}deg`,
             '--folder-tilt-y': `${tilt.y}deg`,
           } as CSSProperties
@@ -66,35 +89,48 @@ export function DossierCarousel({
       >
         {dossiers.map((dossier, index) => {
           const position = getRelativePosition(
-            index,
-            activeIndex,
-            dossiers.length,
-            dossiers.length === total,
+            indices?.[index] ?? offset + index,
+            activePosition + progress,
+            total,
           );
-          if (Math.abs(position) > 1) return null;
+          if (Math.abs(position) > 1.8) return null;
           return (
-            <button
+            <div
               key={dossier.dossier_id}
-              type="button"
-              className={`carousel-folder-slot ${position === 0 ? 'is-active' : ''}`}
+              role="group"
+              className={`carousel-folder-slot ${index === activeIndex ? 'is-active' : ''}`}
               style={
-                { '--folder-position': position, zIndex: 3 - Math.abs(position) } as CSSProperties
+                {
+                  '--folder-position': position,
+                  '--folder-distance': Math.min(Math.abs(position), 1),
+                  zIndex: Math.round(10 - Math.abs(position) * 3),
+                } as CSSProperties
               }
               aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.dossier_id}`}
-              aria-pressed={position === 0}
-              tabIndex={position === 0 ? 0 : -1}
-              onClick={() => {
-                if (canSelect()) onSelect(index);
-              }}
             >
-              <DossierFolder dossier={dossier} />
-            </button>
+              <DossierFolder
+                dossier={dossier}
+                isActive={index === activeIndex}
+                isOpen={
+                  openedDossierId === dossier.dossier_id &&
+                  index === activeIndex &&
+                  !dragging &&
+                  !animating
+                }
+                onRequestClose={() => setOpenedDossierId(null)}
+                onSelect={() => {
+                  if (!canSelect() || animating) return;
+                  onSelect(index);
+                  setOpenedDossierId(dossier.dossier_id);
+                }}
+              />
+            </div>
           );
         })}
       </div>
       <button
         className="carousel-edge carousel-edge-previous"
-        onClick={() => onStep(-1)}
+        onClick={() => browseDossiers(-1)}
         disabled={total < 2}
         aria-label="Dossier précédent"
       >
@@ -102,7 +138,7 @@ export function DossierCarousel({
       </button>
       <button
         className="carousel-edge carousel-edge-next"
-        onClick={() => onStep(1)}
+        onClick={() => browseDossiers(1)}
         disabled={total < 2}
         aria-label="Dossier suivant"
       >
@@ -121,7 +157,7 @@ export function DossierCarousel({
         <ArrowUpRight size={22} strokeWidth={1.2} />
       </a>
       <span className="carousel-counter" aria-live="polite">
-        {String(offset + activeIndex + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        {String(activePosition + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </span>
     </section>
   );

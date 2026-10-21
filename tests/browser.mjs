@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { createFixture, mockApi } from './fixtures.mjs';
 import { runHomeBrowserChecks } from './home-browser.mjs';
+import { runFolderDocumentChecks } from './folder-document-browser.mjs';
 
 const previewOrigin = 'http://127.0.0.1:5181';
 const liveOrigin = 'http://127.0.0.1:5182';
@@ -63,6 +64,7 @@ try {
     args: ['--no-sandbox'],
   });
   await runHomeBrowserChecks({ newPage, check, previewOrigin, liveOrigin });
+  await runFolderDocumentChecks({ newPage, check, previewOrigin, liveOrigin });
   const page = await newPage();
   await check('Preview is explicit, searchable and paginated', async () => {
     await page.goto(`${previewOrigin}/dossiers`);

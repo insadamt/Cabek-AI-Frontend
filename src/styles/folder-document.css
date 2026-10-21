@@ -1,0 +1,108 @@
+.folder-document {
+  --document-front-offset: -25;
+  --document-front-rotation: 1;
+  --document-front-scale: 1.02;
+  position: absolute;
+  top: 7%;
+  left: 10%;
+  z-index: 2;
+  width: 80%;
+  padding: clamp(14px, 1.3vw, 18px);
+  border: 1px solid #deddd7;
+  border-radius: 5px 14px 5px 5px;
+  background: linear-gradient(110deg, #fffefa, #f3f2ec);
+  color: #303634;
+  box-shadow:
+    0 3px 12px #00000018,
+    inset 0 1px 0 #fff;
+  transform: translateY(0) rotate(-3deg);
+  transform-origin: 50% 90%;
+  pointer-events: none;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.folder-document.is-open {
+  pointer-events: auto;
+}
+.folder-document-close {
+  display: none;
+}
+.folder-document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #d8dbd5;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+.folder-document-brand {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -1.4px;
+}
+.folder-document-brand span {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+.folder-document-reference {
+  margin: 8px 0 10px;
+  font-size: 9px;
+  color: #7a807b;
+  overflow-wrap: anywhere;
+}
+.folder-document-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 9px 12px;
+  margin: 0;
+}
+.folder-document-fields dt {
+  margin-bottom: 4px;
+  color: #82877f;
+  font-size: 9px;
+}
+.folder-document-fields dd {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.folder-document-registration {
+  grid-column: 1 / -1;
+}
+.folder-document-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #d8dbd5;
+  font-size: 8px;
+  color: #80867f;
+}
+.folder-document-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #505c53;
+}
+.folder-document-status > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #858c83;
+}
+.folder-document-status.status-completed > span {
+  background: #658773;
+}
+.folder-document-status.status-processing > span,
+.folder-document-status.status-queued > span {
+  background: #b39554;
+}
+.folder-document-status.status-failed > span {
+  background: #b36f65;
+}

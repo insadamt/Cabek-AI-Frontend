@@ -1,0 +1,188 @@
+@media (min-width: 651px) and (min-height: 451px) and (max-height: 800px) {
+  .carousel-folder-slot {
+    top: 60%;
+  }
+}
+@media (max-width: 650px) {
+  .dossier-carousel {
+    --carousel-spacing-ratio: 0.82;
+  }
+  .carousel-stage {
+    inset: 96px 0 calc(140px + env(safe-area-inset-bottom));
+  }
+  .carousel-folder-slot {
+    --folder-turn: calc(var(--folder-position) * -10deg);
+    --folder-lean: calc(var(--folder-position) * 2deg);
+    width: clamp(250px, 82vw, 370px);
+    top: 62%;
+  }
+  .carousel-folder-slot.is-active .dossier-folder {
+    transform: none;
+  }
+  .folder-document {
+    --document-front-offset: -18;
+    --document-front-rotation: 0;
+    --document-front-scale: 1;
+    left: 6%;
+    width: 88%;
+    padding: 14px;
+    max-height: min(62svh, 360px);
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .folder-document.is-open {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .folder-document-header {
+    padding-right: 32px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+  .folder-document-brand {
+    font-size: 21px;
+  }
+  .folder-document-reference {
+    font-size: 9px;
+  }
+  .folder-document-fields {
+    gap: 10px;
+  }
+  .folder-document-fields dt {
+    font-size: 10px;
+  }
+  .folder-document-footer {
+    font-size: 9px;
+  }
+  .carousel-edge,
+  .home-open-dossier {
+    top: auto;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    clip-path: none;
+    padding: 0;
+  }
+  .carousel-edge,
+  .carousel-edge:active:not(:disabled) {
+    transform: none;
+  }
+  .carousel-edge-previous {
+    left: calc(50% - 100px);
+  }
+  .carousel-edge-next {
+    right: calc(50% - 100px);
+  }
+  .carousel-edge svg {
+    width: 22px;
+  }
+  .carousel-counter {
+    right: 50%;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    transform: translateX(50%);
+    font-size: 11px;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .folder-document-close {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    top: 2px;
+    right: 2px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    color: #505c53;
+    border-radius: 50%;
+  }
+  .folder-document-header {
+    padding-right: 32px;
+  }
+}
+@media (max-height: 450px) and (orientation: landscape) {
+  .carousel-stage {
+    inset: 70px 0 calc(76px + env(safe-area-inset-bottom));
+  }
+  .carousel-folder-slot {
+    --folder-turn: calc(var(--folder-position) * -10deg);
+    --folder-lean: 0deg;
+    width: clamp(230px, 34vw, 310px);
+    top: 68%;
+  }
+  .carousel-folder-slot.is-active .dossier-folder {
+    transform: none;
+  }
+  .folder-document {
+    --document-front-offset: -15;
+    --document-front-rotation: 0;
+    --document-front-scale: 1;
+    left: 4%;
+    width: 92%;
+    padding: 10px;
+    max-height: calc(100svh - 150px);
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .folder-document.is-open {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .folder-document-header {
+    font-size: 7px;
+    padding-bottom: 6px;
+  }
+  .folder-document-brand {
+    font-size: 19px;
+  }
+  .folder-document-reference {
+    margin: 6px 0;
+    font-size: 8px;
+  }
+  .folder-document-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .folder-document-fields dt {
+    font-size: 9px;
+  }
+  .folder-document-registration {
+    grid-column: auto;
+  }
+  .folder-document-footer {
+    margin-top: 8px;
+    padding: 5px 0;
+    font-size: 8px;
+  }
+  .carousel-edge,
+  .home-open-dossier {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    clip-path: none;
+  }
+  .carousel-edge,
+  .carousel-edge:active:not(:disabled) {
+    transform: none;
+  }
+  .carousel-edge-previous {
+    left: 18px;
+  }
+  .carousel-edge-next {
+    right: 18px;
+  }
+  .carousel-counter {
+    right: 78px;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: none;
+    font-size: 11px;
+  }
+}
