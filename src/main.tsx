@@ -26,6 +26,9 @@ import './styles/search-return.css';
 import './styles/analysis-island.css';
 import './styles/analysis-motion.css';
 import './styles/motion.css';
+import './styles/dossier-workspace.css';
+import './styles/dossier-inspection.css';
+import './styles/dossier-mobile.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

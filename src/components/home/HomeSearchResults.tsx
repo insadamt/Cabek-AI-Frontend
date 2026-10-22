@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { transitionHomeView } from '../../lib/homeViewTransition';
 import { useGridFolderSelection } from '../../hooks/useGridFolderSelection';
 import { useFolderGridMotion } from '../../hooks/useFolderGridMotion';
+import { useFolderGridScale } from '../../hooks/useFolderGridScale';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { AnalysisAction } from './AnalysisAction';
 import { useResource } from '../../hooks/useResource';
@@ -28,6 +29,7 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
   const previousData = useRef(resource.data);
   if (resource.data) previousData.current = resource.data;
   const data = resource.data ?? previousData.current;
+  useFolderGridScale(sectionRef, data);
   const gridRef = useFolderGridMotion(data, busy || !!selectedFolder);
 
   const folders = data?.items ?? [];
@@ -58,7 +60,7 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
         ref={gridRef}
         inert={busy || analysis.busy}
         aria-busy={resource.loading}
-        className={`home-folder-grid ${data?.total === 1 ? 'has-single-folder' : ''}`}
+        className="home-folder-grid"
       >
         {visibleFolders
           .map((folder) => ({ ...folder, status: analysis.resolveStatus(folder) }))

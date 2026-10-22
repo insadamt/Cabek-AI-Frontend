@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, LoaderCircle, Sparkles, Upload } from 'lucide-reac
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { navigate } from '../../hooks/useNavigation';
 import type { DossierSummary } from '../../types';
+import { openDossierFromFolder } from '../../lib/dossierNavigation';
 import { AnimatedText } from '../AnimatedText';
 
 interface AnalysisActionProps {
@@ -57,7 +58,11 @@ export function AnalysisAction({
         beforeActivate?.();
         if (canAnalyze || status === 'queued' || status === 'processing') {
           if (folder) analysis.beginAnalysis({ ...dossier, status: status! }, folder);
-        } else navigate(event.currentTarget.getAttribute('href')!);
+        } else {
+          const path = event.currentTarget.getAttribute('href')!;
+          if (folder) void openDossierFromFolder({ dossier, folder, path });
+          else navigate(path);
+        }
       }}
     >
       <AnimatedText text={label} className="home-action-content">

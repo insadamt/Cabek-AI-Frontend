@@ -1,0 +1,171 @@
+/* ============================================================
+   Mobile dossier reading and inline photo inspection
+   ============================================================ */
+
+@media (max-width: 767px), (max-width: 950px) and (max-height: 520px) {
+  /* Let the content scroll on phones so metadata and photos retain readable dimensions. */
+
+  .dossier-shell .home-main {
+    height: auto;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scroll-padding-block: 16px;
+  }
+  .dossier-shell .dossier-page {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100%;
+    gap: 16px;
+    padding: 12px max(14px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+  .dossier-overview .back-link {
+    align-self: flex-start;
+    min-height: 44px;
+  }
+  .dossier-overview-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .dossier-overview-sidebar {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 16px;
+  }
+  .dossier-overview-folder {
+    width: 88px;
+    margin: 0;
+  }
+  .dossier-overview-identity {
+    min-width: 0;
+  }
+  .dossier-overview-identity .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.6px;
+  }
+  .dossier-overview-identity h1 {
+    margin: 6px 0 10px;
+    font-size: clamp(20px, 5vw, 26px);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .dossier-overview-identity .status-badge {
+    font-size: 11px;
+  }
+  .dossier-metadata {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    gap: 0 16px;
+    margin: 0;
+    max-height: none;
+  }
+  .dossier-metadata > div {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 5px;
+    min-width: 0;
+    padding: 10px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .dossier-metadata dt {
+    font-size: 11px;
+    flex-shrink: 1;
+  }
+  .dossier-metadata dd {
+    max-width: 100%;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .dossier-preview,
+  .dossier-metadata-loading,
+  .dossier-overview-sidebar > .notice,
+  .dossier-overview-sidebar > .empty-state {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .inspection-workspace {
+    height: auto;
+    padding: 14px;
+    border-radius: 16px;
+  }
+  .inspection-heading {
+    margin-bottom: 14px;
+  }
+  .inspection-heading .eyebrow {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.6px;
+  }
+  .inspection-heading h2 {
+    font-size: 22px;
+    margin-top: 6px;
+  }
+  .inspection-toolbar {
+    margin-bottom: 12px;
+  }
+  .inspection-toolbar .segmented-control {
+    display: flex;
+    width: 100%;
+  }
+  .inspection-toolbar .segmented-control button {
+    flex: 1;
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px;
+  }
+  .inspection-workspace .comparison {
+    flex: none;
+    height: auto;
+    min-height: 240px;
+    aspect-ratio: 4 / 3;
+  }
+  /* Vertical gestures still scroll the page while horizontal gestures adjust the split. */
+
+  .inspection-workspace .comparison-range {
+    touch-action: pan-y;
+  }
+  .inspection-photo-navigation {
+    flex-wrap: nowrap;
+    padding: 10px 0;
+  }
+  .inspection-thumbnails {
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .inspection-thumbnail {
+    min-height: 48px;
+  }
+  .inspection-empty,
+  .inspection-loading {
+    min-height: 240px;
+  }
+  .inspection-loading .skeleton-block {
+    min-height: 190px;
+  }
+  .inspection-error {
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+  .inspection-error button {
+    min-height: 44px;
+  }
+  /* Override the desktop landscape grid when a phone is rotated. */
+
+  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) {
+    display: flex;
+    gap: 0;
+  }
+  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .comparison {
+    height: auto;
+  }
+  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .inspection-toolbar {
+    margin-bottom: 12px;
+  }
+}

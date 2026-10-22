@@ -11,10 +11,10 @@ function currentLocation() {
 
 const scrollPositions = new Map<string, number>();
 
-export function navigate(path: string) {
+export function navigate(path: string, state: Record<string, unknown> = {}) {
   const previousPathname = window.location.pathname;
   scrollPositions.set(currentLocation(), window.scrollY);
-  window.history.pushState({}, '', path);
+  window.history.pushState(state, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
   // Filtering changes the URL in place; only a new screen should reset the page scroll.
 

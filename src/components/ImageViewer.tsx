@@ -5,12 +5,37 @@ import { Modal } from './Modal';
 import { PhotoComparison } from './PhotoComparison';
 import { useSelectionIndicator } from '../hooks/useSelectionIndicator';
 
-export function ImageViewer({ photos, onClose }: { photos: Photo[]; onClose: () => void }) {
-  const [index, setIndex] = useState(0);
-  const [mode, setMode] = useState<'parts' | 'damages'>('parts');
-  const [split, setSplit] = useState(50);
+export interface PhotoSelection {
+  photoIndex: number;
+  mode: 'parts' | 'damages';
+  split: number;
+}
+
+interface ImageViewerProps {
+  photos: Photo[];
+  onClose: () => void;
+  initialSelection?: PhotoSelection;
+  onSelectionChange?: (selection: PhotoSelection) => void;
+}
+
+export function ImageViewer({
+  photos,
+  onClose,
+  initialSelection,
+  onSelectionChange,
+}: ImageViewerProps) {
+  const [requestedIndex, setIndex] = useState(initialSelection?.photoIndex ?? 0);
+  const index = Math.max(0, Math.min(requestedIndex, photos.length - 1));
+  const [mode, setMode] = useState<'parts' | 'damages'>(initialSelection?.mode ?? 'parts');
+  const [split, setSplit] = useState(initialSelection?.split ?? 50);
   const photo = photos[index];
   const modeRef = useSelectionIndicator(mode);
+
+  useEffect(() => {
+    // Share inspection changes so closing the enlarged view keeps the expert's current place.
+
+    onSelectionChange?.({ photoIndex: index, mode, split });
+  }, [index, mode, split, onSelectionChange]);
 
   function changePhoto(nextIndex: number) {
     setIndex(nextIndex);

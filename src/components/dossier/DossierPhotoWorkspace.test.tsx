@@ -1,0 +1,113 @@
+import type { ReactNode } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it, vi } from 'vitest';
+import type { Photo } from '../../types';
+import { ImageViewer } from '../ImageViewer';
+import { DossierPhotoWorkspace } from './DossierPhotoWorkspace';
+
+vi.mock('../Modal', () => ({
+  Modal: ({ children }: { children: ReactNode }) => <section>{children}</section>,
+}));
+vi.mock('../../hooks/useComparisonImages', () => ({
+  useComparisonImages: (photo: Photo, mode: 'parts' | 'damages') => ({
+    displayed: {
+      photoId: photo.photo_id,
+      mode,
+      originalUrl: photo.original_url,
+      annotationUrl: mode === 'parts' ? photo.parts_url : photo.damages_url,
+    },
+    ready: true,
+    error: false,
+    retryImages: vi.fn(),
+  }),
+}));
+
+const photos: Photo[] = ['front', 'rear'].map((photo_id) => ({
+  photo_id,
+  original_url: `/photos/${photo_id}.jpg`,
+  parts_url: `/photos/${photo_id}-parts.jpg`,
+  damages_url: `/photos/${photo_id}-damages.jpg`,
+}));
+const defaults = {
+  photos,
+  status: 'completed' as const,
+  loading: false,
+  error: null,
+  onRetry: vi.fn(),
+};
+
+describe('photo inspection states', () => {
+  it('keeps unavailable photographs distinct from a pending request', () => {
+    const empty = renderToStaticMarkup(<DossierPhotoWorkspace {...defaults} photos={[]} />);
+    const loading = renderToStaticMarkup(
+      <DossierPhotoWorkspace {...defaults} photos={[]} loading />,
+    );
+    expect(empty).toContain('Aucune photo disponible');
+    expect(empty).not.toContain('Agrandir la comparaison');
+    expect(loading).toContain('Chargement des photographies…');
+    expect(loading).not.toContain('Aucune photo disponible');
+  });
+
+  it('does not fabricate annotated photos while an analysis is processing', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace {...defaults} photos={[]} status="processing" />,
+    );
+    expect(markup).toContain('L’analyse est en cours.');
+    expect(markup).not.toContain('class="comparison');
+    expect(markup).not.toContain('Type d’annotation');
+  });
+
+  it('offers retry on result failure without claiming the dossier has no photos', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace {...defaults} photos={[]} error={new Error('offline')} />,
+    );
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Réessayer');
+    expect(markup).not.toContain('Aucune photo disponible');
+  });
+
+  it('retains a saved comparison if refreshing the result fails', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace {...defaults} error={new Error('offline')} />,
+    );
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Photographie originale — front');
+    expect(markup).not.toContain('Agrandir la comparaison');
+    expect(markup).not.toContain('viewer-modal');
+    expect(markup).toContain('aria-label="Afficher la photo 2"');
+  });
+
+  it('disables both navigation directions for one photograph', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace {...defaults} photos={photos.slice(0, 1)} />,
+    );
+    expect(markup).toContain('disabled="" aria-label="Photo précédente"');
+    expect(markup).toContain('disabled="" aria-label="Photo suivante"');
+  });
+
+  it('enlarges the selected photo, annotation mode and comparison position', () => {
+    const markup = renderToStaticMarkup(
+      <ImageViewer
+        photos={photos}
+        initialSelection={{ photoIndex: 1, mode: 'damages', split: 73 }}
+        onClose={() => {}}
+      />,
+    );
+    expect(markup).toContain('Photographie originale — rear');
+    expect(markup).toContain('Annotation des dommages — rear');
+    expect(markup).toMatch(/type="range"[^>]*value="73"/);
+    expect(markup).toContain('Photo 2 sur 2');
+  });
+
+  it('keeps an enlarged selection in range when fewer photos are available', () => {
+    const markup = renderToStaticMarkup(
+      <ImageViewer
+        photos={photos.slice(0, 1)}
+        initialSelection={{ photoIndex: 5, mode: 'parts', split: 50 }}
+        onClose={() => {}}
+      />,
+    );
+    expect(markup).toContain('Photographie originale — front');
+    expect(markup).toContain('Photo 1 sur 1');
+  });
+});

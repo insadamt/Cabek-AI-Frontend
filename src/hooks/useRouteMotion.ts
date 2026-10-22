@@ -8,6 +8,9 @@ export function useRouteMotion(pathname: string) {
     const previous = previousPath.current;
     previousPath.current = pathname;
     if (previous === pathname || !viewportRef.current) return;
+    // The dossier owns the folder travel and metadata reveal as one ordered sequence.
+
+    if (/^\/dossiers\/[^/]+\/?$/.test(pathname)) return;
     const content = viewportRef.current.querySelector('main');
     if (!content) return;
     const returning = previous.startsWith(`${pathname}/`) || pathname === '/';

@@ -5,6 +5,7 @@ import { useNavigation } from './hooks/useNavigation';
 import { Dashboard } from './pages/Dashboard';
 import { Dossier } from './pages/Dossier';
 import { Home } from './pages/Home';
+import { HomeFrame } from './components/home/HomeFrame';
 import { useRouteMotion } from './hooks/useRouteMotion';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -43,11 +44,13 @@ export default function App() {
       <div ref={routeRef} className="route-viewport">
         {pathname === '/' ? (
           <Home />
+        ) : dossierId ? (
+          <HomeFrame variant="dossier">
+            <Dossier key={dossierId} dossierId={dossierId} />
+          </HomeFrame>
         ) : (
           <Layout>
-            {dossierId ? (
-              <Dossier key={dossierId} dossierId={dossierId} />
-            ) : pathname === '/dossiers' ? (
+            {pathname === '/dossiers' ? (
               <Dashboard />
             ) : (
               <div className="page">

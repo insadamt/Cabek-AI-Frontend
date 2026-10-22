@@ -1,9 +1,19 @@
 .home-search-results {
+  --folder-grid-columns: 5;
+  --folder-display-scale: var(--folder-grid-scale, 0.4);
+  --folder-layout-width: min(var(--home-folder-width), calc(100cqw - 24px));
+  --folder-display-width: calc(var(--folder-layout-width) * var(--folder-display-scale));
+  container-type: inline-size;
   height: 100%;
   display: flex;
   flex-direction: column;
   padding: 85px 24px max(20px, env(safe-area-inset-bottom));
   gap: 20px;
+}
+.home-search-results.has-selected-folder {
+  /* Enlarge the complete folder without changing the native layout of anything inside it. */
+
+  --folder-display-scale: 1;
 }
 .home-search-heading {
   display: flex;
@@ -21,24 +31,31 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* A scrollbar gutter would change narrow folder widths when focus removes grid scrolling. */
+
+  scrollbar-width: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  /* Keep empty columns so sparse results retain the same positions as a full row. */
+
+  grid-template-columns: repeat(var(--folder-grid-columns), minmax(0, 1fr));
   align-content: start;
   justify-items: center;
   gap: 32px 24px;
   padding: 18px 12px;
 }
-.home-folder-grid.has-single-folder {
-  grid-template-columns: 1fr;
-  align-content: center;
+.home-folder-grid::-webkit-scrollbar {
+  display: none;
 }
 .home-grid-folder {
-  width: min(100%, 320px);
+  width: var(--folder-display-width);
   text-align: center;
 }
 .home-grid-folder-preview {
+  position: relative;
   width: 100%;
-  aspect-ratio: 1.36;
+  /* Reserve the visible scaled footprint so captions follow the folder rather than its native height. */
+
+  height: calc(var(--folder-display-width) / 1.36);
 }
 .home-grid-folder p {
   margin: 14px 0 8px;
@@ -48,6 +65,15 @@
   font-size: 11px;
 }
 .home-grid-folder .dossier-folder {
+  /* Scale the complete artwork so its document, plate and typography keep their original layout. */
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--folder-layout-width);
+  height: calc(var(--folder-layout-width) / 1.36);
+  transform: scale(var(--folder-display-scale));
+  transform-origin: 0 0;
   filter: none;
 }
 .home-grid-search {
@@ -72,10 +98,24 @@
   font-size: 14px;
   text-align: center;
 }
+@media (max-width: 1279px) {
+  .home-search-results {
+    --folder-grid-columns: 3;
+  }
+}
+@media (max-width: 900px) {
+  .home-search-results {
+    --folder-grid-columns: 2;
+  }
+}
 @media (max-width: 650px) {
   .home-search-results {
+    --folder-grid-columns: 1;
     padding: 105px 16px max(16px, env(safe-area-inset-bottom));
     gap: 12px;
+  }
+  .home-folder-grid {
+    justify-items: center;
   }
 }
 
@@ -184,24 +224,20 @@
   align-content: center;
   overflow: visible;
 }
-.has-selected-folder .home-grid-folder {
-  width: min(100%, var(--home-folder-width));
-  text-align: center;
-}
 .has-selected-folder .home-result-title,
 .has-selected-folder .home-grid-folder > .status-badge {
   display: none;
 }
-.has-selected-folder .folder-document {
+.home-grid-folder .folder-document {
   --document-max-height: min(56svh, 400px);
 }
 @media (max-width: 650px) {
-  .has-selected-folder .folder-document {
+  .home-grid-folder .folder-document {
     --document-max-height: min(56svh, 360px);
   }
 }
 @media (max-height: 450px) and (orientation: landscape) {
-  .has-selected-folder .folder-document {
+  .home-grid-folder .folder-document {
     --document-max-height: calc(100svh - 150px);
   }
 }

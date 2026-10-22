@@ -439,8 +439,23 @@ Manual test checklist:
 
 Suggested commit: `fix(home): sequence folder focus and grid return animations`
 
-Grid sheets retain their natural width inside the pocket and during extraction. Their lower edge is clipped to the pocket depth instead of uniformly scaling the sheet down to fit the thumbnail. Extraction reveals that edge as the sheet lifts; returning reverses the same clip. This avoids an independent width expansion/collapse when switching between grid and focus sizes. The carousel retains its fitted sheet scale. The extracted grid sheet keeps its full content height, scrolling and shadow.
+### Same folder artwork at different display scales
 
-Manual checks: open and return folders at desktop/mobile sizes, compare the sheet's width with its folder throughout travel, and check long vehicle values, bottom-edge containment, scrolling, interrupted closing and reduced motion.
+Grid uniformly scales the complete folder artwork to fit five columns at desktop widths (1280px and above), three below 1280px, two at 900px and below, and one at 650px and below. Its scale is measured from the available cell width and native artwork width, capped at 80%; focus remains at 100%. Both use the same native layout dimensions, document wrapping, matricule plate, typography and 1.36 aspect ratio. Empty columns retain their space so one or two results stay in adjacent cells. Mobile uses one full-width track with the smaller artwork centered. Native width follows the carousel size and available viewport space. Travel measures native layout dimensions separately from visible bounds, animating only overall scale and position. Neighboring cards fade in only after return travel ends. The earlier grid-specific document clipping remains removed; sheets use the existing fitted extraction timeline.
 
-Suggested commit: `fix(home): keep grid document width stable inside folder pockets`
+Each preview reserves only the visible scaled height, with the native artwork positioned absolutely inside it. The title and status therefore sit directly below the folder, rather than below an invisible full-size layout box. Focus continues to hide these grid captions.
+
+Manual test checklist:
+
+- [ ] Compare grid and focus folders: confirm grid is smaller and focus is larger, with identical design and proportions.
+- [ ] Confirm the complete folder grows smoothly from its fitted grid scale to 100%, without changing text wrapping or stretching the plate/document independently.
+- [ ] Return folders from different rows; confirm they reach their original cells before neighboring folders fade back in.
+- [ ] Check document wrapping and pocket appearance before selection and after returning, including long vehicle values.
+- [ ] Check 320px/390px phones, desktop, landscape, scrolling, resizing and reduced motion.
+- [ ] With one or two results, verify they retain adjacent fixed-width column positions.
+- [ ] At desktop widths, verify five folders fit per row; resize and confirm only uniform artwork scale changes.
+- [ ] On 320px/390px phones, verify each grid folder is horizontally centered.
+- [ ] Verify the title and status sit directly below each folder at every scale, without overlap or a full-size blank gap.
+- [ ] Check wrapping at narrower widths and verify both grid and focus folders fit the available space.
+
+Suggested commit: `fix(home): scale folders into five columns and center mobile results`

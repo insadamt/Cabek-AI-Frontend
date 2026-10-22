@@ -11,17 +11,26 @@ function navigateFromLink(event: MouseEvent<HTMLAnchorElement>) {
   navigate(event.currentTarget.getAttribute('href')!);
 }
 
-function HomeFrameContent({ children }: { children: ReactNode }) {
+interface HomeFrameProps {
+  children: ReactNode;
+  variant?: 'home' | 'dossier';
+}
+
+function HomeFrameContent({ children, variant = 'home' }: HomeFrameProps) {
   const { busy } = useHomeAnalysis();
   return (
-    <div className="home-shell">
+    <div className={`home-shell ${variant === 'dossier' ? 'dossier-shell' : ''}`}>
       <a href="#main-content" className="skip-link">
         Aller au contenu
       </a>
       <div className={`home-frame ${busy ? 'home-analysis-busy' : ''}`}>
         <header className="home-header">
           <nav aria-label="Navigation principale" className="home-navigation">
-            <a href="/" aria-current="page" onClick={navigateFromLink}>
+            <a
+              href="/"
+              aria-current={variant === 'home' ? 'page' : undefined}
+              onClick={navigateFromLink}
+            >
               Accueil
             </a>
             <a href="/dossiers" onClick={navigateFromLink}>
@@ -46,10 +55,10 @@ function HomeFrameContent({ children }: { children: ReactNode }) {
   );
 }
 
-export function HomeFrame({ children }: { children: ReactNode }) {
+export function HomeFrame({ children, variant }: HomeFrameProps) {
   return (
     <HomeAnalysisProvider>
-      <HomeFrameContent>{children}</HomeFrameContent>
+      <HomeFrameContent variant={variant}>{children}</HomeFrameContent>
     </HomeAnalysisProvider>
   );
 }

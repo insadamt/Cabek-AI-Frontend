@@ -37,8 +37,10 @@ export function animateGridFolderPositions(
   const elements = getMotionElements(section).map((element) => ({
     element,
     bounds: element.getBoundingClientRect(),
+    layoutWidth: element.offsetWidth,
+    layoutHeight: element.offsetHeight,
   }));
-  elements.forEach(({ element, bounds: current }) => {
+  elements.forEach(({ element, bounds: current, layoutWidth, layoutHeight }) => {
     const previous = previousPositions.get(getMotionKey(element));
     if (element.matches(controlSelector) && previous) {
       const container = element.parentElement!.getBoundingClientRect();
@@ -105,7 +107,10 @@ export function animateGridFolderPositions(
         travelDuration,
       );
 
-    // One scale preserves the artwork's aspect ratio and removes the instant thumbnail size jump.
+    // Keep native layout dimensions during travel; the artwork's display scale must not reflow text.
+
+    const artworkWidth = layoutWidth || current.width;
+    const artworkHeight = layoutHeight || current.height;
 
     timeline.fromTo(
       element,
@@ -113,18 +118,18 @@ export function animateGridFolderPositions(
         position: 'fixed',
         left: current.left,
         top: current.top,
-        width: current.width,
-        height: current.height,
+        width: artworkWidth,
+        height: artworkHeight,
         zIndex: 5,
-        transformOrigin: '50% 50%',
-        x: previous.left + previous.width / 2 - current.left - current.width / 2,
-        y: previous.top + previous.height / 2 - current.top - current.height / 2,
-        scale: current.width > 0 ? previous.width / current.width : 1,
+        transformOrigin: '0 0',
+        x: previous.left - current.left,
+        y: previous.top - current.top,
+        scale: artworkWidth > 0 ? previous.width / artworkWidth : 1,
       },
       {
         x: 0,
         y: 0,
-        scale: 1,
+        scale: artworkWidth > 0 ? current.width / artworkWidth : 1,
         duration: travelDuration,
         ease: 'power3.inOut',
         clearProps: 'position,left,top,width,height,zIndex,transformOrigin,transform',

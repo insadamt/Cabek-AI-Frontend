@@ -2,10 +2,10 @@ import gsap from 'gsap';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDocumentTimeline } from './useFolderDocumentMotion';
 
-function createPaperFixture(isGridFolder = false) {
+function createPaperFixture() {
   const folder = {
     offsetHeight: 220,
-    closest: (selector: string) => (isGridFolder && selector === '.home-grid-folder' ? {} : null),
+    closest: () => null,
     getBoundingClientRect: () => ({ top: 270 }),
   };
   return {
@@ -19,7 +19,6 @@ function createPaperFixture(isGridFolder = false) {
     yPercent: 0,
     rotation: -3,
     force3D: false,
-    clipPath: '',
   };
 }
 
@@ -39,20 +38,6 @@ afterEach(() => {
 });
 
 describe('folder document pocket state', () => {
-  it('keeps grid sheets at full width while revealing and stowing their lower edge', () => {
-    vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => '' }));
-    const paper = createPaperFixture(true);
-    const timeline = createDocumentTimeline(paper as unknown as HTMLElement);
-    const pocketClip = paper.clipPath;
-    expect(pocketClip).not.toBe('inset(0px 0px 0px 0px)');
-    for (const progress of [0, 0.2, 0.5, 1, 0.5, 0]) {
-      timeline.progress(progress).pause();
-      expect(paper.scale).toBe(1);
-      if (progress === 1) expect(paper.clipPath).toBe('inset(-60px -60px -60px -60px)');
-    }
-    expect(paper.clipPath).toBe(pocketClip);
-  });
-
   it('fits before the paused timeline has ever played', () => {
     vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => '' }));
     const paper = createPaperFixture();

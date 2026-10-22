@@ -27,13 +27,15 @@ export function DossierFolder({
   onDocumentMotionChange,
 }: DossierFolderProps) {
   const analysis = useHomeAnalysis();
+  const [navigationClosing, setNavigationClosing] = useState(false);
   const analysisSession =
     analysis.session?.dossier.dossier_id === dossier.dossier_id ? analysis.session : null;
-  const documentOpen = analysisSession
+  const requestedDocumentOpen = analysisSession
     ? analysisSession.phase === 'uploading'
       ? isOpen
       : !['stowing', 'done', 'error', 'idle'].includes(analysisSession.phase)
     : isOpen;
+  const documentOpen = !navigationClosing && requestedDocumentOpen;
   const documentAway =
     !!analysisSession && ['ingesting', 'working', 'returning'].includes(analysisSession.phase);
   const folderId = useId().replace(/:/g, '');
@@ -43,7 +45,19 @@ export function DossierFolder({
   const mouthOpen =
     analysisSession && analysis.busy
       ? (documentOpen && analysisSession.phase !== 'working') || documentMoving
-      : (isActive && hovered) || documentOpen || documentMoving;
+      : (!navigationClosing && isActive && hovered) || documentOpen || documentMoving;
+
+  useLayoutEffect(() => {
+    const folder = folderElement.current;
+    const closeForNavigation = () => setNavigationClosing(true);
+    const cancelNavigation = () => setNavigationClosing(false);
+    folder?.addEventListener('dossier-navigation-start', closeForNavigation);
+    folder?.addEventListener('dossier-navigation-cancel', cancelNavigation);
+    return () => {
+      folder?.removeEventListener('dossier-navigation-start', closeForNavigation);
+      folder?.removeEventListener('dossier-navigation-cancel', cancelNavigation);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     if (!isActive) setHovered(false);
