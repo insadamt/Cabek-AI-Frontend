@@ -16,6 +16,12 @@ The home frame, activity island and neutral styling are reused. On desktop, the 
 
 The folder artwork keeps the focused view's native `--home-folder-width` and aspect ratio. A uniform transform scales it into the smaller sidebar slot; the registration plate, label, paper and shadows retain their shared styling and proportions. Resize observation updates the fitting scale without reflowing the artwork contents. Travel also uses a uniform scale to avoid stretching the folder.
 
+During travel, the artwork uses fixed viewport positioning above the workspace so
+the sidebar's scrolling overflow cannot clip it. Its empty sidebar slot stays in
+layout, keeping metadata and the arrival position stable. On arrival, temporary
+positioning and transforms clear together and the artwork resumes its fitted
+sidebar scale. Direct links and reduced motion keep the artwork in its slot.
+
 ## Photo inspection
 
 After the folder and metadata timeline completes, the right workspace fades in with a 12px upward movement. Hidden controls are inert until the entrance completes. The workspace shell remains mounted while result data loads, so a slow request does not replay the folder animation. Reduced motion removes the reveal transition.

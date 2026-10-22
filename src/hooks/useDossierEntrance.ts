@@ -34,26 +34,37 @@ export function useDossierEntrance({ container, entrance, ready }: DossierEntran
     let timeline: gsap.core.Timeline;
     const context = gsap.context(() => {
       timeline = gsap.timeline();
-      // The destination is measured from layout so the travel path also fits phones and zoom.
+
+      // Keep the slot in layout while fixed artwork escapes the sidebar's scroll clipping.
+
+      const travelling = !!source && !reducedMotion;
+      if (travelling) {
+        gsap.set(artwork, {
+          position: 'fixed',
+          left: destination.left,
+          top: destination.top,
+          zIndex: 101,
+        });
+      }
 
       timeline
         .fromTo(
-          folder,
+          artwork,
           {
             transformOrigin: '0 0',
-            x: source ? source.left - destination.left : 0,
-            y: source ? source.top - destination.top : 10,
-            scale: source && destination.width ? source.width / destination.width : 1,
+            x: travelling ? source.left - destination.left : 0,
+            y: travelling ? source.top - destination.top : reducedMotion ? 0 : 10,
+            scale: (travelling ? source.width : destination.width) / artwork.offsetWidth,
             opacity: source ? 1 : 0,
           },
           {
             x: 0,
             y: 0,
-            scale: 1,
+            scale: destination.width / artwork.offsetWidth,
             opacity: 1,
             duration: reducedMotion ? 0 : source ? 0.45 : 0.2,
             ease: 'power3.inOut',
-            clearProps: 'transform,transformOrigin,opacity',
+            clearProps: 'position,left,top,zIndex,transform,transformOrigin,opacity',
           },
         )
         .fromTo(

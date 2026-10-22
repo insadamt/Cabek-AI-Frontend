@@ -313,11 +313,6 @@
     align-items: center;
     padding-bottom: 0;
   }
-  .home-navigation {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ai-activity-island * {

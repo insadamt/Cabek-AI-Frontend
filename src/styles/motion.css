@@ -76,28 +76,17 @@
 .vehicle-save-feedback .animated-text > span {
   flex-wrap: wrap;
 }
-.search-field,
 .select-wrapper select {
   transition:
     border-color var(--motion-feedback),
     background-color var(--motion-feedback),
     box-shadow var(--motion-feedback);
 }
-.search-field button {
-  animation: control-arrive var(--motion-feedback) var(--motion-ease);
-}
 .home-result-title mark {
   animation: highlight-arrive 260ms ease-out;
 }
-.carousel-counter,
-.stat-value strong {
+.carousel-counter {
   font-variant-numeric: tabular-nums;
-}
-.stat-card {
-  transition:
-    border-color var(--motion-text),
-    background-color var(--motion-text),
-    box-shadow var(--motion-text);
 }
 .empty-state,
 .notice,
@@ -113,33 +102,28 @@ button:not(:disabled):active {
   translate: 0 1px;
 }
 .folder-cover:not(:disabled):active,
-.carousel-edge:not(:disabled):active,
-.sidebar-scrim:not(:disabled):active {
+.carousel-edge:not(:disabled):active {
   translate: none;
 }
-button:not(.sidebar-scrim):not(.folder-cover):not(.carousel-edge),
+button:not(.folder-cover):not(.carousel-edge),
 a.button,
-.card-action,
 .home-open-dossier,
 .home-selected-action {
   transition-property: background-color, border-color, color, box-shadow, opacity, translate;
   transition-duration: var(--motion-feedback);
 }
 a.button:active,
-.card-action:active,
 .home-open-dossier:not([aria-disabled='true']):active,
 .home-selected-action:not([aria-disabled='true']):active {
   translate: 0 1px;
 }
 .button > .lucide-arrow-up-right,
-.card-action > .lucide-arrow-up-right,
 .home-action-content .lucide-arrow-up-right,
 .back-link > svg {
   transition: translate var(--motion-feedback) var(--motion-ease);
 }
 @media (hover: hover) and (pointer: fine) {
   .button:hover > .lucide-arrow-up-right,
-  .card-action:hover > .lucide-arrow-up-right,
   .home-open-dossier:not([aria-disabled='true']):hover .lucide-arrow-up-right {
     translate: 2px -2px;
   }
@@ -152,10 +136,7 @@ a.button:active,
    Selected surfaces move independently of labels and icons
    ============================================================ */
 
-.status-tabs,
-.view-switch,
-.segmented-control,
-.sidebar-navigation {
+.segmented-control {
   position: relative;
   isolation: isolate;
 }
@@ -169,16 +150,9 @@ a.button:active,
   box-shadow: 0 1px 4px #00000010;
   pointer-events: none;
 }
-.has-selection-indicator button.selected,
-.sidebar-navigation.has-selection-indicator .nav-link.active {
+.has-selection-indicator button.selected {
   background: transparent;
   box-shadow: none;
-}
-.sidebar-navigation {
-  --selection-surface: #242424;
-}
-.sidebar-navigation .selection-indicator {
-  border-radius: 9px;
 }
 .animated-details summary {
   list-style: none;

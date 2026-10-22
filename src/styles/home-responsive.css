@@ -16,13 +16,6 @@
     min-width: 190px;
     font-size: 23px;
   }
-  .home-navigation a {
-    padding: 4px 8px;
-    font-size: 8px;
-  }
-  .home-list-link {
-    height: 25px;
-  }
   .carousel-backdrop-word {
     top: 23%;
     font-size: 23vw;

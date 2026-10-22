@@ -1,0 +1,31 @@
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 9px;
+  color: #222;
+}
+.brand-light {
+  color: #f8f8f8;
+}
+.brand-mark {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.brand-word {
+  /* Keep the name as continuous text so the font preserves its natural kerning. */
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 25px;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.brand-ai {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}

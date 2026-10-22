@@ -1,8 +1,6 @@
 import { Component, type ReactNode } from 'react';
-import { Layout } from './components/Layout';
 import { EmptyState } from './components/EmptyState';
 import { useNavigation } from './hooks/useNavigation';
-import { Dashboard } from './pages/Dashboard';
 import { Dossier } from './pages/Dossier';
 import { Home } from './pages/Home';
 import { HomeFrame } from './components/home/HomeFrame';
@@ -49,20 +47,16 @@ export default function App() {
             <Dossier key={dossierId} dossierId={dossierId} />
           </HomeFrame>
         ) : (
-          <Layout>
-            {pathname === '/dossiers' ? (
-              <Dashboard />
-            ) : (
-              <div className="page">
-                <EmptyState
-                  title="Cette page est introuvable"
-                  description="Retrouvez vos expertises depuis votre espace dossiers."
-                  onRetry={() => navigate('/dossiers')}
-                  actionLabel="Voir les dossiers"
-                />
-              </div>
-            )}
-          </Layout>
+          <HomeFrame>
+            <div className="home-state">
+              <EmptyState
+                title="Cette page est introuvable"
+                description="Retrouvez vos expertises depuis l’accueil."
+                onRetry={() => navigate('/')}
+                actionLabel="Retour à l’accueil"
+              />
+            </div>
+          </HomeFrame>
         )}
       </div>
     </ErrorBoundary>
