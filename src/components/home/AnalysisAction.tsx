@@ -1,5 +1,6 @@
 import { ArrowUpRight, Check, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
+import { useDossierOpening } from '../../hooks/useDossierOpening';
 import { navigate } from '../../hooks/useNavigation';
 import type { DossierSummary } from '../../types';
 import { openDossierFromFolder } from '../../lib/dossierNavigation';
@@ -19,25 +20,30 @@ export function AnalysisAction({
   disabled,
 }: AnalysisActionProps) {
   const analysis = useHomeAnalysis();
+  const opening = useDossierOpening();
+  const openingBusy = !!opening && opening.phase !== 'error';
+  const openingThisDossier = openingBusy && opening.dossier.dossier_id === dossier?.dossier_id;
   const session =
     analysis.session?.dossier.dossier_id === dossier?.dossier_id ? analysis.session : null;
   const status = dossier ? analysis.resolveStatus(dossier) : undefined;
   const canAnalyze = status === 'not_analyzed' || status === 'failed';
-  const complete = session?.phase === 'done';
+  const complete = session?.phase === 'done' && !opening;
   const uploading = session?.phase === 'uploading';
-  const working = !!session && analysis.busy;
-  const label = complete
-    ? 'Terminé'
-    : uploading
-      ? 'Envoi…'
-      : working
-        ? 'Analyse…'
-        : canAnalyze
-          ? 'Analyser'
-          : status === 'queued' || status === 'processing'
-            ? 'Suivre'
-            : 'Ouvrir';
-  const unavailable = !dossier || analysis.busy || disabled;
+  const working = (!!session && analysis.busy) || openingThisDossier;
+  const label = openingThisDossier
+    ? 'Chargement…'
+    : complete
+      ? 'Terminé'
+      : uploading
+        ? 'Envoi…'
+        : working
+          ? 'Analyse…'
+          : canAnalyze
+            ? 'Analyser'
+            : status === 'queued' || status === 'processing'
+              ? 'Suivre'
+              : 'Ouvrir';
+  const unavailable = !dossier || analysis.busy || openingBusy || disabled;
   return (
     <a
       className={className}

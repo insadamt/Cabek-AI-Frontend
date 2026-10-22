@@ -152,7 +152,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <ArrowUpRight size={14} />
           </button>
           <div className="sidebar-footer">
-            <span className="footer-logo">C</span>
+            <span className="footer-logo">
+              <Brand compact />
+            </span>
             <div>
               <strong>CABEK AI</strong>
               <span>Votre espace professionnel</span>

@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
+import { useDossierOpening } from '../../hooks/useDossierOpening';
 import { vehicleName } from '../../lib/format';
 import type { DossierSummary } from '../../types';
 import { FolderDocument } from './FolderDocument';
@@ -27,23 +28,31 @@ export function DossierFolder({
   onDocumentMotionChange,
 }: DossierFolderProps) {
   const analysis = useHomeAnalysis();
+  const opening = useDossierOpening();
+  const openingSession =
+    isActive && opening?.dossier.dossier_id === dossier.dossier_id ? opening : null;
+  const openingBusy = !!openingSession && openingSession.phase !== 'error';
   const [navigationClosing, setNavigationClosing] = useState(false);
   const analysisSession =
     analysis.session?.dossier.dossier_id === dossier.dossier_id ? analysis.session : null;
-  const requestedDocumentOpen = analysisSession
-    ? analysisSession.phase === 'uploading'
-      ? isOpen
-      : !['stowing', 'done', 'error', 'idle'].includes(analysisSession.phase)
-    : isOpen;
+  const requestedDocumentOpen = openingBusy
+    ? openingSession.phase !== 'stowing'
+    : analysisSession
+      ? analysisSession.phase === 'uploading'
+        ? isOpen
+        : !['stowing', 'done', 'error', 'idle'].includes(analysisSession.phase)
+      : isOpen;
   const documentOpen = !navigationClosing && requestedDocumentOpen;
-  const documentAway =
-    !!analysisSession && ['ingesting', 'working', 'returning'].includes(analysisSession.phase);
+  const documentAway = openingBusy
+    ? ['ingesting', 'loading', 'returning'].includes(openingSession.phase)
+    : !!analysisSession && ['ingesting', 'working', 'returning'].includes(analysisSession.phase);
   const folderId = useId().replace(/:/g, '');
   const folderElement = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [documentMoving, setDocumentMoving] = useState(false);
-  const mouthOpen =
-    analysisSession && analysis.busy
+  const mouthOpen = openingBusy
+    ? (documentOpen && openingSession.phase !== 'loading') || documentMoving
+    : analysisSession && analysis.busy
       ? (documentOpen && analysisSession.phase !== 'working') || documentMoving
       : (!navigationClosing && isActive && hovered) || documentOpen || documentMoving;
 
@@ -88,7 +97,7 @@ export function DossierFolder({
       data-dossier-id={dossier.dossier_id}
       data-active={isActive}
       data-document-away={documentAway || undefined}
-      data-analysis-active={(!!analysisSession && analysis.busy) || undefined}
+      data-analysis-active={openingBusy || (!!analysisSession && analysis.busy) || undefined}
       inert={!isActive}
       onPointerEnter={(event) => {
         if (isActive && event.pointerType !== 'touch') setHovered(true);
@@ -127,7 +136,8 @@ export function DossierFolder({
         aria-controls={`${folderId}-document`}
         tabIndex={isActive ? 0 : -1}
         onClick={() => {
-          if (isActive && !analysis.busy) {
+          if (isActive && !analysis.busy && !openingBusy) {
+            if (openingSession?.phase === 'error') openingSession.cancel();
             analysis.revealDocument(dossier.dossier_id);
             onSelect();
           }

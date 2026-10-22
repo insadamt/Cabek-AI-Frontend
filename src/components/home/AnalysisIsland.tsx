@@ -6,6 +6,10 @@ import { navigate } from '../../hooks/useNavigation';
 import { photoProgress } from '../../lib/format';
 import { AttachedIslandSurface } from './AttachedIslandSurface';
 import { observeReducedMotion, prefersReducedMotion } from '../../lib/motion';
+import { Brand } from '../Brand';
+import { useDossierOpening } from '../../hooks/useDossierOpening';
+import { useIslandBrandMotion } from '../../hooks/useIslandBrandMotion';
+import { DossierOpeningActivity, getDossierOpeningLabel } from './DossierOpeningActivity';
 
 const activityLabels = {
   queued: 'En attente',
@@ -108,14 +112,23 @@ function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
 
 export function AnalysisIsland() {
   const { session, busy } = useHomeAnalysis();
+  const opening = useDossierOpening();
+  const brandRef = useRef<HTMLAnchorElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const expanded = !!session && session.phase !== 'idle';
-  const phase = session?.phase ?? 'idle';
-  const label = session ? getActivityLabel(session) : '';
+  const expanded = !!opening || (!!session && session.phase !== 'idle');
+  const phase = opening?.phase ?? session?.phase ?? 'idle';
+  const label = opening
+    ? getDossierOpeningLabel(opening)
+    : session
+      ? getActivityLabel(session)
+      : '';
+  useIslandBrandMotion(brandRef, expanded);
   const progress = session?.response?.progress;
   const percentage = photoProgress(progress ?? null);
-  const success = phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
+  const success = opening
+    ? !opening.error && ['returning', 'stowing'].includes(opening.phase)
+    : phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
   const [detailStep, setDetailStep] = useState(0);
   const [compact, setCompact] = useState(false);
   const hasEstimate = phase === 'working' && progress?.eta_seconds != null && !session?.error;
@@ -168,9 +181,11 @@ export function AnalysisIsland() {
         Number.parseFloat(styles.getPropertyValue('--island-inline-padding')) || 28;
       const frameGutter = Number.parseFloat(styles.getPropertyValue('--island-frame-gutter')) || 28;
       const availableWidth = window.innerWidth - frameGutter * 2;
-      const width = expanded
-        ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
-        : Math.min(300, availableWidth);
+      const width = opening
+        ? Math.min(360, availableWidth)
+        : expanded
+          ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
+          : Math.min(300, availableWidth);
       if (Math.abs(width - targetWidth) < 0.5) return;
       targetWidth = width;
       gsap.to(island, {
@@ -194,17 +209,18 @@ export function AnalysisIsland() {
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
     };
-  }, [expanded, label]);
+  }, [expanded, label, !!opening]);
 
   return (
     <div
       ref={islandRef}
-      className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''}`}
+      className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
       data-phase={phase}
     >
       <AttachedIslandSurface />
       <div className="island-content-clip">
         <a
+          ref={brandRef}
           className="island-brand"
           href="/"
           aria-label="CABEK AI — Accueil"
@@ -216,94 +232,96 @@ export function AnalysisIsland() {
             if (!busy) navigate('/');
           }}
         >
-          <span className="brand-letters" aria-hidden="true">
-            {Array.from('cabek').map((letter, index) => (
-              <span key={index} style={{ '--letter-delay': `${index * 25}ms` } as CSSProperties}>
-                {letter}
-              </span>
-            ))}
-          </span>
-          <span>ai</span>.
+          <Brand tone="light" />
         </a>
-        <div ref={contentRef} className="island-activity" aria-hidden={!expanded} inert={!expanded}>
-          <span className="island-pixels" aria-hidden="true">
-            <span className="island-pixel-grid">
-              {Array.from({ length: 9 }, (_, index) => (
-                <i
-                  key={index}
-                  style={
-                    {
-                      '--pixel-index': index,
-                      '--pixel-gather-x': `${(1 - (index % 3)) * 3}px`,
-                      '--pixel-gather-y': `${(1 - Math.floor(index / 3)) * 3}px`,
-                    } as CSSProperties
-                  }
-                />
-              ))}
-            </span>
-            <Check className="island-success-mark" size={20} />
-            <TriangleAlert className="island-error-mark" size={18} />
-          </span>
-          <span
-            className="island-status"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            title={session?.error || label}
+        {opening ? (
+          <DossierOpeningActivity session={opening} contentRef={contentRef} />
+        ) : (
+          <div
+            ref={contentRef}
+            className="island-activity"
+            aria-hidden={!expanded}
+            inert={!expanded}
           >
-            <AnimatedActivityText text={displayedLabel} />
-          </span>
-          <span
-            className="island-detail"
-            title={
-              session?.error ||
-              `${session?.dossier.dossier_id ?? ''} · ${photoDetail}${etaDetail ? ` · ${etaDetail}` : ''}`
-            }
-          >
-            <FileText size={11} aria-hidden="true" />
-            <AnimatedActivityText text={detail} />
-          </span>
-          {session?.response?.progress ? (
-            <AnalysisTimer
-              key={`${session.dossier.dossier_id}-${session.startedAt}`}
-              session={session}
-            />
-          ) : (
-            <span className="island-timer" aria-hidden="true">
-              --:--.-
+            <span className="island-pixels" aria-hidden="true">
+              <span className="island-pixel-grid">
+                {Array.from({ length: 9 }, (_, index) => (
+                  <i
+                    key={index}
+                    style={
+                      {
+                        '--pixel-index': index,
+                        '--pixel-gather-x': `${(1 - (index % 3)) * 3}px`,
+                        '--pixel-gather-y': `${(1 - Math.floor(index / 3)) * 3}px`,
+                      } as CSSProperties
+                    }
+                  />
+                ))}
+              </span>
+              <Check className="island-success-mark" size={20} />
+              <TriangleAlert className="island-error-mark" size={18} />
             </span>
-          )}
-          {session?.error && (
-            <a
-              className="island-error-link"
-              href={`/dossiers/${encodeURIComponent(session.dossier.dossier_id)}`}
-              aria-label={`Voir le dossier : ${session.error}`}
-              title={session.error}
-              onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                navigate(event.currentTarget.getAttribute('href')!);
-              }}
+            <span
+              className="island-status"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              title={session?.error || label}
             >
-              <ArrowUpRight size={14} aria-hidden="true" />
-            </a>
-          )}
-          {progress && phase === 'working' && (
-            <div
-              className="island-progress"
-              role="progressbar"
-              aria-label="Photos analysées"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={percentage ?? undefined}
+              <AnimatedActivityText text={displayedLabel} />
+            </span>
+            <span
+              className="island-detail"
+              title={
+                session?.error ||
+                `${session?.dossier.dossier_id ?? ''} · ${photoDetail}${etaDetail ? ` · ${etaDetail}` : ''}`
+              }
             >
-              <span
-                style={{ width: percentage == null ? '24%' : `${percentage}%` }}
-                className={percentage == null ? 'is-indeterminate' : ''}
+              <FileText size={11} aria-hidden="true" />
+              <AnimatedActivityText text={detail} />
+            </span>
+            {session?.response?.progress ? (
+              <AnalysisTimer
+                key={`${session.dossier.dossier_id}-${session.startedAt}`}
+                session={session}
               />
-            </div>
-          )}
-        </div>
+            ) : (
+              <span className="island-timer" aria-hidden="true">
+                --:--.-
+              </span>
+            )}
+            {session?.error && (
+              <a
+                className="island-error-link"
+                href={`/dossiers/${encodeURIComponent(session.dossier.dossier_id)}`}
+                aria-label={`Voir le dossier : ${session.error}`}
+                title={session.error}
+                onClick={(event) => {
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  navigate(event.currentTarget.getAttribute('href')!);
+                }}
+              >
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
+            )}
+            {progress && phase === 'working' && (
+              <div
+                className="island-progress"
+                role="progressbar"
+                aria-label="Photos analysées"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={percentage ?? undefined}
+              >
+                <span
+                  style={{ width: percentage == null ? '24%' : `${percentage}%` }}
+                  className={percentage == null ? 'is-indeterminate' : ''}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

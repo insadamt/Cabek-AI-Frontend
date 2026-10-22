@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { preloadComparisonImages, preloadImage } from './comparisonImages';
+import { retainPreparedImages } from './preparedImages';
 
 vi.mock('./api', () => ({ resolveMediaUrl: (source: string) => source }));
 
@@ -23,12 +24,55 @@ const photo = {
 };
 
 beforeEach(() => {
+  retainPreparedImages(new Map());
   TestImage.instances = [];
   vi.stubGlobal('Image', TestImage);
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('comparison image preparation', () => {
+  it.each(['parts', 'damages'] as const)('reuses decoded WebP previews for %s', async (mode) => {
+    const previewPhoto = {
+      ...photo,
+      original_preview_url: '/preview/original.webp',
+      parts_preview_url: '/preview/parts.webp',
+      damages_preview_url: '/preview/damages.webp',
+    };
+    retainPreparedImages(new Map([
+      [previewPhoto.original_preview_url, {} as HTMLImageElement],
+      [previewPhoto[`${mode}_preview_url`], {} as HTMLImageElement],
+    ]));
+    const pair = await preloadComparisonImages(previewPhoto, mode, new AbortController().signal);
+    expect(pair.originalUrl).toBe('/preview/original.webp');
+    expect(pair.annotationUrl).toBe(`/preview/${mode}.webp`);
+    expect(TestImage.instances).toHaveLength(0);
+  });
+
+  it('falls back per image when a response contains only some previews', async () => {
+    const task = preloadComparisonImages(
+      { ...photo, original_preview_url: '/preview/original.webp' },
+      'damages',
+      new AbortController().signal,
+    );
+    expect(TestImage.instances.map((image) => image.src)).toEqual(['/preview/original.webp', '/damages']);
+    await Promise.all(TestImage.instances.map((image) => image.onload!()));
+    await task;
+  });
+
+  it('reuses decoded opening images without starting another download', async () => {
+    const original = new TestImage() as unknown as HTMLImageElement;
+    const annotation = new TestImage() as unknown as HTMLImageElement;
+    retainPreparedImages(
+      new Map([
+        ['/original', original],
+        ['/parts', annotation],
+      ]),
+    );
+    const count = TestImage.instances.length;
+    const pair = await preloadComparisonImages(photo, 'parts', new AbortController().signal);
+    expect(pair.annotationUrl).toBe('/parts');
+    expect(TestImage.instances).toHaveLength(count);
+  });
   it('keeps the next pair pending until both images have decoded', async () => {
     const controller = new AbortController();
     const task = preloadComparisonImages(photo, 'parts', controller.signal);

@@ -17,8 +17,8 @@
     height: auto;
     min-height: 100%;
     gap: 16px;
-    padding: 12px max(14px, env(safe-area-inset-right))
-      max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    padding: 12px max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
   }
   .dossier-overview .back-link {
     align-self: flex-start;

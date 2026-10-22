@@ -1,7 +1,7 @@
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DossierFolder } from '../components/home/DossierFolder';
-import { DossierPhotoWorkspace } from '../components/dossier/DossierPhotoWorkspace';
+import { DossierResultWorkspace } from '../components/dossier/DossierResultWorkspace';
 import { EmptyState } from '../components/EmptyState';
 import { StatusBadge } from '../components/StatusBadge';
 import { useDossierEntrance } from '../hooks/useDossierEntrance';
@@ -27,7 +27,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
     findDossierSummary(dossierId, signal),
   );
   const savedSummary = summary.data ?? entrance?.dossier;
-  const response = resource.data;
+  const response = resource.data ?? entrance?.response;
   const vehicle = response?.result?.vehicle ?? savedSummary?.vehicle;
   const dossier: DossierSummary | undefined = vehicle
     ? {
@@ -79,54 +79,60 @@ export function Dossier({ dossierId }: { dossierId: string }) {
               <div className="dossier-overview-identity" data-dossier-metadata>
                 <p className="eyebrow">DOSSIER D’EXPERTISE</p>
                 <h1 title={vehicleName(dossier.vehicle)}>{vehicleName(dossier.vehicle)}</h1>
+                <p className="dossier-registration">
+                  <bdi>{dossier.vehicle.matricule || 'Immatriculation non renseignée'}</bdi>
+                </p>
                 <StatusBadge status={dossier.status} />
               </div>
-              <dl className="dossier-metadata">
-                <div data-dossier-metadata>
-                  <dt>Référence</dt>
-                  <dd title={String(dossierId)}>{dossierId}</dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Marque</dt>
-                  <dd title={String(dossier.vehicle.marque || 'Non renseignée')}>
-                    {dossier.vehicle.marque || 'Non renseignée'}
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Modèle</dt>
-                  <dd title={String(dossier.vehicle.modele || 'Non renseigné')}>
-                    {dossier.vehicle.modele || 'Non renseigné'}
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Immatriculation</dt>
-                  <dd title={dossier.vehicle.matricule || 'Non renseignée'}>
-                    <bdi>{dossier.vehicle.matricule || 'Non renseignée'}</bdi>
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Année du véhicule</dt>
-                  <dd title={String(dossier.vehicle.annee || 'Non renseignée')}>
-                    {dossier.vehicle.annee || 'Non renseignée'}
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Date du sinistre</dt>
-                  <dd title={String(formatDate(dossier.vehicle.date_sinistre))}>
-                    {formatDate(dossier.vehicle.date_sinistre)}
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Création du dossier</dt>
-                  <dd title={String(formatDate(dossier.created_at))}>
-                    {formatDate(dossier.created_at)}
-                  </dd>
-                </div>
-                <div data-dossier-metadata>
-                  <dt>Photographies</dt>
-                  <dd title={String(dossier.photo_count)}>{dossier.photo_count}</dd>
-                </div>
-              </dl>
+              <div className="dossier-information" data-dossier-metadata>
+                <h2 className="dossier-information-heading">Informations du dossier</h2>
+                <dl className="dossier-metadata">
+                  <div data-dossier-metadata>
+                    <dt>Référence</dt>
+                    <dd title={String(dossierId)}>{dossierId}</dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Marque</dt>
+                    <dd title={String(dossier.vehicle.marque || 'Non renseignée')}>
+                      {dossier.vehicle.marque || 'Non renseignée'}
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Modèle</dt>
+                    <dd title={String(dossier.vehicle.modele || 'Non renseigné')}>
+                      {dossier.vehicle.modele || 'Non renseigné'}
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Immatriculation</dt>
+                    <dd title={dossier.vehicle.matricule || 'Non renseignée'}>
+                      <bdi>{dossier.vehicle.matricule || 'Non renseignée'}</bdi>
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Année du véhicule</dt>
+                    <dd title={String(dossier.vehicle.annee || 'Non renseignée')}>
+                      {dossier.vehicle.annee || 'Non renseignée'}
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Date du sinistre</dt>
+                    <dd title={String(formatDate(dossier.vehicle.date_sinistre))}>
+                      {formatDate(dossier.vehicle.date_sinistre)}
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Création du dossier</dt>
+                    <dd title={String(formatDate(dossier.created_at))}>
+                      {formatDate(dossier.created_at)}
+                    </dd>
+                  </div>
+                  <div data-dossier-metadata>
+                    <dt>Photographies</dt>
+                    <dd title={String(dossier.photo_count)}>{dossier.photo_count}</dd>
+                  </div>
+                </dl>
+              </div>
               {isPreview && (
                 <p className="dossier-preview" data-dossier-metadata>
                   Aperçu en lecture seule · Données d’exemple
@@ -175,8 +181,10 @@ export function Dossier({ dossierId }: { dossierId: string }) {
             data-ready={entranceComplete}
             inert={!entranceComplete}
           >
-            <DossierPhotoWorkspace
-              photos={response?.status === 'completed' ? (response.result?.photos ?? []) : []}
+            <DossierResultWorkspace
+              key={dossierId}
+              dossierId={dossierId}
+              response={response}
               status={response?.status ?? dossier.status}
               loading={!response && resource.loading}
               error={resource.error}

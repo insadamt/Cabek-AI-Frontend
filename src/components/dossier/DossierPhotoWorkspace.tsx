@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, Images, RefreshCw } from 'lucide-react';
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
 import { describeError, resolveMediaUrl } from '../../lib/api';
+import { getPhotoDisplayUrls } from '../../lib/photoDisplayUrls';
 import type { Photo, ScanStatus } from '../../types';
 import type { AnnotationMode } from '../../lib/comparisonImages';
 import { PhotoComparison } from '../PhotoComparison';
@@ -12,7 +13,13 @@ interface PhotoSelection {
   split: number;
 }
 
+export interface PhotoEvidenceSelection {
+  photoIndex: number;
+  requestId: number;
+}
+
 interface DossierPhotoWorkspaceProps {
+  evidenceSelection?: PhotoEvidenceSelection;
   photos: Photo[];
   status: ScanStatus;
   loading: boolean;
@@ -35,12 +42,17 @@ export function DossierPhotoWorkspace({
   loading,
   error,
   onRetry,
+  evidenceSelection,
 }: DossierPhotoWorkspaceProps) {
   const [selection, setSelection] = useState<PhotoSelection>({
     photoIndex: 0,
     mode: 'parts',
     split: 50,
   });
+  useEffect(() => {
+    if (!evidenceSelection) return;
+    setSelection({ photoIndex: evidenceSelection.photoIndex, mode: 'damages', split: 50 });
+  }, [evidenceSelection]);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const [thumbnailLimit, setThumbnailLimit] = useState(5);
   const modeRef = useSelectionIndicator(`${selection.mode}-${photos.length > 0}`);
@@ -72,10 +84,7 @@ export function DossierPhotoWorkspace({
   }
 
   function navigatePhotosWithKeyboard(event: KeyboardEvent<HTMLElement>) {
-    if (
-      ['INPUT', 'SELECT', 'TEXTAREA'].includes((event.target as HTMLElement).tagName)
-    )
-      return;
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes((event.target as HTMLElement).tagName)) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
     selectPhoto(selectedIndex + (event.key === 'ArrowLeft' ? -1 : 1));
@@ -179,7 +188,7 @@ export function DossierPhotoWorkspace({
                 >
                   <Images size={20} aria-hidden="true" />
                   <img
-                    src={resolveMediaUrl(item.original_url)}
+                    src={resolveMediaUrl(getPhotoDisplayUrls(item).original)}
                     alt=""
                     loading="lazy"
                     onError={(event) => {

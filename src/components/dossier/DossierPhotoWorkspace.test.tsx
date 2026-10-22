@@ -37,6 +37,16 @@ const defaults = {
 };
 
 describe('photo inspection states', () => {
+  it('uses the returned preview URL for the thumbnail', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace
+        {...defaults}
+        photos={[{ ...photos[0], original_preview_url: '/preview/front.webp' }]}
+      />,
+    );
+    expect(markup).toMatch(/src="[^"]*\/preview\/front.webp" alt="" loading="lazy"/);
+  });
+
   it('keeps unavailable photographs distinct from a pending request', () => {
     const empty = renderToStaticMarkup(<DossierPhotoWorkspace {...defaults} photos={[]} />);
     const loading = renderToStaticMarkup(

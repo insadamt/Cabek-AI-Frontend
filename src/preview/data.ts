@@ -115,7 +115,7 @@ function previewAnalysis(dossier: DossierSummary): AnalysisResult {
             action: 'repair',
             financial: repair,
             detection_ids: ['preview-1'],
-            source_images: ['vue_avant.svg'],
+            source_images: ['Vue avant'],
           },
           {
             part_id: 'fender',
@@ -123,7 +123,7 @@ function previewAnalysis(dossier: DossierSummary): AnalysisResult {
             action: 'replace',
             financial: replacement,
             detection_ids: ['preview-2'],
-            source_images: ['vue_gauche.svg'],
+            source_images: ['Vue latérale'],
           },
         ],
     detections: empty
@@ -135,7 +135,7 @@ function previewAnalysis(dossier: DossierSummary): AnalysisResult {
             piece: 'Pare-chocs avant',
             niveau: 'low',
             confiance: 0.94,
-            images_sources: ['vue_avant.svg'],
+            images_sources: ['Vue avant'],
           },
           {
             detection_id: 'preview-2',
@@ -143,7 +143,7 @@ function previewAnalysis(dossier: DossierSummary): AnalysisResult {
             piece: 'Aile avant gauche',
             niveau: 'high',
             confiance: 0.91,
-            images_sources: ['vue_gauche.svg'],
+            images_sources: ['Vue latérale'],
           },
         ],
     photos: Array.from({ length: dossier.photo_count }, (_, index) => ({

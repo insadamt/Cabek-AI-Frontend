@@ -29,6 +29,10 @@ import './styles/motion.css';
 import './styles/dossier-workspace.css';
 import './styles/dossier-inspection.css';
 import './styles/dossier-mobile.css';
+import './styles/dossier-opening.css';
+import './styles/dossier-results.css';
+import './styles/dossier-parts.css';
+import './styles/dossier-drawer.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

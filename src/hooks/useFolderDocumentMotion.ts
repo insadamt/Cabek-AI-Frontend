@@ -111,6 +111,10 @@ export function useFolderDocumentMotion({ isOpen, onMotionChange }: FolderDocume
       const progress = animation.current?.progress() ?? 0;
       animation.current?.kill();
       const timeline = createDocumentTimeline(paper);
+      timeline.timeScale(
+        Number.parseFloat(getComputedStyle(paper).getPropertyValue('--document-playback-rate')) ||
+          1,
+      );
       animation.current = timeline;
       timeline.eventCallback('onComplete', () => notifyMotionState(false, true));
       timeline.eventCallback('onReverseComplete', () => notifyMotionState(false, false));
@@ -150,6 +154,12 @@ export function useFolderDocumentMotion({ isOpen, onMotionChange }: FolderDocume
   useLayoutEffect(() => {
     const timeline = animation.current;
     if (!timeline) return;
+    const paper = documentElement.current;
+    if (paper)
+      timeline.timeScale(
+        Number.parseFloat(getComputedStyle(paper).getPropertyValue('--document-playback-rate')) ||
+          1,
+      );
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       timeline.pause().progress(isOpen ? 1 : 0);
       notifyMotionState(false, isOpen);

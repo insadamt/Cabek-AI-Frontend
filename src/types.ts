@@ -94,6 +94,10 @@ export interface Photo {
   parts_url: string;
   damages_url: string;
   critical_url?: string;
+  original_preview_url?: string;
+  parts_preview_url?: string;
+  damages_preview_url?: string;
+  critical_preview_url?: string;
 }
 
 export interface AnalysisResult {

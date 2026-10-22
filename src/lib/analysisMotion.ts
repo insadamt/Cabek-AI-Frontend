@@ -21,6 +21,7 @@ interface DocumentFlightOptions {
   island: HTMLElement;
   returning: boolean;
   signal: AbortSignal;
+  playbackRate?: number;
 }
 
 interface DocumentFlightGeometry {
@@ -102,7 +103,13 @@ export function createDocumentFusionTimeline(
     );
 }
 
-export function flyAnalysisDocument({ paper, island, returning, signal }: DocumentFlightOptions) {
+export function flyAnalysisDocument({
+  paper,
+  island,
+  returning,
+  signal,
+  playbackRate = 1,
+}: DocumentFlightOptions) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
     if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
@@ -153,6 +160,7 @@ export function flyAnalysisDocument({ paper, island, returning, signal }: Docume
         if (!returning) island.dataset.fusion = 'absorbing';
       },
     );
+    animation.timeScale(playbackRate);
 
     function cleanUp() {
       stopObserving();

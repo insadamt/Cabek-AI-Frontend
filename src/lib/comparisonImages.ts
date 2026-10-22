@@ -1,5 +1,7 @@
 import { resolveMediaUrl } from './api';
 import type { Photo } from '../types';
+import { getPreparedImage } from './preparedImages';
+import { getPhotoDisplayUrls } from './photoDisplayUrls';
 
 export type AnnotationMode = 'parts' | 'damages';
 
@@ -11,7 +13,10 @@ export interface ComparisonImagePair {
 }
 
 export function preloadImage(source: string, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
+  if (signal.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  const prepared = getPreparedImage(source);
+  if (prepared) return Promise.resolve(prepared);
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     function cleanUp() {
       image.onload = null;
@@ -36,7 +41,7 @@ export function preloadImage(source: string, signal: AbortSignal) {
         if (image.decode) await image.decode();
         signal.throwIfAborted();
         cleanUp();
-        resolve();
+        resolve(image);
       } catch (error) {
         cleanUp();
         reject(error);
@@ -51,8 +56,9 @@ export async function preloadComparisonImages(
   mode: AnnotationMode,
   signal: AbortSignal,
 ): Promise<ComparisonImagePair> {
-  const originalUrl = resolveMediaUrl(photo.original_url);
-  const annotationUrl = resolveMediaUrl(mode === 'parts' ? photo.parts_url : photo.damages_url);
+  const displayUrls = getPhotoDisplayUrls(photo);
+  const originalUrl = resolveMediaUrl(displayUrls.original);
+  const annotationUrl = resolveMediaUrl(displayUrls[mode]);
   await Promise.all([preloadImage(originalUrl, signal), preloadImage(annotationUrl, signal)]);
   signal.throwIfAborted();
   return { photoId: photo.photo_id, mode, originalUrl, annotationUrl };

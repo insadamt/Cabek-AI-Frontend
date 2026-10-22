@@ -13,6 +13,9 @@ describe('API media URL resolution', () => {
     expect(resolveMediaUrl('/service/api/dossiers/TEST/media/photos/avant%2001.jpg')).toBe(
       'https://cabek.example/service/api/dossiers/TEST/media/photos/avant%2001.jpg',
     );
+    expect(resolveMediaUrl('/service/api/dossiers/TEST/preview/photos/avant%2001.jpg.webp')).toBe(
+      'https://cabek.example/service/api/dossiers/TEST/preview/photos/avant%2001.jpg.webp',
+    );
     expect(resolveMediaUrl('api/dossiers/TEST/report')).toBe(
       'https://cabek.example/service/api/dossiers/TEST/report',
     );
@@ -26,6 +29,9 @@ describe('API media URL resolution', () => {
       '/api/dossiers/TEST/media/photos/avant%2001.jpg',
     );
     expect(resolveMediaUrl('/service/api/dossiers/TEST/report')).toBe('/api/dossiers/TEST/report');
+    expect(resolveMediaUrl('/service/api/dossiers/TEST/preview/photos/avant%2001.jpg.webp')).toBe(
+      '/api/dossiers/TEST/preview/photos/avant%2001.jpg.webp',
+    );
     expect(resolveMediaUrl('https://images.example/photo.jpg')).toBe(
       'https://images.example/photo.jpg',
     );

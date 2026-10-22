@@ -15,40 +15,37 @@
 .brand-link {
   display: block;
   margin: 0 10px 36px;
-  width: fit-content;
 }
 .brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 9px;
+  color: #222;
+}
+.brand-light {
+  color: #f8f8f8;
 }
 .brand-mark {
-  width: 31px;
-  height: 31px;
-  border-radius: 8px;
-  background: #222;
-  color: white;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.brand-mark svg {
-  height: 24px;
-  width: 24px;
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .brand-word {
-  font-size: 27px;
-  letter-spacing: -1.8px;
+  /* Keep the name as continuous text so the font preserves its natural kerning. */
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 25px;
+  letter-spacing: -0.035em;
   line-height: 1;
-  font-weight: 750;
+  font-weight: 700;
+  white-space: nowrap;
 }
 .brand-ai {
-  font-weight: 450;
-  color: #6c6c6c;
-  margin-left: 4px;
-}
-.brand-period {
-  color: #6e6e6e;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 .workspace-label {
   display: flex;
@@ -193,9 +190,10 @@
   place-items: center;
   height: 30px;
   width: 30px;
-  border: 1px solid #d9d9d9;
-  border-radius: 50%;
-  font-size: 14px;
+}
+.footer-logo .brand-mark {
+  width: 30px;
+  height: 30px;
 }
 .sidebar-footer div {
   display: flex;

@@ -1,5 +1,7 @@
 import { LayoutGrid } from 'lucide-react';
-import type { MouseEvent, ReactNode } from 'react';
+import { useEffect, type MouseEvent, type ReactNode } from 'react';
+import { useDossierOpening } from '../../hooks/useDossierOpening';
+import { getDossierOpening } from '../../lib/dossierOpeningState';
 import { HomeAnalysisProvider, useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { AnalysisIsland } from './AnalysisIsland';
 import { navigate } from '../../hooks/useNavigation';
@@ -18,12 +20,15 @@ interface HomeFrameProps {
 
 function HomeFrameContent({ children, variant = 'home' }: HomeFrameProps) {
   const { busy } = useHomeAnalysis();
+  const opening = useDossierOpening();
+  const openingBusy = !!opening && opening.phase !== 'error';
+  useEffect(() => () => getDossierOpening()?.cancel(), []);
   return (
     <div className={`home-shell ${variant === 'dossier' ? 'dossier-shell' : ''}`}>
       <a href="#main-content" className="skip-link">
         Aller au contenu
       </a>
-      <div className={`home-frame ${busy ? 'home-analysis-busy' : ''}`}>
+      <div className={`home-frame ${busy || openingBusy ? 'home-analysis-busy' : ''}`}>
         <header className="home-header">
           <nav aria-label="Navigation principale" className="home-navigation">
             <a

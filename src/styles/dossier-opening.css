@@ -1,0 +1,55 @@
+/* ============================================================
+   Fast dossier preparation and collection transfer
+   ============================================================ */
+
+.dossier-opening-island {
+  width: min(360px, calc(100vw - 56px));
+}
+.dossier-opening-island .island-activity {
+  min-width: 0;
+  width: calc(100% - var(--island-inline-padding) * 2);
+  transition-delay: 0ms;
+}
+.dossier-opening-island .island-status {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dossier-opening-island button.island-error-link {
+  color: inherit;
+  cursor: pointer;
+}
+.dossier-photo-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  pointer-events: none;
+}
+.dossier-photo-flight-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 62px;
+  padding: 4px;
+  border: 1px solid #dedede;
+  border-radius: 7px;
+  background: white;
+  box-shadow: 0 8px 20px #00000020;
+}
+.dossier-photo-flight-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.dossier-photo-flight-card span {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #202020;
+  color: white;
+  font-size: 11px;
+}
