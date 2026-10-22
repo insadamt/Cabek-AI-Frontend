@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { animateSearchReturnContents } from './searchReturnMotion';
 
 const controlSelector = '[data-flip-id="home-search"], [data-flip-id="home-action"]';
 
@@ -38,6 +39,7 @@ export function animateGridFolderPositions(
     const previous = previousPositions.get(getMotionKey(element));
     if (element.matches(controlSelector) && previous) {
       const container = element.parentElement!.getBoundingClientRect();
+      const persistentSearch = element.dataset.mode !== undefined;
 
       // Take controls out of flex flow while their widths change so siblings cannot push each other.
 
@@ -51,7 +53,7 @@ export function animateGridFolderPositions(
           height: previous.height,
           x: previous.left - current.left,
           y: previous.top - current.top,
-          opacity: 0,
+          opacity: persistentSearch ? 1 : 0,
           overflow: 'hidden',
         },
         {
@@ -66,6 +68,7 @@ export function animateGridFolderPositions(
         },
         0,
       );
+      if (persistentSearch) animateSearchReturnContents(timeline, element, reducedMotion);
       return;
     }
 

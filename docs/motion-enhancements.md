@@ -34,6 +34,8 @@ Shared feedback uses 160ms, text changes 200ms, disclosures 240ms and layout mov
 
 Animation owners are separated by purpose. Card layout motion owns card transforms, while the shared entrance hook handles newly mounted section elements. Selection backgrounds move independently of labels. Pointer press feedback uses the CSS `translate` property so it does not overwrite GSAP positioning transforms. Comparison dragging remains directly connected to the input value.
 
+The document now feeds progressively through the island's lower edge, retaining its white paper, logo, text, border and corners. This replaces the earlier black material sweep described in `home-redesign.md`. After approach, its scale stays fixed while a 620ms insertion moves the sheet behind the viewport clip; it no longer collapses into a thin black shape. Release reverses the same timeline, progressively revealing the intact sheet before restoring its native size and shadow. Reduced motion and cancellation retain their existing behavior.
+
 General headings animate whole words, preserving the browser's Arabic shaping. Only the fixed Latin brand name uses separate letters. Vehicle names, registration values and financial amounts retain native text proportions and accessible text.
 
 ## Verification
@@ -63,6 +65,7 @@ Frame rate and device-specific rendering need the manual checks below. Transform
 - [ ] Move the mouse over the carousel and leave it. Confirm gentle tilt, a neutral resting position and crisp opened document text.
 - [ ] Run analysis with DevTools Network open. Confirm the status request starts immediately and no duplicate scan POST occurs.
 - [ ] Test closed and already-open sheets, carousel and focused search results. Confirm extraction finishes before flight and insertion before browsing unlocks.
+- [ ] Watch absorption and release with short and long documents. Confirm the white sheet disappears and reappears progressively at the island's lower edge, without a black sweep, flattening or an abrupt full-sheet appearance.
 - [ ] Test a very fast completion, immediate launch rejection, failed job and reconnection. Confirm correct document return and no false success.
 - [ ] While Terminé is visible after insertion, browse and open the result. Start another eligible analysis and confirm the older success timer cannot reset it.
 - [ ] Navigate away during extraction, flight or processing. Confirm temporary sheets and presentation listeners disappear while accepted backend work remains available.

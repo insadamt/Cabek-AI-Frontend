@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowUpRight, Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SearchReturnControl } from './SearchReturnControl';
 import { useRef } from 'react';
 import { transitionHomeView } from '../../lib/homeViewTransition';
 import { useGridFolderSelection } from '../../hooks/useGridFolderSelection';
@@ -113,60 +114,28 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
         </nav>
       )}
       <div className="home-search-controls">
+        <SearchReturnControl
+          search={search}
+          focused={!!selectedFolder}
+          disabled={busy || analysis.busy}
+          onReturn={selection.returnToGrid}
+        />
         {selectedFolder ? (
-          <>
-            <button
-              className="home-search-back"
-              data-flip-id="home-search"
-              type="button"
-              aria-disabled={busy || analysis.busy}
-              disabled={analysis.busy}
-              onClick={selection.returnToGrid}
-            >
-              <ArrowLeft size={18} aria-hidden="true" /> Retour
-            </button>
-            <AnalysisAction
-              className="home-selected-action"
-              dossier={selectedFolder}
-              disabled={busy}
-            />
-          </>
+          <AnalysisAction
+            className="home-selected-action"
+            dossier={selectedFolder}
+            disabled={busy}
+          />
         ) : (
-          <>
-            <button
-              className="home-clear-search"
-              data-flip-id="home-action"
-              type="button"
-              onClick={() => transitionHomeView('/', 'reverse')}
-            >
-              <X size={18} aria-hidden="true" /> Effacer
-            </button>
-            <form
-              className="home-folder-search home-grid-search"
-              data-flip-id="home-search"
-              role="search"
-              key={search}
-              onSubmit={(event) => {
-                event.preventDefault();
-                const nextSearch = String(
-                  new FormData(event.currentTarget).get('search') ?? '',
-                ).trim();
-                transitionHomeView(`/?${new URLSearchParams({ search: nextSearch })}`);
-              }}
-            >
-              <Search size={17} aria-hidden="true" />
-              <input
-                name="search"
-                type="search"
-                defaultValue={search}
-                placeholder="Rechercher un dossier…"
-                aria-label="Rechercher un dossier"
-              />
-              <button type="submit" aria-label="Rechercher">
-                <ArrowUpRight size={18} aria-hidden="true" />
-              </button>
-            </form>
-          </>
+          <button
+            className="home-clear-search"
+            data-flip-id="home-action"
+            type="button"
+            disabled={busy}
+            onClick={() => transitionHomeView('/', 'reverse')}
+          >
+            <X size={18} aria-hidden="true" /> Effacer
+          </button>
         )}
       </div>
     </section>

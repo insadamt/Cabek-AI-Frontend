@@ -33,6 +33,8 @@ describe('focused grid folder controls', () => {
     const markup = render();
     expect(markup).toContain('Effacer');
     expect(markup).toContain('role="search"');
+    expect(markup).toContain('data-mode="search"');
+    expect(markup).toContain('class="search-return-label"');
     expect(markup).not.toContain('href="/dossiers/');
   });
   it.each([
@@ -44,6 +46,8 @@ describe('focused grid folder controls', () => {
     selection.documentOpen = true;
     const markup = render();
     expect(markup).toContain('Retour');
+    expect(markup).toContain('data-mode="return"');
+    expect(markup).toContain('class="search-return-form" aria-hidden="true" inert=""');
     expect(markup).toContain(label);
     expect(markup).toContain(`href="/dossiers/${selection.selectedFolder.dossier_id}"`);
     expect(markup).toContain('aria-expanded="true"');

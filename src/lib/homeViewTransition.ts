@@ -22,7 +22,8 @@ export function transitionHomeView(path: string, direction: 'forward' | 'reverse
     navigate(path);
     return;
   }
-  const controls = '.home-folder-search, .home-open-dossier, .home-clear-search';
+  const controls =
+    '.home-folder-search, .home-search-return, .home-open-dossier, .home-clear-search';
   const getVisibleControls = () =>
     Array.from(content.querySelectorAll<HTMLElement>(controls)).filter(
       (control) => control.getClientRects().length > 0,

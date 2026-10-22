@@ -13,21 +13,6 @@
   background: white;
   will-change: transform;
 }
-.analysis-flying-document::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  z-index: 10;
-  border-radius: inherit;
-  background: linear-gradient(
-    to bottom,
-    #161616 0%,
-    #161616 calc(var(--fusion-front, -12%) - 8%),
-    #161616dd var(--fusion-front, -12%),
-    transparent calc(var(--fusion-front, -12%) + 8%)
-  );
-  pointer-events: none;
-}
 .dossier-folder[data-document-away='true'] > .folder-document {
   visibility: hidden;
   pointer-events: none;

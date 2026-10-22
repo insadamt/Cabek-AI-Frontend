@@ -38,7 +38,8 @@ export function createDocumentFusionTimeline(
 ) {
   const { paperWidth, paperHeight, paperBounds, islandBounds, paperStyle } = geometry;
   const centeredX = islandBounds.left + islandBounds.width / 2 - paperWidth / 2;
-  const mergedScaleY = 0.035;
+  const feedingScaleX = 0.3;
+  const feedingScaleY = 0.36;
   const restingPosition = {
     x: paperBounds.left + (paperBounds.width - paperWidth) / 2,
     y: paperBounds.top + (paperBounds.height - paperHeight) / 2,
@@ -48,10 +49,9 @@ export function createDocumentFusionTimeline(
     borderRadius: paperStyle.borderRadius,
     borderColor: paperStyle.borderColor,
     boxShadow: paperStyle.boxShadow,
-    '--fusion-front': '-12%',
   };
 
-  // A single reversible timeline keeps the material reveal aligned with the document's flight.
+  // Feeding intact paper through the viewport edge makes release reveal the same content in reverse.
 
   gsap.set(flight, restingPosition);
   return gsap
@@ -73,8 +73,8 @@ export function createDocumentFusionTimeline(
       flight,
       {
         y: islandBounds.bottom + paperHeight * 0.18 - 2 - paperHeight / 2,
-        scaleX: 0.3,
-        scaleY: 0.36,
+        scaleX: feedingScaleX,
+        scaleY: feedingScaleY,
         rotation: 0,
         duration: 0.32,
         ease: 'power2.out',
@@ -85,33 +85,20 @@ export function createDocumentFusionTimeline(
     .to(
       flight,
       {
-        y: islandBounds.bottom - (paperHeight * mergedScaleY) / 2 - 2 - paperHeight / 2,
-        scaleX: 0.11,
-        scaleY: mergedScaleY,
-        duration: 0.44,
-        ease: 'power2.inOut',
+        y: islandBounds.bottom - (paperHeight * feedingScaleY) / 2 - 2 - paperHeight / 2,
+        duration: 0.62,
+        ease: 'power1.inOut',
       },
       0.78,
     )
     .to(
       flight,
       {
-        '--fusion-front': '112%',
-        duration: 0.72,
-        ease: 'power1.inOut',
-      },
-      0.28,
-    )
-    .to(
-      flight,
-      {
-        borderRadius: '56px',
-        borderColor: '#161616',
         boxShadow: '0px 0px 0px 0px rgba(0, 0, 0, 0)',
-        duration: 0.64,
+        duration: 0.3,
         ease: 'power2.inOut',
       },
-      0.4,
+      0.78,
     );
 }
 

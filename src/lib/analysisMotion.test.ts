@@ -13,7 +13,6 @@ function createFlightFixture(paperHeight = 320) {
     borderRadius: '18px',
     borderColor: '#ededed',
     boxShadow: '0px 16px 40px 0px rgba(0, 0, 0, 0.1)',
-    '--fusion-front': '-12%',
   };
   const geometry = {
     paperWidth: 280,
@@ -51,24 +50,38 @@ describe('document material fusion', () => {
       timeline.progress(1);
       const visibleBottom = flight.y + height / 2 + (height * flight.scaleY) / 2;
       expect(visibleBottom).toBeLessThan(geometry.islandBounds.bottom - 1);
-      expect(Number.parseFloat(flight['--fusion-front'])).toBeGreaterThan(100);
       expect(flight.opacity).toBe(1);
       expect(onContact).toHaveBeenCalledTimes(1);
     },
   );
 
-  it('darkens progressively and removes darkness from the bottom first on release', () => {
-    const { flight, timeline } = createFlightFixture();
-    timeline.progress(1, true);
-    expect(Number.parseFloat(flight['--fusion-front'])).toBeGreaterThan(100);
-    timeline.time(0.65);
-    const emergingDarkness = Number.parseFloat(flight['--fusion-front']);
-    expect(emergingDarkness).toBeGreaterThan(0);
-    expect(emergingDarkness).toBeLessThan(100);
-    timeline.time(0.4);
-    expect(Number.parseFloat(flight['--fusion-front'])).toBeLessThan(emergingDarkness);
-    expect(flight.opacity).toBe(1);
-  });
+  it.each([200, 400, 1000])(
+    'progressively feeds a %ipx sheet through the edge without flattening or darkening it',
+    (height) => {
+      const { flight, geometry, timeline } = createFlightFixture(height);
+      const visibleHeights = [0.78, 0.95, 1.12, 1.29, timeline.duration()].map((time) => {
+        timeline.time(time);
+        expect(flight.scaleX).toBeCloseTo(0.3);
+        expect(flight.scaleY).toBeCloseTo(0.36);
+        expect(flight.borderColor).toBe(geometry.paperStyle.borderColor);
+        expect(flight.borderRadius).toBe(geometry.paperStyle.borderRadius);
+        expect(flight.opacity).toBe(1);
+        const bottom = flight.y + height / 2 + (height * flight.scaleY) / 2;
+        return Math.max(0, bottom - (geometry.islandBounds.bottom - 1));
+      });
+      expect(visibleHeights[0]).toBeGreaterThan(height * 0.3);
+      visibleHeights.slice(1).forEach((visibleHeight, index) => {
+        expect(visibleHeight).toBeLessThan(visibleHeights[index]);
+      });
+      expect(visibleHeights.at(-1)).toBe(0);
+
+      timeline.time(1.12);
+      const emergingBottom = flight.y;
+      timeline.time(0.95);
+      expect(flight.y).toBeGreaterThan(emergingBottom);
+      expect(flight.scaleY).toBeCloseTo(0.36);
+    },
+  );
 
   it('restores native document position, material, corners and shadow at the return handoff', () => {
     const { flight, geometry, timeline } = createFlightFixture();
@@ -78,7 +91,6 @@ describe('document material fusion', () => {
     expect(flight.scaleX).toBe(1);
     expect(flight.scaleY).toBe(1);
     expect(flight.rotation).toBe(0);
-    expect(Number.parseFloat(flight['--fusion-front'])).toBeLessThan(-8);
     expect(flight.borderRadius).toBe(geometry.paperStyle.borderRadius);
     expect(flight.boxShadow).toBe(geometry.paperStyle.boxShadow);
   });

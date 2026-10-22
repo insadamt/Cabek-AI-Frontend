@@ -22,6 +22,7 @@ import './styles/home-responsive.css';
 import './styles/folder-mobile.css';
 import './styles/home-actions.css';
 import './styles/home-search.css';
+import './styles/search-return.css';
 import './styles/analysis-island.css';
 import './styles/analysis-motion.css';
 import './styles/motion.css';

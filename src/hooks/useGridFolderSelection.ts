@@ -25,10 +25,7 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
     const neighboringFolders = Array.from(
       grid.querySelectorAll<HTMLElement>('.home-grid-folder'),
     ).filter((folder) => folder.dataset.folderId !== dossier.dossier_id);
-    const outgoingControls = sectionRef.current.querySelectorAll<HTMLElement>(
-      '[data-flip-id="home-search"], [data-flip-id="home-action"]',
-    );
-    animation.current = gsap.timeline().to([...neighboringFolders, ...outgoingControls], {
+    animation.current = gsap.timeline().to(neighboringFolders, {
       opacity: 0,
       duration: reducedMotion() ? 0 : 0.12,
       onComplete: () => {
@@ -89,15 +86,7 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
 
     if (!moving && returning.current) {
       returning.current = false;
-      queueMicrotask(() => {
-        if (!sectionRef.current) return;
-        animation.current = gsap.timeline().to(
-          sectionRef.current.querySelectorAll(
-            '[data-flip-id="home-search"], [data-flip-id="home-action"]',
-          ),
-          { opacity: 0, duration: reducedMotion() ? 0 : 0.12, onComplete: restoreGrid },
-        );
-      });
+      queueMicrotask(restoreGrid);
     }
   }
 

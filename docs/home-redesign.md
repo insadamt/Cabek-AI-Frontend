@@ -250,9 +250,13 @@ Suggested commit: `feat(home): focus grid folders with reversible document and c
 
 ### Preserve proportions during folder selection
 
-Grid selection uses GSAP translation instead of Flip scaling. The focused folder shares the home carousel's responsive width, capped by the available search area, rather than retaining its smaller grid thumbnail width. Desktop, phone and landscape sizes follow the same shared CSS property and update on resize. Search/Back and Clear/action controls render at their natural sizes and move by their centers, keeping text and icons undistorted. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
+Grid selection uses GSAP translation instead of Flip scaling. The focused folder shares the home carousel's responsive width, capped by the available search area, rather than retaining its smaller grid thumbnail width. Desktop, phone and landscape sizes follow the same shared CSS property and update on resize.
+
+Search and Retour now share one persistent, opaque surface. Its width collapses into the button while the magnifier's SVG paths interpolate into a back arrow. Query and Retour text share the same left origin and exchange locally, with the submit icon disappearing inside the collapsing field. Returning expands the same control and reverses the icon/text changes. The query input stays mounted to preserve entered text; inactive form/button layers are inert and hidden from assistive technology. There is no whole-control fade or removal between states. All destination bounds are captured before controls leave flex flow; a reserved 50px control row prevents layout collapse. Text and icons remain unscaled. Temporary positioning and dimensions clear when movement finishes. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
 
 - [ ] Select and return from several grid positions: verify folder proportions, text, and icons never stretch.
+- [ ] Watch Search → Retour and Retour → Search: verify width changes smoothly with no overlapping controls, row jump, wrapped labels or stretched icons. Repeat with each action status, pagination and reduced motion.
+- [ ] Verify the search surface stays visible throughout collapse, the magnifier becomes the back arrow, and query text transitions into Retour at the same left edge. Type a query before selection and confirm it survives return. Tab must skip the inactive input/button layer.
 - [ ] Compare a selected search folder with the home folder on desktop, tablet, phone portrait and landscape; verify matching size where space allows.
 - [ ] Resize with a search folder selected, then use Retour/Escape; verify responsive sizing, original grid thumbnails, scroll position and focus.
 - [ ] Check short queries, long registration titles, scroll restoration, mobile rotation, and reduced motion.
