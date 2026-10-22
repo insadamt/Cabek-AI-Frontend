@@ -5,7 +5,6 @@ import { navigate } from '../../hooks/useNavigation';
 import type { DossierSummary } from '../../types';
 import { openDossierFromFolder } from '../../lib/dossierNavigation';
 import { AnimatedText } from '../AnimatedText';
-import { validateVehicleMetadata } from '../../lib/vehicleMetadata';
 
 interface AnalysisActionProps {
   dossier?: DossierSummary;
@@ -28,8 +27,6 @@ export function AnalysisAction({
     analysis.session?.dossier.dossier_id === dossier?.dossier_id ? analysis.session : null;
   const status = dossier ? analysis.resolveStatus(dossier) : undefined;
   const canAnalyze = status === 'not_analyzed' || status === 'failed';
-  const metadataWarnings = dossier && canAnalyze ? validateVehicleMetadata(dossier.vehicle) : [];
-  const metadataBlocked = metadataWarnings.length > 0;
   const complete = session?.phase === 'done' && !opening;
   const uploading = session?.phase === 'uploading';
   const working = (!!session && analysis.busy) || openingThisDossier;
@@ -42,9 +39,7 @@ export function AnalysisAction({
         : working
           ? 'Analyse…'
           : canAnalyze
-            ? metadataBlocked
-              ? 'Compléter'
-              : 'Analyser'
+            ? 'Analyser'
             : status === 'queued' || status === 'processing'
               ? 'Suivre'
               : 'Ouvrir';
@@ -53,21 +48,10 @@ export function AnalysisAction({
     <a
       className={className}
       data-flip-id="home-action"
-      data-action={
-        complete
-          ? 'done'
-          : working
-            ? 'working'
-            : canAnalyze && !metadataBlocked
-              ? 'analyze'
-              : 'open'
-      }
+      data-action={complete ? 'done' : working ? 'working' : canAnalyze ? 'analyze' : 'open'}
       href={dossier ? `/dossiers/${encodeURIComponent(dossier.dossier_id)}` : undefined}
       aria-disabled={unavailable || undefined}
       aria-busy={working || undefined}
-      title={
-        metadataBlocked ? metadataWarnings.map((warning) => warning.message).join('\n') : undefined
-      }
       aria-label={dossier ? `${label} le dossier ${dossier.dossier_id}` : 'Dossier indisponible'}
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -78,7 +62,7 @@ export function AnalysisAction({
           scope?.querySelectorAll<HTMLElement>('.dossier-folder') ?? [],
         ).find((element) => element.dataset.dossierId === dossier.dossier_id);
         beforeActivate?.();
-        if ((canAnalyze && !metadataBlocked) || status === 'queued' || status === 'processing') {
+        if (canAnalyze || status === 'queued' || status === 'processing') {
           if (folder) analysis.beginAnalysis({ ...dossier, status: status! }, folder);
         } else {
           const path = event.currentTarget.getAttribute('href')!;

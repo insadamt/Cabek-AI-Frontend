@@ -3,8 +3,6 @@ import { Check, ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-reac
 import type { Vehicle, VehicleOption } from '../types';
 import { describeError, isPreview, listBrands, listModels, saveVehicle } from '../lib/api';
 import { AnimatedText } from './AnimatedText';
-import { validateVehicleCatalogue, validateVehicleMetadata } from '../lib/vehicleMetadata';
-import { MetadataWarnings } from './MetadataWarnings';
 
 export function VehicleForm({
   dossierId,
@@ -29,32 +27,6 @@ export function VehicleForm({
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [registration, setRegistration] = useState(vehicle.matricule || '');
-  const [registrationDate, setRegistrationDate] = useState(vehicle.date_mise_en_circulation || '');
-  const [lossDate, setLossDate] = useState(vehicle.date_sinistre || '');
-  const selectedBrand = brands.find((option) => option.id === Number(brandId));
-  const selectedModel = models.find((option) => option.id === Number(modelId));
-  const selection = {
-    marque: selectedBrand?.libelle ?? '',
-    modele: selectedModel?.libelle ?? '',
-    marque_id: Number(brandId),
-    model_id: Number(modelId),
-    matricule: registration.trim(),
-    date_mise_en_circulation: registrationDate,
-    date_sinistre: lossDate,
-  };
-  const warnings = [
-    ...validateVehicleMetadata(selection),
-    ...(!brandsLoading && !modelsLoading && brandId && modelId
-      ? validateVehicleCatalogue(selection, brands, models)
-      : []),
-  ];
-
-  function markChanges() {
-    setSaved(false);
-    setError('');
-    onPendingChangesChange(true);
-  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -74,7 +46,6 @@ export function VehicleForm({
   useEffect(() => {
     if (!brandId) {
       setModels([]);
-      setModelsLoading(false);
       return;
     }
     const controller = new AbortController();
@@ -92,16 +63,17 @@ export function VehicleForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (saving || warnings.length || brandsLoading || modelsLoading || isPreview) return;
+    if (saving || !brandId || !modelId) return;
     setSaving(true);
     onBusyChange(true);
     setError('');
     setSaved(false);
     try {
-      const resolved = await saveVehicle(dossierId, selection);
-      // The saved server response owns the displayed metadata; never fill gaps with unsaved input.
-
-      onSaved(resolved);
+      const resolved = await saveVehicle(dossierId, {
+        marque_id: Number(brandId),
+        model_id: Number(modelId),
+      });
+      onSaved({ ...vehicle, ...resolved });
       onPendingChangesChange(false);
       setSaved(true);
     } catch (error) {
@@ -119,11 +91,11 @@ export function VehicleForm({
           <SlidersHorizontal size={18} />
         </span>
         <div>
-          <h2>Compléter les informations</h2>
-          <p>Tous les champs sont obligatoires avant de lancer l’analyse.</p>
+          <h2>Véhicule pour la tarification</h2>
+          <p>Une identification précise pour rechercher les prix des pièces.</p>
         </div>
       </div>
-      <form onSubmit={submit} onChange={markChanges}>
+      <form onSubmit={submit}>
         <div className="form-fields">
           <label>
             Marque
@@ -131,7 +103,6 @@ export function VehicleForm({
               <select
                 aria-label="Marque du véhicule"
                 value={brandId}
-                required
                 disabled={brandsLoading || saving || isPreview}
                 onChange={(event) => {
                   setBrandId(event.target.value);
@@ -160,7 +131,6 @@ export function VehicleForm({
               <select
                 aria-label="Modèle du véhicule"
                 value={modelId}
-                required
                 disabled={!brandId || modelsLoading || saving || isPreview}
                 onChange={(event) => {
                   setModelId(event.target.value);
@@ -180,38 +150,7 @@ export function VehicleForm({
               <ChevronDown size={15} />
             </div>
           </label>
-          <label>
-            Immatriculation
-            <input
-              required
-              value={registration}
-              disabled={saving || isPreview}
-              onChange={(event) => setRegistration(event.target.value)}
-              autoComplete="off"
-            />
-          </label>
-          <label>
-            Date de mise en circulation
-            <input
-              required
-              type="date"
-              value={registrationDate}
-              disabled={saving || isPreview}
-              onChange={(event) => setRegistrationDate(event.target.value)}
-            />
-          </label>
-          <label>
-            Date du sinistre
-            <input
-              required
-              type="date"
-              value={lossDate}
-              disabled={saving || isPreview}
-              onChange={(event) => setLossDate(event.target.value)}
-            />
-          </label>
         </div>
-        {!brandsLoading && !modelsLoading && <MetadataWarnings warnings={warnings} />}
         {error && (
           <div className="inline-error" role="alert">
             {error}
@@ -241,7 +180,7 @@ export function VehicleForm({
           </span>
           <button
             className="button button-secondary"
-            disabled={!!warnings.length || brandsLoading || modelsLoading || saving || isPreview}
+            disabled={!brandId || !modelId || saving || isPreview}
             type="submit"
           >
             <AnimatedText text={saving ? 'Enregistrement…' : 'Enregistrer le véhicule'}>

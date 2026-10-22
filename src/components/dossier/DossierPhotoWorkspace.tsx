@@ -2,10 +2,11 @@ import { ChevronLeft, ChevronRight, Images, RefreshCw } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
 import { describeError, resolveMediaUrl } from '../../lib/api';
-import { getPhotoDisplayUrls } from '../../lib/photoDisplayUrls';
-import type { Photo, ScanStatus } from '../../types';
+import { getOriginalPhotoDisplayUrl } from '../../lib/photoDisplayUrls';
+import type { OriginalPhoto, Photo, ScanStatus } from '../../types';
 import type { AnnotationMode } from '../../lib/comparisonImages';
 import { PhotoComparison } from '../PhotoComparison';
+import { OriginalPhotoPreview } from './OriginalPhotoPreview';
 
 interface PhotoSelection {
   photoIndex: number;
@@ -20,7 +21,7 @@ export interface PhotoEvidenceSelection {
 
 interface DossierPhotoWorkspaceProps {
   evidenceSelection?: PhotoEvidenceSelection;
-  photos: Photo[];
+  photos: (OriginalPhoto | Photo)[];
   status: ScanStatus;
   loading: boolean;
   error: unknown;
@@ -55,9 +56,11 @@ export function DossierPhotoWorkspace({
   }, [evidenceSelection]);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const [thumbnailLimit, setThumbnailLimit] = useState(5);
-  const modeRef = useSelectionIndicator(`${selection.mode}-${photos.length > 0}`);
   const selectedIndex = Math.min(selection.photoIndex, Math.max(0, photos.length - 1));
   const photo = photos[selectedIndex];
+  const annotatedPhoto =
+    photo && 'parts_url' in photo && 'damages_url' in photo ? photo : undefined;
+  const modeRef = useSelectionIndicator(`${selection.mode}-${!!annotatedPhoto}`);
 
   const thumbnailStart = Math.min(
     Math.max(0, selectedIndex - Math.floor(thumbnailLimit / 2)),
@@ -115,37 +118,43 @@ export function DossierPhotoWorkspace({
       )}
       {photo ? (
         <>
-          <div className="viewer-toolbar inspection-toolbar">
-            <div
-              ref={modeRef}
-              className="segmented-control"
-              role="group"
-              aria-label="Type d’annotation"
-            >
-              <span className="selection-indicator" aria-hidden="true" />
-              <button
-                className={selection.mode === 'parts' ? 'selected' : ''}
-                aria-pressed={selection.mode === 'parts'}
-                onClick={() => setSelection((current) => ({ ...current, mode: 'parts' }))}
+          {annotatedPhoto && (
+            <div className="viewer-toolbar inspection-toolbar">
+              <div
+                ref={modeRef}
+                className="segmented-control"
+                role="group"
+                aria-label="Type d’annotation"
               >
-                Pièces
-              </button>
-              <button
-                className={selection.mode === 'damages' ? 'selected' : ''}
-                aria-pressed={selection.mode === 'damages'}
-                onClick={() => setSelection((current) => ({ ...current, mode: 'damages' }))}
-              >
-                Dommages
-              </button>
+                <span className="selection-indicator" aria-hidden="true" />
+                <button
+                  className={selection.mode === 'parts' ? 'selected' : ''}
+                  aria-pressed={selection.mode === 'parts'}
+                  onClick={() => setSelection((current) => ({ ...current, mode: 'parts' }))}
+                >
+                  Pièces
+                </button>
+                <button
+                  className={selection.mode === 'damages' ? 'selected' : ''}
+                  aria-pressed={selection.mode === 'damages'}
+                  onClick={() => setSelection((current) => ({ ...current, mode: 'damages' }))}
+                >
+                  Dommages
+                </button>
+              </div>
+              <span>Glissez la séparation pour comparer</span>
             </div>
-            <span>Glissez la séparation pour comparer</span>
-          </div>
-          <PhotoComparison
-            photo={photo}
-            mode={selection.mode}
-            split={selection.split}
-            onSplitChange={(split) => setSelection((current) => ({ ...current, split }))}
-          />
+          )}
+          {annotatedPhoto ? (
+            <PhotoComparison
+              photo={annotatedPhoto}
+              mode={selection.mode}
+              split={selection.split}
+              onSplitChange={(split) => setSelection((current) => ({ ...current, split }))}
+            />
+          ) : (
+            <OriginalPhotoPreview key={getOriginalPhotoDisplayUrl(photo)} photo={photo} />
+          )}
           <div className="inspection-photo-navigation">
             <p role="status">
               Photo <strong>{String(selectedIndex + 1).padStart(2, '0')}</strong>
@@ -188,7 +197,7 @@ export function DossierPhotoWorkspace({
                 >
                   <Images size={20} aria-hidden="true" />
                   <img
-                    src={resolveMediaUrl(getPhotoDisplayUrls(item).original)}
+                    src={resolveMediaUrl(getOriginalPhotoDisplayUrl(item))}
                     alt=""
                     loading="lazy"
                     onError={(event) => {

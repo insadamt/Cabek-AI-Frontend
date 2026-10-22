@@ -30,7 +30,6 @@ export const previewDossiers: DossierSummary[] = vehicles.map(
       modele,
       matricule: `${12000 + index * 137} · A · 6`,
       annee: String(2023 - (index % 4)),
-      date_mise_en_circulation: `${2023 - (index % 4)}-06-14`,
       date_sinistre: '2026-10-18',
       marque_id:
         ['Renault', 'Dacia', 'Peugeot', 'Volkswagen', 'Toyota', 'Hyundai', 'Citroën'].indexOf(
@@ -192,6 +191,12 @@ export function getPreviewResult(id: string): DossierResponse {
   const status: ScanStatus = dossier.status;
   return {
     dossier_id: id,
+    vehicle: dossier.vehicle,
+    photos: previewAnalysis(dossier).photos.map((photo) => ({
+      photo_id: photo.photo_id,
+      original_url: photo.original_url,
+      preview_url: photo.original_url,
+    })),
     status,
     error:
       status === 'failed'

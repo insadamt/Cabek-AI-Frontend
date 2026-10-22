@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { previewDossiers } from '../../preview/data';
 import { DossierCarousel } from './DossierCarousel';
-import { AnalysisAction } from './AnalysisAction';
 
 const motion = vi.hoisted(() => ({ progress: 0 }));
 
@@ -69,33 +68,6 @@ describe('dossier link during carousel motion', () => {
 // Status changes must preserve the visible folder as the action target during motion.
 
 describe('visible folder action', () => {
-  it('offers correction instead of analysis for incomplete metadata', () => {
-    const dossier = {
-      ...previewDossiers[0],
-      vehicle: { ...previewDossiers[0].vehicle, date_sinistre: null, model_id: null },
-    };
-    const markup = renderToStaticMarkup(
-      <AnalysisAction dossier={dossier} className="test-action" />,
-    );
-    expect(markup).toContain('Compléter le dossier');
-    expect(markup).toContain('data-action="open"');
-    expect(markup).toContain('La date du sinistre est obligatoire.');
-    expect(markup).toContain('Sélectionnez un modèle dans le catalogue.');
-    expect(markup).not.toContain('data-action="analyze"');
-  });
-
-  it('keeps completed legacy dossiers readable without a metadata gate', () => {
-    const dossier = {
-      ...previewDossiers[1],
-      vehicle: { ...previewDossiers[1].vehicle, date_sinistre: null, model_id: null },
-    };
-    const markup = renderToStaticMarkup(
-      <AnalysisAction dossier={dossier} className="test-action" />,
-    );
-    expect(markup).toContain('Ouvrir le dossier');
-    expect(markup).not.toContain('Compléter');
-  });
-
   it.each([
     ['not_analyzed', 'Analyser'],
     ['failed', 'Analyser'],

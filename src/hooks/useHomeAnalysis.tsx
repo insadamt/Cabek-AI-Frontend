@@ -4,7 +4,6 @@ import { runScanAlongsidePresentation } from '../lib/homeAnalysis';
 import { flyAnalysisDocument, waitForAnalysisDelay } from '../lib/analysisMotion';
 import { waitForDocumentMotion } from '../lib/documentMotion';
 import { prefersReducedMotion } from '../lib/motion';
-import { validateVehicleMetadata } from '../lib/vehicleMetadata';
 import type { DossierResponse, DossierSummary, ScanStatus } from '../types';
 
 export type AnalysisPhase =
@@ -61,20 +60,6 @@ export function HomeAnalysisProvider({ children }: { children: ReactNode }) {
 
   async function runAnalysis(dossier: DossierSummary, folder: HTMLElement) {
     if (running.current) return;
-    if (dossier.status === 'not_analyzed' || dossier.status === 'failed') {
-      const warnings = validateVehicleMetadata(dossier.vehicle);
-      if (warnings.length) {
-        const startedAt = performance.now();
-        setSession({
-          dossier,
-          phase: 'error',
-          error: warnings.map((warning) => warning.message).join(' '),
-          receivedAt: startedAt,
-          startedAt,
-        });
-        return;
-      }
-    }
     const paper = folder.querySelector<HTMLElement>('.folder-document');
     const island = document.querySelector<HTMLElement>('.ai-activity-island');
     if (!paper || !island) return;

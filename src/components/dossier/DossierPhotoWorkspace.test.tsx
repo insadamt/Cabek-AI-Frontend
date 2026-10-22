@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Photo } from '../../types';
 import { ImageViewer } from '../ImageViewer';
 import { DossierPhotoWorkspace } from './DossierPhotoWorkspace';
+import { DossierResultWorkspace } from './DossierResultWorkspace';
 
 vi.mock('../Modal', () => ({
   Modal: ({ children }: { children: ReactNode }) => <section>{children}</section>,
@@ -37,6 +38,72 @@ const defaults = {
 };
 
 describe('photo inspection states', () => {
+  it('routes top-level originals into the result workspace without an analysis', () => {
+    const markup = renderToStaticMarkup(
+      <DossierResultWorkspace
+        dossierId="DOS-001"
+        response={{
+          dossier_id: 'DOS-001',
+          status: 'not_analyzed',
+          vehicle: { marque: '', modele: '', matricule: '' },
+          photos: [
+            {
+              photo_id: 'before-scan',
+              original_url: '/original.jpg',
+              preview_url: '/original.webp',
+            },
+          ],
+          progress: null,
+          error: null,
+          result: null,
+        }}
+        status="not_analyzed"
+        loading={false}
+        error={null}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(markup).toContain('Photographie originale — before-scan');
+    expect(markup).not.toContain('Type d’annotation');
+    expect(markup).not.toContain('type="range"');
+  });
+
+  it.each(['not_analyzed', 'queued', 'processing', 'failed', 'completed'] as const)(
+    'shows original previews in %s without inventing annotation controls',
+    (status) => {
+      const markup = renderToStaticMarkup(
+        <DossierPhotoWorkspace
+          {...defaults}
+          status={status}
+          photos={[
+            {
+              photo_id: 'original-only',
+              original_url: '/photos/front.jpg',
+              preview_url: '/preview/front.webp',
+            },
+          ]}
+        />,
+      );
+      expect(markup).toMatch(/src="[^"]*\/preview\/front.webp"/);
+      expect(markup).toContain('Photographie originale — original-only');
+      expect(markup).not.toContain('Type d’annotation');
+      expect(markup).not.toContain('type="range"');
+      expect(markup).not.toContain('Comparaison à venir');
+    },
+  );
+
+  it('supports original media when a preview is unavailable', () => {
+    const markup = renderToStaticMarkup(
+      <DossierPhotoWorkspace
+        {...defaults}
+        status="not_analyzed"
+        photos={[{ photo_id: 'legacy', original_url: '/photos/legacy.jpg' }]}
+      />,
+    );
+    expect(markup).toMatch(/src="[^"]*\/photos\/legacy.jpg"/);
+    expect(markup).not.toContain('Type d’annotation');
+  });
+
   it('uses the returned preview URL for the thumbnail', () => {
     const markup = renderToStaticMarkup(
       <DossierPhotoWorkspace

@@ -10,24 +10,7 @@ export interface Vehicle {
   marque_id?: number | null;
   model_id?: number | null;
   annee?: string | null;
-  date_mise_en_circulation?: string | null;
   date_sinistre?: string | null;
-}
-
-export interface RequiredVehicleMetadata {
-  marque: string;
-  modele: string;
-  marque_id: number;
-  model_id: number;
-  matricule: string;
-  date_mise_en_circulation: string;
-  date_sinistre: string;
-}
-
-export interface MetadataWarning {
-  field: string;
-  code: string;
-  message: string;
 }
 
 export interface DossierSummary {
@@ -105,9 +88,13 @@ export interface Detection {
   [key: string]: unknown;
 }
 
-export interface Photo {
+export interface OriginalPhoto {
   photo_id: string;
   original_url: string;
+  preview_url?: string;
+}
+
+export interface Photo extends OriginalPhoto {
   parts_url: string;
   damages_url: string;
   critical_url?: string;
@@ -129,6 +116,8 @@ export interface AnalysisResult {
 
 export interface DossierResponse {
   dossier_id: string;
+  vehicle: Vehicle;
+  photos: OriginalPhoto[];
   status: ScanStatus;
   progress: ScanProgress | null;
   error: { code: string; message: string } | null;
@@ -141,4 +130,9 @@ export interface VehicleOption {
   marque_id?: number;
 }
 
-export type VehicleSelection = RequiredVehicleMetadata;
+export interface VehicleSelection {
+  marque_id: number;
+  model_id: number;
+}
+
+export type ResolvedVehicle = VehicleSelection & Pick<Vehicle, 'marque' | 'modele'>;

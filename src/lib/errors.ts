@@ -1,6 +1,15 @@
-import type { MetadataWarning } from '../types';
-
 const errorMessages: Record<string, string> = {
+  already_analyzed: 'Ce dossier a déjà été analysé. Ouvrez son résultat enregistré.',
+  scan_in_progress: 'Une analyse est déjà en cours pour ce dossier.',
+  invalid_request: 'Les paramètres de la demande sont invalides.',
+  invalid_dossier_id: 'La référence du dossier est invalide.',
+  artifact_not_found: 'L’image demandée est indisponible.',
+  report_not_found: 'Aucun rapport enregistré n’est disponible pour ce dossier.',
+  invalid_image: 'Cette photographie ne peut pas être lue.',
+  invalid_report: 'Le rapport enregistré ne peut pas être lu.',
+  invalid_analysis: 'Les données d’analyse de ce dossier sont invalides.',
+  invalid_status: 'L’état enregistré de l’analyse ne peut pas être lu.',
+  invalid_feedback: 'Les observations enregistrées de ce dossier sont invalides.',
   dossier_not_found: 'Ce dossier est introuvable.',
   no_valid_photos: 'Aucune photo valide ne permet de lancer l’analyse.',
   worker_unavailable: 'L’analyse ne peut pas être lancée pour le moment. Réessayez plus tard.',
@@ -20,26 +29,9 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     public status?: number,
-    public warnings: MetadataWarning[] = [],
   ) {
-    super(
-      [
-        errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.',
-        ...warnings.map((warning) => warning.message),
-      ].join(' '),
-    );
+    super(errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.');
   }
-}
-
-export function parseMetadataWarnings(value: unknown): MetadataWarning[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (warning): warning is MetadataWarning =>
-      warning != null &&
-      typeof warning.field === 'string' &&
-      typeof warning.code === 'string' &&
-      typeof warning.message === 'string',
-  );
 }
 
 export function describeError(error: unknown): string {

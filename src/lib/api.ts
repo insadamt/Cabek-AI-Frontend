@@ -3,7 +3,7 @@ import type {
   DossierList,
   DossierQuery,
   DossierResponse,
-  Vehicle,
+  ResolvedVehicle,
   VehicleOption,
   VehicleSelection,
 } from '../types';
@@ -13,8 +13,7 @@ import {
   getPreviewModels,
   getPreviewResult,
 } from '../preview/data';
-import { ApiError, parseMetadataWarnings } from './errors';
-import { validateVehicleCatalogue, validateVehicleMetadata } from './vehicleMetadata';
+import { ApiError } from './errors';
 export { ApiError, describeError, failureMessage } from './errors';
 
 export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
@@ -35,12 +34,9 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
         throw new Error(
           'Connexion au service interrompue. Vérifiez votre connexion ou réessayez dans un instant.',
         );
-      const body = error.response.data;
-      const detail = body?.error ?? body?.detail ?? body;
       throw new ApiError(
-        detail?.code ?? 'unknown_error',
+        error.response.data?.error?.code ?? 'unknown_error',
         error.response.status,
-        parseMetadataWarnings(detail?.warnings),
       );
     }
     throw error;
@@ -74,24 +70,8 @@ export async function findDossierSummary(id: string, signal?: AbortSignal) {
   }
 }
 
-export async function startScan(id: string, signal?: AbortSignal): Promise<DossierResponse> {
-  if (isPreview) throw new ApiError('preview_only');
-  // Re-read persisted input: an old summary or an unsaved form must never authorize a scan.
-
-  const dossier = await findDossierSummary(id, signal);
-  if (!dossier) throw new ApiError('dossier_not_found', 404);
-  if (dossier.status === 'completed') throw new ApiError('already_analyzed', 409);
-  if (dossier.status === 'queued' || dossier.status === 'processing')
-    throw new ApiError('scan_in_progress', 409);
-  const warnings = validateVehicleMetadata(dossier.vehicle);
-  if (warnings.length) throw new ApiError('invalid_metadata', 422, warnings);
-  const [brands, models] = await Promise.all([
-    listBrands(signal),
-    listModels(dossier.vehicle.marque_id!, signal),
-  ]);
-  const catalogueWarnings = validateVehicleCatalogue(dossier.vehicle, brands, models);
-  if (catalogueWarnings.length) throw new ApiError('invalid_metadata', 422, catalogueWarnings);
-  signal?.throwIfAborted();
+export function startScan(id: string, signal?: AbortSignal): Promise<DossierResponse> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
   return request(() =>
     client.post(`/api/dossiers/${encodeURIComponent(id)}/scan`, undefined, { signal }),
   );
@@ -109,10 +89,8 @@ export function listModels(brandId: number, signal?: AbortSignal): Promise<Vehic
   );
 }
 
-export function saveVehicle(id: string, selection: VehicleSelection): Promise<Vehicle> {
+export function saveVehicle(id: string, selection: VehicleSelection): Promise<ResolvedVehicle> {
   if (isPreview) return Promise.reject(new ApiError('preview_only'));
-  const warnings = validateVehicleMetadata(selection);
-  if (warnings.length) return Promise.reject(new ApiError('invalid_metadata', 422, warnings));
   return request(() => client.put(`/api/dossiers/${encodeURIComponent(id)}/vehicle`, selection));
 }
 

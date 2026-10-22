@@ -1,14 +1,14 @@
 import gsap from 'gsap';
-import type { Photo } from '../types';
+import type { OriginalPhoto } from '../types';
 import { resolveMediaUrl } from './api';
-import { getPhotoDisplayUrls } from './photoDisplayUrls';
+import { getOriginalPhotoDisplayUrl } from './photoDisplayUrls';
 import { getPreparedImage } from './preparedImages';
 import { observeReducedMotion, prefersReducedMotion } from './motion';
 
 interface PhotoFlightOptions {
   folder: HTMLElement;
   island: HTMLElement;
-  photos: Photo[];
+  photos: OriginalPhoto[];
   signal: AbortSignal;
 }
 
@@ -26,7 +26,7 @@ export function flyDossierPhotos({ folder, island, photos, signal }: PhotoFlight
     photos.slice(0, 4).forEach((photo, index) => {
       const card = document.createElement('div');
       card.className = 'dossier-photo-flight-card';
-      const source = resolveMediaUrl(getPhotoDisplayUrls(photo).original);
+      const source = resolveMediaUrl(getOriginalPhotoDisplayUrl(photo));
 
       // Decorative cards reuse prepared previews to avoid adding image work during navigation.
 

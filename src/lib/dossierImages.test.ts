@@ -13,6 +13,8 @@ vi.mock('./comparisonImages', () => ({ preloadImage: mocks.load }));
 function resultWithPhotos(count = 1): DossierResponse {
   return {
     dossier_id: 'DOS-001',
+    vehicle: { marque: '', modele: '', matricule: '' },
+    photos: [],
     status: 'completed',
     progress: null,
     error: null,
@@ -36,6 +38,29 @@ beforeEach(() => {
 afterEach(() => retainPreparedImages(new Map()));
 
 describe('all visible dossier images prepared during opening', () => {
+  it('prepares top-level originals before analysis using only returned preview URLs', async () => {
+    const response = {
+      ...resultWithPhotos(),
+      status: 'not_analyzed',
+      result: null,
+      photos: [{ photo_id: 'front', original_url: '/front.jpg', preview_url: '/front.webp' }],
+    };
+    mocks.read.mockResolvedValue(response);
+    const onProgress = vi.fn();
+    const prepared = await prepareDossierImages({
+      dossierId: 'DOS-001',
+      signal: new AbortController().signal,
+      onProgress,
+    });
+    expect(prepared).toBe(response);
+    expect(mocks.load.mock.calls.map(([source]) => source)).toEqual(['/resolved/front.webp']);
+    expect(onProgress.mock.calls).toEqual([
+      [0, 1],
+      [1, 1],
+    ]);
+    expect(getPreparedImage('/resolved/front.webp')?.src).toBe('/resolved/front.webp');
+  });
+
   it('prepares all visible WebP previews without critical images, preserving full media URLs', async () => {
     const response = resultWithPhotos();
     Object.assign(response.result!.photos[0], {
@@ -55,7 +80,9 @@ describe('all visible dossier images prepared during opening', () => {
       '/resolved/preview/parts.webp',
       '/resolved/preview/damages.webp',
     ]);
-    expect(getPreparedImage('/resolved/preview/parts.webp')?.src).toBe('/resolved/preview/parts.webp');
+    expect(getPreparedImage('/resolved/preview/parts.webp')?.src).toBe(
+      '/resolved/preview/parts.webp',
+    );
     expect(prepared.result!.photos[0].original_url).toBe('/original-0');
   });
 

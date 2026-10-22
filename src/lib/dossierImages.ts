@@ -1,7 +1,7 @@
 import { readDossier, resolveMediaUrl } from './api';
 import { preloadImage } from './comparisonImages';
 import { retainPreparedImages } from './preparedImages';
-import { getPhotoDisplayUrls } from './photoDisplayUrls';
+import { getOriginalPhotoDisplayUrl, getPhotoDisplayUrls } from './photoDisplayUrls';
 
 interface PrepareDossierOptions {
   dossierId: string;
@@ -18,10 +18,16 @@ export async function prepareDossierImages({
   signal.throwIfAborted();
   const urls = [
     ...new Set(
-      (response.result?.photos ?? []).flatMap((photo) => {
-        const displayUrls = getPhotoDisplayUrls(photo);
-        return [displayUrls.original, displayUrls.parts, displayUrls.damages].map(resolveMediaUrl);
-      }),
+      response.result
+        ? response.result.photos.flatMap((photo) => {
+            const displayUrls = getPhotoDisplayUrls(photo);
+            return [displayUrls.original, displayUrls.parts, displayUrls.damages].map(
+              resolveMediaUrl,
+            );
+          })
+        : (response.photos ?? []).map((photo) =>
+            resolveMediaUrl(getOriginalPhotoDisplayUrl(photo)),
+          ),
     ),
   ];
   const images = new Map<string, HTMLImageElement>();

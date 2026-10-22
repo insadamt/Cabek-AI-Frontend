@@ -107,7 +107,12 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
         ? flyAnalysisDocument({ paper, island, returning: true, signal, playbackRate: 2 })
         : Promise.resolve(),
       island
-        ? flyDossierPhotos({ folder, island, photos: response.result?.photos ?? [], signal })
+        ? flyDossierPhotos({
+            folder,
+            island,
+            photos: response.result?.photos ?? response.photos ?? [],
+            signal,
+          })
         : Promise.resolve(),
     ]);
     paperInIsland = false;

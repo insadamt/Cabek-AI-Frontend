@@ -101,7 +101,7 @@ export function DossierResultWorkspace({
           tabIndex={0}
         >
           <DossierPhotoWorkspace
-            photos={result?.photos ?? []}
+            photos={result?.photos ?? response?.photos ?? []}
             status={status}
             loading={loading}
             error={error}

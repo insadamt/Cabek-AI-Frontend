@@ -12,7 +12,15 @@ vi.mock('./api', async (importOriginal) => ({
 vi.mock('./analysisMotion', () => ({ waitForAnalysisDelay: vi.fn(() => Promise.resolve()) }));
 
 function response(status: ScanStatus): DossierResponse {
-  return { dossier_id: 'DOS-001', status, progress: null, error: null, result: null };
+  return {
+    dossier_id: 'DOS-001',
+    vehicle: { marque: '', modele: '', matricule: '' },
+    photos: [],
+    status,
+    progress: null,
+    error: null,
+    result: null,
+  };
 }
 
 function createScan() {

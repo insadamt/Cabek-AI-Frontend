@@ -158,6 +158,8 @@ describe('estimate and damage states', () => {
         dossierId="test"
         response={{
           dossier_id: 'test',
+          vehicle: result.vehicle,
+          photos: [],
           status: 'completed',
           progress: null,
           error: null,

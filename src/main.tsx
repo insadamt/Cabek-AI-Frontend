@@ -30,7 +30,6 @@ import './styles/dossier-opening.css';
 import './styles/dossier-results.css';
 import './styles/dossier-parts.css';
 import './styles/dossier-drawer.css';
-import './styles/metadata.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

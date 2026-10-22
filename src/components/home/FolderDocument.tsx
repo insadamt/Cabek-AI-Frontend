@@ -1,7 +1,5 @@
 import { useFolderDocumentMotion } from '../../hooks/useFolderDocumentMotion';
-import { formatDate, shortStatusLabels } from '../../lib/format';
-import { validateVehicleMetadata } from '../../lib/vehicleMetadata';
-import { MetadataWarnings } from '../MetadataWarnings';
+import { shortStatusLabels } from '../../lib/format';
 import type { DossierSummary } from '../../types';
 
 interface FolderDocumentProps {
@@ -37,8 +35,8 @@ export function FolderDocument({
         <h2>{vehicle.modele || 'Modèle non renseigné'}</h2>
         <div className="folder-document-summary">
           <span>
-            <span className="folder-document-year-label">Mise en circulation </span>
-            {formatDate(vehicle.date_mise_en_circulation)}
+            <span className="folder-document-year-label">Année </span>
+            {vehicle.annee || 'Non renseignée'}
           </span>
           <span className={`folder-document-status status-${dossier.status}`}>
             <span aria-hidden="true" />
@@ -54,9 +52,6 @@ export function FolderDocument({
           </dd>
         </div>
       </dl>
-      {(dossier.status === 'not_analyzed' || dossier.status === 'failed') && (
-        <MetadataWarnings warnings={validateVehicleMetadata(vehicle)} />
-      )}
       <footer className="folder-document-footer">
         <span>
           <strong>{dossier.photo_count}</strong>{' '}
