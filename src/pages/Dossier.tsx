@@ -2,6 +2,7 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DossierFolder } from '../components/home/DossierFolder';
 import { DossierResultWorkspace } from '../components/dossier/DossierResultWorkspace';
+import { DossierMetadataEditor } from '../components/dossier/DossierMetadataEditor';
 import { EmptyState } from '../components/EmptyState';
 import { StatusBadge } from '../components/StatusBadge';
 import { useDossierEntrance } from '../hooks/useDossierEntrance';
@@ -10,10 +11,11 @@ import { useResource } from '../hooks/useResource';
 import { describeError, findDossierSummary, isPreview, readDossier } from '../lib/api';
 import type { DossierEntrance } from '../lib/dossierNavigation';
 import { formatDate, isActiveStatus, vehicleName } from '../lib/format';
-import type { DossierSummary } from '../types';
+import type { DossierSummary, Vehicle } from '../types';
 
 export function Dossier({ dossierId }: { dossierId: string }) {
   const container = useRef<HTMLDivElement>(null);
+  const [savedVehicle, setSavedVehicle] = useState<Vehicle>();
   const [entrance] = useState<DossierEntrance | undefined>(() => {
     const snapshot = window.history.state?.dossierEntrance as DossierEntrance | undefined;
     return snapshot?.dossier.dossier_id === dossierId ? snapshot : undefined;
@@ -28,7 +30,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   );
   const savedSummary = summary.data ?? entrance?.dossier;
   const response = resource.data ?? entrance?.response;
-  const vehicle = response?.result?.vehicle ?? savedSummary?.vehicle;
+  const vehicle = response?.result?.vehicle ?? savedVehicle ?? savedSummary?.vehicle;
   const dossier: DossierSummary | undefined = vehicle
     ? {
         dossier_id: dossierId,
@@ -110,9 +112,9 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                     </dd>
                   </div>
                   <div data-dossier-metadata>
-                    <dt>Année du véhicule</dt>
-                    <dd title={String(dossier.vehicle.annee || 'Non renseignée')}>
-                      {dossier.vehicle.annee || 'Non renseignée'}
+                    <dt>Date de mise en circulation</dt>
+                    <dd title={formatDate(dossier.vehicle.date_mise_en_circulation)}>
+                      {formatDate(dossier.vehicle.date_mise_en_circulation)}
                     </dd>
                   </div>
                   <div data-dossier-metadata>
@@ -181,15 +183,27 @@ export function Dossier({ dossierId }: { dossierId: string }) {
             data-ready={entranceComplete}
             inert={!entranceComplete}
           >
-            <DossierResultWorkspace
-              key={dossierId}
-              dossierId={dossierId}
-              response={response}
-              status={response?.status ?? dossier.status}
-              loading={!response && resource.loading}
-              error={resource.error}
-              onRetry={resource.refresh}
-            />
+            {dossier.status !== 'not_analyzed' && dossier.status !== 'failed' ? (
+              <DossierResultWorkspace
+                key={dossierId}
+                dossierId={dossierId}
+                response={response}
+                status={response?.status ?? dossier.status}
+                loading={!response && resource.loading}
+                error={resource.error}
+                onRetry={resource.refresh}
+              />
+            ) : (
+              <DossierMetadataEditor
+                key={dossierId}
+                dossier={dossier}
+                onSaved={setSavedVehicle}
+                onResponse={(nextResponse) => {
+                  resource.replaceData(nextResponse);
+                  refreshMetadata();
+                }}
+              />
+            )}
           </div>
         )}
       </div>

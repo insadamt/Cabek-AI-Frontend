@@ -1,3 +1,5 @@
+import type { MetadataWarning } from '../types';
+
 const errorMessages: Record<string, string> = {
   dossier_not_found: 'Ce dossier est introuvable.',
   no_valid_photos: 'Aucune photo valide ne permet de lancer l’analyse.',
@@ -18,9 +20,26 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     public status?: number,
+    public warnings: MetadataWarning[] = [],
   ) {
-    super(errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.');
+    super(
+      [
+        errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.',
+        ...warnings.map((warning) => warning.message),
+      ].join(' '),
+    );
   }
+}
+
+export function parseMetadataWarnings(value: unknown): MetadataWarning[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (warning): warning is MetadataWarning =>
+      warning != null &&
+      typeof warning.field === 'string' &&
+      typeof warning.code === 'string' &&
+      typeof warning.message === 'string',
+  );
 }
 
 export function describeError(error: unknown): string {

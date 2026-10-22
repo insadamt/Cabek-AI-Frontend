@@ -10,7 +10,24 @@ export interface Vehicle {
   marque_id?: number | null;
   model_id?: number | null;
   annee?: string | null;
+  date_mise_en_circulation?: string | null;
   date_sinistre?: string | null;
+}
+
+export interface RequiredVehicleMetadata {
+  marque: string;
+  modele: string;
+  marque_id: number;
+  model_id: number;
+  matricule: string;
+  date_mise_en_circulation: string;
+  date_sinistre: string;
+}
+
+export interface MetadataWarning {
+  field: string;
+  code: string;
+  message: string;
 }
 
 export interface DossierSummary {
@@ -124,7 +141,4 @@ export interface VehicleOption {
   marque_id?: number;
 }
 
-export interface VehicleSelection {
-  marque_id: number;
-  model_id: number;
-}
+export type VehicleSelection = RequiredVehicleMetadata;

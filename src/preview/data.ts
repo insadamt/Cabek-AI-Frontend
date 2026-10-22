@@ -30,6 +30,7 @@ export const previewDossiers: DossierSummary[] = vehicles.map(
       modele,
       matricule: `${12000 + index * 137} · A · 6`,
       annee: String(2023 - (index % 4)),
+      date_mise_en_circulation: `${2023 - (index % 4)}-06-14`,
       date_sinistre: '2026-10-18',
       marque_id:
         ['Renault', 'Dacia', 'Peugeot', 'Volkswagen', 'Toyota', 'Hyundai', 'Citroën'].indexOf(
