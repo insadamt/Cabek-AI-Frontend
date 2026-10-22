@@ -10,6 +10,8 @@ import { Brand } from '../Brand';
 import { useDossierOpening } from '../../hooks/useDossierOpening';
 import { useIslandBrandMotion } from '../../hooks/useIslandBrandMotion';
 import { DossierOpeningActivity, getDossierOpeningLabel } from './DossierOpeningActivity';
+import { useReportDownloadNotification } from '../../lib/reportDownload';
+import { ReportDownloadActivity } from './ReportDownloadActivity';
 
 const activityLabels = {
   queued: 'En attente',
@@ -113,22 +115,27 @@ function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
 export function AnalysisIsland() {
   const { session, busy } = useHomeAnalysis();
   const opening = useDossierOpening();
+  const reportDownload = useReportDownloadNotification();
   const brandRef = useRef<HTMLAnchorElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const expanded = !!opening || (!!session && session.phase !== 'idle');
-  const phase = opening?.phase ?? session?.phase ?? 'idle';
-  const label = opening
-    ? getDossierOpeningLabel(opening)
-    : session
-      ? getActivityLabel(session)
-      : '';
+  const expanded = !!reportDownload || !!opening || (!!session && session.phase !== 'idle');
+  const phase = reportDownload?.phase ?? opening?.phase ?? session?.phase ?? 'idle';
+  const label = reportDownload
+    ? reportDownload.phase
+    : opening
+      ? getDossierOpeningLabel(opening)
+      : session
+        ? getActivityLabel(session)
+        : '';
   useIslandBrandMotion(brandRef, expanded);
   const progress = session?.response?.progress;
   const percentage = photoProgress(progress ?? null);
-  const success = opening
-    ? !opening.error && ['returning', 'stowing'].includes(opening.phase)
-    : phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
+  const success = reportDownload
+    ? reportDownload.phase === 'done'
+    : opening
+      ? !opening.error && ['returning', 'stowing'].includes(opening.phase)
+      : phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
   const [detailStep, setDetailStep] = useState(0);
   const [compact, setCompact] = useState(false);
   const hasEstimate = phase === 'working' && progress?.eta_seconds != null && !session?.error;
@@ -181,11 +188,12 @@ export function AnalysisIsland() {
         Number.parseFloat(styles.getPropertyValue('--island-inline-padding')) || 28;
       const frameGutter = Number.parseFloat(styles.getPropertyValue('--island-frame-gutter')) || 28;
       const availableWidth = window.innerWidth - frameGutter * 2;
-      const width = opening
-        ? Math.min(360, availableWidth)
-        : expanded
-          ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
-          : Math.min(300, availableWidth);
+      const width =
+        opening || reportDownload
+          ? Math.min(360, availableWidth)
+          : expanded
+            ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
+            : Math.min(300, availableWidth);
       if (Math.abs(width - targetWidth) < 0.5) return;
       targetWidth = width;
       gsap.to(island, {
@@ -209,7 +217,7 @@ export function AnalysisIsland() {
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
     };
-  }, [expanded, label, !!opening]);
+  }, [expanded, label, !!opening, !!reportDownload]);
 
   return (
     <div
@@ -234,7 +242,9 @@ export function AnalysisIsland() {
         >
           <Brand tone="light" />
         </a>
-        {opening ? (
+        {reportDownload ? (
+          <ReportDownloadActivity contentRef={contentRef} />
+        ) : opening ? (
           <DossierOpeningActivity session={opening} contentRef={contentRef} />
         ) : (
           <div

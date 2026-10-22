@@ -1,7 +1,8 @@
 import { ArrowUpRight, CircleHelp, Download, ReceiptText, RefreshCw, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import type { AnalysisResult, ScanStatus } from '../../types';
-import { describeError, downloadReport, isPreview } from '../../lib/api';
+import { describeError, isPreview } from '../../lib/api';
+import { downloadReportWithNotification } from '../../lib/reportDownload';
 import { displayTotal, formatMoney } from '../../lib/format';
 import { getPartDecision, getPartDetections } from '../../lib/partPresentation';
 import { DetailsDrawer } from './DetailsDrawer';
@@ -38,7 +39,7 @@ export function DossierEstimateWorkspace({
     setDownloading(true);
     setReportError(null);
     try {
-      await downloadReport(dossierId, result.report_url);
+      await downloadReportWithNotification(dossierId, result.report_url);
     } catch (failure) {
       setReportError(failure);
     } finally {

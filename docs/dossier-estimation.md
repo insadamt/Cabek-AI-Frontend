@@ -64,3 +64,29 @@ Suggested commits:
 
 - `fix(dossier): simplify layout and shorten mobile drawer motion`
 - `fix(dossier): show metadata directly and contain part illustrations`
+
+## PDF download notification
+
+The report downloads directly through the existing validated PDF service. The
+dynamic island shows “Téléchargement du PDF…” while fetching, then
+“Téléchargement lancé” for 3.5 seconds after handing the file to the browser.
+This confirms download initiation; browser save completion is not observable.
+Failures show “PDF indisponible” for 6 seconds and retain the existing detailed
+error in Estimation. The previous island activity resumes after dismissal.
+A newer download takes priority over older responses and dismissal timers.
+There is no document travel or conversion animation.
+
+Verification: all 193 existing tests pass, production build passes (with a bundle
+size warning), and `git diff --check` passes. Browser automation was not used.
+
+Manual test checklist:
+
+- [ ] Download an available report: verify one direct download, island loading feedback, then a brief confirmation and restored branding/activity.
+- [ ] Throttle the request: confirm loading persists until the PDF is ready and repeated clicks remain disabled.
+- [ ] Fail the PDF request: verify island failure feedback, detailed inline error and a working retry.
+- [ ] Start another download while confirmation is visible: verify the old timer does not dismiss the new status.
+- [ ] Navigate during download: confirm feedback survives navigation and clears afterward.
+- [ ] Check a 320px phone, keyboard activation and reduced motion; confirm readable feedback and no overflow.
+- [ ] Confirm preview mode and missing report URLs still disable the action.
+
+Suggested commit: `feat(dossier): show PDF download notifications in dynamic island`
