@@ -21,6 +21,11 @@ import { CarBlueprint } from '../components/CarBlueprint';
 import { EmptyState } from '../components/EmptyState';
 import { StatusBadge } from '../components/StatusBadge';
 import { useEntrance } from '../hooks/useEntrance';
+import { useDossierListMotion } from '../hooks/useDossierListMotion';
+import { useSelectionIndicator } from '../hooks/useSelectionIndicator';
+import { AnimatedHeading, AnimatedText } from '../components/AnimatedText';
+import { AnimatedDetails } from '../components/AnimatedDetails';
+import { AnimatedPresence } from '../components/AnimatedPresence';
 import { navigate, restoreScrollPosition, useNavigation } from '../hooks/useNavigation';
 import { useResource } from '../hooks/useResource';
 import { describeError, isPreview, listDossiers } from '../lib/api';
@@ -70,7 +75,10 @@ function DossierCard({ dossier, rowView }: { dossier: DossierSummary; rowView: b
         ? 'Voir le suivi'
         : 'Ouvrir le dossier';
   return (
-    <article className={`dossier-card ${rowView ? 'dossier-row' : ''}`} data-enter>
+    <article
+      className={`dossier-card ${rowView ? 'dossier-row' : ''}`}
+      data-dossier-id={dossier.dossier_id}
+    >
       <div className="dossier-card-top">
         <span className="folder-icon">
           <FolderClosed size={21} strokeWidth={1.4} />
@@ -133,8 +141,14 @@ export function Dashboard() {
     (data) =>
       !isPreview && data && data.counts.processing + data.counts.queued > 0 ? 10_000 : undefined,
   );
-  const data = resource.data;
+  const previousData = useRef(resource.data);
+  if (resource.data) previousData.current = resource.data;
+  const data = resource.data ?? previousData.current;
   const counts = data?.counts;
+  const listRef = useRef<HTMLDivElement>(null);
+  const filterRef = useSelectionIndicator(status);
+  const viewRef = useSelectionIndicator(rowView);
+  useDossierListMotion(listRef, data?.items, rowView);
   useEntrance(
     container,
     `${overview}-${data?.items.map((item) => item.dossier_id).join(',') ?? 'loading'}-${rowView}`,
@@ -180,7 +194,11 @@ export function Dashboard() {
       <div className="page-heading" data-enter>
         <div>
           <div className="eyebrow">VOTRE ESPACE, EN UN REGARD</div>
-          <h1>{overview ? 'Chaque détail compte.' : 'Vos dossiers, simplement.'}</h1>
+          <h1>
+            <AnimatedHeading
+              text={overview ? 'Chaque détail compte.' : 'Vos dossiers, simplement.'}
+            />
+          </h1>
           <p>
             {overview
               ? 'Une vision claire pour chacune de vos expertises.'
@@ -252,7 +270,9 @@ export function Dashboard() {
               <stat.icon size={16} strokeWidth={1.5} />
             </div>
             <div className="stat-value">
-              <strong>{counts ? String(counts[stat.status]).padStart(2, '0') : '—'}</strong>
+              <strong>
+                <AnimatedText text={counts ? String(counts[stat.status]).padStart(2, '0') : '—'} />
+              </strong>
               <span className="stat-number">/ 0{index + 1}</span>
             </div>
             <div className="stat-bottom">
@@ -267,7 +287,9 @@ export function Dashboard() {
         <div className="section-toolbar" data-enter>
           <div className="section-title">
             <h2>{overview ? 'Vos dossiers' : statusLabels[status]}</h2>
-            <span className="count-pill">{data?.total ?? '—'}</span>
+            <span className="count-pill">
+              <AnimatedText text={String(data?.total ?? '—')} />
+            </span>
           </div>
           <div className="list-tools">
             <label className="search-field">
@@ -292,7 +314,8 @@ export function Dashboard() {
                 <kbd>⌘ K</kbd>
               )}
             </label>
-            <div className="view-switch" aria-label="Présentation des dossiers">
+            <div ref={viewRef} className="view-switch" aria-label="Présentation des dossiers">
+              <span className="selection-indicator" aria-hidden="true" />
               <button
                 aria-label="Vue en grille"
                 aria-pressed={!rowView}
@@ -313,7 +336,8 @@ export function Dashboard() {
           </div>
         </div>
         <div className="filter-toolbar" data-enter>
-          <div className="status-tabs" role="group" aria-label="Filtrer par état">
+          <div ref={filterRef} className="status-tabs" role="group" aria-label="Filtrer par état">
+            <span className="selection-indicator" aria-hidden="true" />
             {filters.map((filter) => (
               <button
                 className={status === filter ? 'selected' : ''}
@@ -332,7 +356,7 @@ export function Dashboard() {
           </span>
         </div>
 
-        {resource.error != null && (
+        <AnimatedPresence visible={resource.error != null}>
           <div className="notice error-notice" role="alert">
             <TriangleAlert size={17} />
             <div>
@@ -342,13 +366,17 @@ export function Dashboard() {
             </div>
             <button onClick={resource.refresh}>Réessayer</button>
           </div>
-        )}
+        </AnimatedPresence>
         {!!data?.warnings.length && (
-          <details className="notice warning-notice">
-            <summary>
-              <TriangleAlert size={16} />
-              {data.warnings.length} dossier(s) n’ont pas pu être affichés
-            </summary>
+          <AnimatedDetails
+            className="notice warning-notice"
+            summary={
+              <>
+                <TriangleAlert size={16} />
+                {data.warnings.length} dossier(s) n’ont pas pu être affichés
+              </>
+            }
+          >
             <ul>
               {data.warnings.map((warning) => (
                 <li key={warning.dossier_id}>
@@ -356,10 +384,11 @@ export function Dashboard() {
                 </li>
               ))}
             </ul>
-          </details>
+          </AnimatedDetails>
         )}
 
         <div
+          ref={listRef}
           aria-busy={resource.loading}
           className={`dossier-grid ${rowView ? 'dossier-list' : ''}`}
         >

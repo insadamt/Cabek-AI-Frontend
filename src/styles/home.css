@@ -1,5 +1,8 @@
 .home-shell {
   --home-ink: #161616;
+  /* Share the presentation size so focused search folders match the home carousel. */
+
+  --home-folder-width: clamp(280px, 35vw, 510px);
   height: 100svh;
   background: #fafafa;
   color: var(--home-ink);

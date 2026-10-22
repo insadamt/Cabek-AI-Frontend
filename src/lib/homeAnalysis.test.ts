@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, readDossier, startScan } from './api';
 import { waitForAnalysisDelay } from './analysisMotion';
-import { runHomeScan } from './homeAnalysis';
+import { runHomeScan, runScanAlongsidePresentation } from './homeAnalysis';
 import type { DossierResponse, ScanStatus } from '../types';
 
 vi.mock('./api', async (importOriginal) => ({
@@ -38,6 +38,50 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('home analysis lifecycle', () => {
+  it('starts reading the server before presentation and waits for both before returning success', async () => {
+    const scan = createScan();
+    vi.mocked(readDossier).mockResolvedValueOnce(response('completed'));
+    let finishPresentation!: () => void;
+    const present = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishPresentation = resolve;
+        }),
+    );
+    const settled = vi.fn();
+    const task = runScanAlongsidePresentation(scan.options, present);
+    void task.then(settled);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(vi.mocked(readDossier).mock.invocationCallOrder[0]).toBeLessThan(
+      present.mock.invocationCallOrder[0],
+    );
+    expect(settled).not.toHaveBeenCalled();
+    expect(startScan).not.toHaveBeenCalled();
+    finishPresentation();
+    expect((await task).status).toBe('completed');
+  });
+
+  it('handles an early API rejection while presentation is pending and surfaces it afterward', async () => {
+    const scan = createScan();
+    const failure = new ApiError('no_valid_photos', 422);
+    vi.mocked(readDossier).mockRejectedValueOnce(failure);
+    let finishPresentation!: () => void;
+    const task = runScanAlongsidePresentation(
+      scan.options,
+      () =>
+        new Promise<void>((resolve) => {
+          finishPresentation = resolve;
+        }),
+    );
+    const rejection = expect(task).rejects.toBe(failure);
+    await Promise.resolve();
+    await Promise.resolve();
+    finishPresentation();
+    await rejection;
+    expect(startScan).not.toHaveBeenCalled();
+  });
+
   it('submits one scan and reports only server responses until completion', async () => {
     const scan = createScan();
     vi.mocked(readDossier)

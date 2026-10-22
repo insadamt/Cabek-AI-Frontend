@@ -1,4 +1,7 @@
 @media (max-width: 650px) {
+  .home-shell {
+    --home-folder-width: clamp(250px, 82vw, 370px);
+  }
   .home-frame {
     border-width: 2px;
   }
@@ -28,7 +31,7 @@
     inset: 90px 0 70px;
   }
   .carousel-folder-slot {
-    width: 65vw;
+    width: var(--home-folder-width);
     top: 50%;
   }
   .carousel-edge {
@@ -57,8 +60,11 @@
   }
 }
 @media (max-height: 450px) {
+  .home-shell {
+    --home-folder-width: 50vh;
+  }
   .carousel-folder-slot {
-    width: 50vh;
+    width: var(--home-folder-width);
     top: 78%;
   }
   .carousel-stage {

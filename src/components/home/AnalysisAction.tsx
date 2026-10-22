@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, LoaderCircle, Sparkles, Upload } from 'lucide-reac
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { navigate } from '../../hooks/useNavigation';
 import type { DossierSummary } from '../../types';
+import { AnimatedText } from '../AnimatedText';
 
 interface AnalysisActionProps {
   dossier?: DossierSummary;
@@ -35,7 +36,7 @@ export function AnalysisAction({
           : status === 'queued' || status === 'processing'
             ? 'Suivre'
             : 'Ouvrir';
-  const unavailable = !dossier || analysis.busy || complete || disabled;
+  const unavailable = !dossier || analysis.busy || disabled;
   return (
     <a
       className={className}
@@ -59,7 +60,7 @@ export function AnalysisAction({
         } else navigate(event.currentTarget.getAttribute('href')!);
       }}
     >
-      <span key={label} className="home-action-content">
+      <AnimatedText text={label} className="home-action-content">
         {complete ? (
           <Check className="analysis-done-check" size={18} aria-hidden="true" />
         ) : uploading ? (
@@ -72,7 +73,7 @@ export function AnalysisAction({
           <ArrowUpRight size={20} aria-hidden="true" />
         )}
         {label}
-      </span>
+      </AnimatedText>
     </a>
   );
 }

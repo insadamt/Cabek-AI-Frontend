@@ -13,7 +13,7 @@
   .carousel-folder-slot {
     --folder-turn: calc(var(--folder-position) * -10deg);
     --folder-lean: calc(var(--folder-position) * 2deg);
-    width: clamp(250px, 82vw, 370px);
+    width: var(--home-folder-width);
     top: 62%;
   }
   .carousel-folder-slot.is-active .dossier-folder {
@@ -82,13 +82,16 @@
   }
 }
 @media (max-height: 450px) and (orientation: landscape) {
+  .home-shell {
+    --home-folder-width: clamp(230px, 34vw, 310px);
+  }
   .carousel-stage {
     inset: 70px 0 calc(76px + env(safe-area-inset-bottom));
   }
   .carousel-folder-slot {
     --folder-turn: calc(var(--folder-position) * -10deg);
     --folder-lean: 0deg;
-    width: clamp(230px, 34vw, 310px);
+    width: var(--home-folder-width);
     top: 68%;
   }
   .carousel-folder-slot.is-active .dossier-folder {

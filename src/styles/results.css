@@ -57,7 +57,10 @@
   font-weight: 550;
   padding: 16px 0;
 }
-.financial-details[open] summary > svg {
+.financial-details summary > svg {
+  transition: transform 220ms ease;
+}
+.financial-details[data-expanded='true'] summary > svg {
   transform: rotate(180deg);
 }
 .financial-breakdown {

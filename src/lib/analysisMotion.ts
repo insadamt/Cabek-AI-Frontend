@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { observeReducedMotion } from './motion';
 
 export function waitForAnalysisDelay(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -167,6 +168,7 @@ export function flyAnalysisDocument({ paper, island, returning, signal }: Docume
     );
 
     function cleanUp() {
+      stopObserving();
       signal.removeEventListener('abort', cancel);
       delete island.dataset.fusion;
       viewport.remove();
@@ -181,6 +183,9 @@ export function flyAnalysisDocument({ paper, island, returning, signal }: Docume
       reject(new DOMException('Aborted', 'AbortError'));
     }
     signal.addEventListener('abort', cancel, { once: true });
+    const stopObserving = observeReducedMotion(() => {
+      animation.progress(returning ? 0 : 1);
+    });
     animation.eventCallback(returning ? 'onReverseComplete' : 'onComplete', finish);
     animation.progress(returning ? 1 : 0, true);
     if (returning) {

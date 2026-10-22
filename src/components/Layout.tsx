@@ -9,18 +9,25 @@ import {
   ScanLine,
   X,
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Brand } from './Brand';
 import { HelpDialog } from './HelpDialog';
 import { isPreview } from '../lib/api';
 import { navigate, useNavigation } from '../hooks/useNavigation';
+import { useSelectionIndicator } from '../hooks/useSelectionIndicator';
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname, searchParams, location } = useNavigation();
   const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavigation, setMobileNavigation] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const selectedStatus = searchParams.get('status');
   const detail = pathname.startsWith('/dossiers/');
+  const navigationRef = useSelectionIndicator<HTMLElement>(
+    `${pathname}-${selectedStatus}`,
+    '.active',
+  );
   const navItems = [
     { name: 'Vue d’ensemble', icon: LayoutGrid, href: '/', active: pathname === '/' },
     {
@@ -45,24 +52,38 @@ export function Layout({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [location]);
+  useEffect(() => {
+    const viewport = matchMedia('(max-width: 767px)');
+    const updateNavigationMode = () => setMobileNavigation(viewport.matches);
+    updateNavigationMode();
+    viewport.addEventListener('change', updateNavigationMode);
+    return () => viewport.removeEventListener('change', updateNavigationMode);
+  }, []);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    menuButtonRef.current?.focus({ preventScroll: true });
+  }
 
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Aller au contenu
       </a>
-      {menuOpen && (
-        <button
-          className="sidebar-scrim"
-          aria-label="Fermer la navigation"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
+      <button
+        className={`sidebar-scrim ${menuOpen ? 'is-visible' : ''}`}
+        aria-label="Fermer la navigation"
+        aria-hidden={!menuOpen}
+        tabIndex={menuOpen ? 0 : -1}
+        disabled={!menuOpen}
+        onClick={closeMenu}
+      />
       <aside
         className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}
         aria-label="Navigation principale"
+        inert={mobileNavigation && !menuOpen}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') setMenuOpen(false);
+          if (event.key === 'Escape') closeMenu();
         }}
       >
         <a
@@ -77,7 +98,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </a>
         <button
           className="icon-button mobile-close"
-          onClick={() => setMenuOpen(false)}
+          onClick={closeMenu}
           aria-label="Fermer la navigation"
         >
           <X size={20} />
@@ -91,7 +112,8 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="workspace-dot" />
         </div>
         <div className="nav-caption">ESPACE DE TRAVAIL</div>
-        <nav>
+        <nav ref={navigationRef} className="sidebar-navigation">
+          <span className="selection-indicator" aria-hidden="true" />
           {navItems.map((item) => (
             <a
               key={item.href}
@@ -142,6 +164,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              ref={menuButtonRef}
               className="icon-button mobile-menu"
               onClick={() => setMenuOpen(true)}
               aria-label="Ouvrir la navigation"

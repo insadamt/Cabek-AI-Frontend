@@ -77,8 +77,9 @@
 .details-chevron {
   margin-left: 4px;
   color: #6e6e6e;
+  transition: transform 220ms ease;
 }
-.part-card[open] .details-chevron {
+.part-card[data-expanded='true'] .details-chevron {
   transform: rotate(180deg);
 }
 .part-details {

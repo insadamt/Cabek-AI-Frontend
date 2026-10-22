@@ -76,7 +76,7 @@ export function ScanProgressPanel({ response }: { response: DossierResponse }) {
         aria-valuenow={stage === 'queued' || stage === 'preparing' ? undefined : percentage}
       >
         {percentage != null && stage !== 'queued' && stage !== 'preparing' && (
-          <span style={{ width: `${percentage}%` }} />
+          <span style={{ transform: `scaleX(${percentage / 100})` }} />
         )}
       </div>
       <div className="scan-timings">

@@ -37,7 +37,7 @@
   position: absolute;
   left: 50%;
   top: 51%;
-  width: clamp(280px, 35vw, 510px);
+  width: var(--home-folder-width);
   aspect-ratio: 1.36;
   padding: 0;
   background: transparent;
@@ -54,7 +54,7 @@
   will-change: transform;
 }
 .carousel-folder-slot.is-active .dossier-folder {
-  transform: rotateX(var(--folder-tilt-x));
+  transform: rotateX(var(--folder-tilt-x)) rotateY(var(--folder-tilt-y));
 }
 .carousel-tracking .carousel-folder-slot,
 .carousel-dragging .carousel-folder-slot {

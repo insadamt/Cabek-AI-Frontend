@@ -2,12 +2,21 @@ import gsap from 'gsap';
 import { Flip } from 'gsap/Flip';
 import { flushSync } from 'react-dom';
 import { navigate } from '../hooks/useNavigation';
+import { observeReducedMotion } from './motion';
 
 gsap.registerPlugin(Flip);
 let activeTransition: gsap.core.Timeline | undefined;
+let stopObserving: (() => void) | undefined;
+
+export function finishHomeViewTransition() {
+  activeTransition?.progress(1).kill();
+  activeTransition = undefined;
+  stopObserving?.();
+  stopObserving = undefined;
+}
 
 export function transitionHomeView(path: string, direction: 'forward' | 'reverse' = 'forward') {
-  activeTransition?.progress(1).kill();
+  finishHomeViewTransition();
   const content = document.querySelector<HTMLElement>('.home-main');
   if (!content || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     navigate(path);
@@ -45,4 +54,5 @@ export function transitionHomeView(path: string, direction: 'forward' | 'reverse
     0,
   );
   controlMotion.play();
+  stopObserving = observeReducedMotion(finishHomeViewTransition);
 }

@@ -11,8 +11,24 @@
   overflow-x: hidden;
 }
 .modal::backdrop {
+  opacity: 1;
+  transition: opacity 240ms ease;
   background: #17171778;
   backdrop-filter: blur(4px);
+}
+.modal.is-closing::backdrop {
+  opacity: 0;
+  transition-duration: 180ms;
+}
+@starting-style {
+  .modal[open]::backdrop {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal::backdrop {
+    transition: none;
+  }
 }
 .modal-header {
   display: flex;
@@ -153,6 +169,7 @@
   width: 100%;
   position: absolute;
   inset: 0;
+  transition: opacity 200ms ease;
 }
 .comparison-images.images-ready {
   opacity: 1;

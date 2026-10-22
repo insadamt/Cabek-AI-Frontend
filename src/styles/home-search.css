@@ -80,6 +80,8 @@
 }
 
 .home-search-controls {
+  position: relative;
+  min-height: 50px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -99,6 +101,7 @@
   background: #161616;
   color: white;
   font-size: 12px;
+  white-space: nowrap;
   transition: background 180ms;
 }
 .home-clear-search:hover {
@@ -182,7 +185,7 @@
   overflow: visible;
 }
 .has-selected-folder .home-grid-folder {
-  width: min(100%, var(--focused-folder-width, 320px));
+  width: min(100%, var(--home-folder-width));
   text-align: center;
 }
 .has-selected-folder .home-result-title,
@@ -193,17 +196,11 @@
   --document-max-height: min(56svh, 400px);
 }
 @media (max-width: 650px) {
-  .has-selected-folder .home-grid-folder {
-    width: min(100%, var(--focused-folder-width, 320px));
-  }
   .has-selected-folder .folder-document {
     --document-max-height: min(56svh, 360px);
   }
 }
 @media (max-height: 450px) and (orientation: landscape) {
-  .has-selected-folder .home-grid-folder {
-    width: min(100%, var(--focused-folder-width, 320px));
-  }
   .has-selected-folder .folder-document {
     --document-max-height: calc(100svh - 150px);
   }

@@ -8,6 +8,7 @@ import { vehicleName } from '../../lib/format';
 import { getVisibleDossierNumber } from '../../lib/carousel';
 import type { DossierSummary } from '../../types';
 import { DossierFolder } from './DossierFolder';
+import { AnimatedText } from '../AnimatedText';
 
 interface DossierCarouselProps {
   dossiers: DossierSummary[];
@@ -217,7 +218,8 @@ export function DossierCarousel({
         />
       </div>
       <span className="carousel-counter" aria-live="polite">
-        {String(visibleDossierNumber).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        <AnimatedText text={String(visibleDossierNumber).padStart(2, '0')} /> /{' '}
+        {String(total).padStart(2, '0')}
       </span>
     </section>
   );

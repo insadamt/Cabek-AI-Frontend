@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { observeReducedMotion } from '../lib/motion';
 
 interface DragOrigin {
   pointerId: number;
@@ -26,14 +27,27 @@ export function useDossierCarousel(
   const [progress, setProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const tiltStage = useRef<HTMLElement | null>(null);
+  const tiltAnimation = useRef<gsap.core.Tween | null>(null);
+  const tilt = { x: 0, y: 0 };
 
-  useEffect(
-    () => () => {
+  function resetTilt() {
+    tiltAnimation.current?.kill();
+    tiltStage.current?.style.setProperty('--folder-tilt-x', '0deg');
+    tiltStage.current?.style.setProperty('--folder-tilt-y', '0deg');
+  }
+
+  useEffect(() => {
+    const stopObserving = observeReducedMotion(() => {
+      animation.current?.progress(1);
+      resetTilt();
+    });
+    return () => {
+      stopObserving();
       animation.current?.kill();
-    },
-    [],
-  );
+      tiltAnimation.current?.kill();
+    };
+  }, []);
 
   function settleGesture(steps: number) {
     dragOrigin.current = null;
@@ -43,7 +57,9 @@ export function useDossierCarousel(
     setAnimating(true);
     animation.current = gsap.to(motion.current, {
       progress: steps,
-      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.42,
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 0
+        : Math.min(0.46, Math.max(0.18, 0.18 + Math.abs(steps - motion.current.progress) * 0.12)),
       ease: 'power3.out',
       onUpdate: () => setProgress(motion.current.progress),
       onComplete: () => {
@@ -54,7 +70,7 @@ export function useDossierCarousel(
         if (steps) onStep(steps);
       },
     });
-    setTilt({ x: 0, y: 0 });
+    resetTilt();
   }
 
   function stopMotion() {
@@ -66,7 +82,7 @@ export function useDossierCarousel(
     setProgress(0);
     setDragging(false);
     setAnimating(false);
-    setTilt({ x: 0, y: 0 });
+    resetTilt();
   }
 
   function animateStep(direction: number) {
@@ -79,6 +95,7 @@ export function useDossierCarousel(
 
   function startDrag(event: PointerEvent<HTMLElement>) {
     if (!enabled || !event.isPrimary || event.button !== 0) return;
+    resetTilt();
     const interruptedMotion =
       animation.current?.isActive() === true || motion.current.progress !== 0;
     animation.current?.kill();
@@ -138,9 +155,16 @@ export function useDossierCarousel(
     if (event.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    setTilt({
-      x: ((event.clientY - bounds.top) / bounds.height - 0.5) * -7,
-      y: ((event.clientX - bounds.left) / bounds.width - 0.5) * 9,
+    tiltStage.current = event.currentTarget;
+
+    // Pointer decoration updates CSS directly, keeping the folder tree out of hover-frame renders.
+
+    tiltAnimation.current = gsap.to(event.currentTarget, {
+      '--folder-tilt-x': `${((event.clientY - bounds.top) / bounds.height - 0.5) * -7}deg`,
+      '--folder-tilt-y': `${((event.clientX - bounds.left) / bounds.width - 0.5) * 9}deg`,
+      duration: 0.18,
+      ease: 'power2.out',
+      overwrite: 'auto',
     });
   }
 
@@ -194,7 +218,7 @@ export function useDossierCarousel(
         if (event.target === event.currentTarget && dragOrigin.current) settleGesture(0);
       },
       onPointerLeave: () => {
-        if (!dragOrigin.current) setTilt({ x: 0, y: 0 });
+        if (!dragOrigin.current) resetTilt();
       },
     },
   };

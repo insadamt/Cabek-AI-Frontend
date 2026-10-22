@@ -1,0 +1,305 @@
+/* ============================================================
+   Shared feedback and readable text motion
+   ============================================================ */
+
+:root {
+  --motion-feedback: 160ms;
+  --motion-text: 200ms;
+  --motion-layout: 320ms;
+  --motion-ease: cubic-bezier(0.22, 0.8, 0.2, 1);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.animated-text {
+  display: inline-grid;
+  vertical-align: baseline;
+  max-width: 100%;
+}
+.animated-text > span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.animated-text-current {
+  animation: text-arrive var(--motion-text) var(--motion-ease) both;
+}
+.animated-text-outgoing {
+  animation: text-leave var(--motion-text) ease both;
+  pointer-events: none;
+}
+.motion-heading > span,
+.brand-letters > span {
+  display: inline-block;
+  animation: text-arrive 240ms var(--motion-ease) both;
+}
+.motion-heading > span {
+  animation-delay: var(--word-delay);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.brand-letters > span {
+  animation-delay: var(--letter-delay);
+}
+.island-brand > .brand-letters {
+  margin: 0;
+  font: inherit;
+}
+.home-action-content.animated-text {
+  display: inline-grid;
+  min-width: 78px;
+  animation: none;
+}
+.home-action-content > span {
+  justify-content: center;
+}
+.status-badge .animated-text > span {
+  gap: 5px;
+}
+.status-badge,
+.folder-document-status {
+  transition:
+    color var(--motion-text),
+    background-color var(--motion-text),
+    border-color var(--motion-text);
+}
+.form-footer .button {
+  min-width: 195px;
+}
+.vehicle-save-feedback .animated-text > span {
+  flex-wrap: wrap;
+}
+.search-field,
+.select-wrapper select {
+  transition:
+    border-color var(--motion-feedback),
+    background-color var(--motion-feedback),
+    box-shadow var(--motion-feedback);
+}
+.search-field button {
+  animation: control-arrive var(--motion-feedback) var(--motion-ease);
+}
+.home-result-title mark {
+  animation: highlight-arrive 260ms ease-out;
+}
+.carousel-counter,
+.stat-value strong {
+  font-variant-numeric: tabular-nums;
+}
+.stat-card {
+  transition:
+    border-color var(--motion-text),
+    background-color var(--motion-text),
+    box-shadow var(--motion-text);
+}
+.empty-state,
+.notice,
+.inline-error,
+.image-error {
+  animation: text-arrive 220ms var(--motion-ease);
+}
+.estimated-total {
+  animation: text-arrive 260ms var(--motion-ease);
+}
+button:not(:disabled):active {
+  transform: none;
+  translate: 0 1px;
+}
+.folder-cover:not(:disabled):active,
+.carousel-edge:not(:disabled):active,
+.sidebar-scrim:not(:disabled):active {
+  translate: none;
+}
+button:not(.sidebar-scrim):not(.folder-cover):not(.carousel-edge),
+a.button,
+.card-action,
+.home-open-dossier,
+.home-selected-action {
+  transition-property: background-color, border-color, color, box-shadow, opacity, translate;
+  transition-duration: var(--motion-feedback);
+}
+a.button:active,
+.card-action:active,
+.home-open-dossier:not([aria-disabled='true']):active,
+.home-selected-action:not([aria-disabled='true']):active {
+  translate: 0 1px;
+}
+.button > .lucide-arrow-up-right,
+.card-action > .lucide-arrow-up-right,
+.home-action-content .lucide-arrow-up-right,
+.back-link > svg {
+  transition: translate var(--motion-feedback) var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover > .lucide-arrow-up-right,
+  .card-action:hover > .lucide-arrow-up-right,
+  .home-open-dossier:not([aria-disabled='true']):hover .lucide-arrow-up-right {
+    translate: 2px -2px;
+  }
+  .back-link:hover > svg {
+    translate: -2px 0;
+  }
+}
+
+/* ============================================================
+   Selected surfaces move independently of labels and icons
+   ============================================================ */
+
+.status-tabs,
+.view-switch,
+.segmented-control,
+.sidebar-navigation {
+  position: relative;
+  isolation: isolate;
+}
+.selection-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  border-radius: 6px;
+  background: var(--selection-surface, white);
+  box-shadow: 0 1px 4px #00000010;
+  pointer-events: none;
+}
+.has-selection-indicator button.selected,
+.sidebar-navigation.has-selection-indicator .nav-link.active {
+  background: transparent;
+  box-shadow: none;
+}
+.sidebar-navigation {
+  --selection-surface: #242424;
+}
+.sidebar-navigation .selection-indicator {
+  border-radius: 9px;
+}
+.animated-details summary {
+  list-style: none;
+}
+.animated-details summary::-webkit-details-marker {
+  display: none;
+}
+.details-content {
+  display: flow-root;
+}
+.motion-presence {
+  display: flow-root;
+}
+.scan-stages li > span,
+.scan-stages li > strong {
+  transition:
+    color var(--motion-text),
+    background-color var(--motion-text),
+    border-color var(--motion-text);
+}
+.stage-done > span > svg {
+  animation: control-arrive var(--motion-text) var(--motion-ease);
+}
+.download-prepared {
+  animation: control-arrive var(--motion-text) var(--motion-ease);
+}
+.motion-presence > .notice {
+  animation: none;
+}
+.progress-track > span {
+  width: 100%;
+  transform-origin: left center;
+  transition: transform var(--motion-layout) var(--motion-ease);
+}
+.comparison-current {
+  animation: image-arrive 220ms ease-out;
+}
+.comparison-previous {
+  pointer-events: none;
+}
+.has-images .image-loading:not(.image-error) {
+  inset: auto 12px 12px;
+  flex-direction: row;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #fffffff2;
+  color: #333;
+  font-size: 12px;
+  pointer-events: none;
+}
+.has-images .image-loading:not(.image-error) > svg {
+  width: 16px;
+  height: 16px;
+}
+.image-error {
+  background: #f7f7f7ed;
+}
+.comparison-divider > span {
+  transition:
+    scale var(--motion-feedback),
+    box-shadow var(--motion-feedback);
+}
+.comparison:has(.comparison-range:hover) .comparison-divider > span,
+.comparison:has(.comparison-range:focus-visible) .comparison-divider > span {
+  scale: 1.06;
+  box-shadow: 0 2px 12px #0002;
+}
+.comparison:has(.comparison-range:active) .comparison-divider > span {
+  scale: 0.96;
+}
+@keyframes text-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes text-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes control-arrive {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes image-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes highlight-arrive {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: #dff4c9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
+  }
+  .animated-text-outgoing {
+    display: none;
+  }
+}

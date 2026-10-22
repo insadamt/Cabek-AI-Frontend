@@ -30,11 +30,46 @@ export function animateGridFolderPositions(
   onComplete: () => void,
 ) {
   const timeline = gsap.timeline({ onComplete });
-  getMotionElements(section).forEach((element) => {
+  const elements = getMotionElements(section).map((element) => ({
+    element,
+    bounds: element.getBoundingClientRect(),
+  }));
+  elements.forEach(({ element, bounds: current }) => {
     const previous = previousPositions.get(getMotionKey(element));
-    const current = element.getBoundingClientRect();
+    if (element.matches(controlSelector) && previous) {
+      const container = element.parentElement!.getBoundingClientRect();
 
-    // Translate natural-size elements; scaling a search field into a button stretches its text.
+      // Take controls out of flex flow while their widths change so siblings cannot push each other.
+
+      timeline.fromTo(
+        element,
+        {
+          position: 'absolute',
+          left: current.left - container.left,
+          top: current.top - container.top,
+          width: previous.width,
+          height: previous.height,
+          x: previous.left - current.left,
+          y: previous.top - current.top,
+          opacity: 0,
+          overflow: 'hidden',
+        },
+        {
+          width: current.width,
+          height: current.height,
+          x: 0,
+          y: 0,
+          opacity: 1,
+          duration: reducedMotion ? 0 : 0.36,
+          ease: 'power2.inOut',
+          clearProps: 'position,left,top,width,height,transform,opacity,overflow',
+        },
+        0,
+      );
+      return;
+    }
+
+    // Folder artwork keeps its natural proportions instead of stretching with the controls.
 
     timeline.fromTo(
       element,

@@ -5,6 +5,7 @@ import { useHomeAnalysis, type HomeAnalysisSession } from '../../hooks/useHomeAn
 import { navigate } from '../../hooks/useNavigation';
 import { photoProgress } from '../../lib/format';
 import { AttachedIslandSurface } from './AttachedIslandSurface';
+import { observeReducedMotion, prefersReducedMotion } from '../../lib/motion';
 
 const activityLabels = {
   queued: 'En attente',
@@ -127,6 +128,9 @@ export function AnalysisIsland() {
     photoDetail,
     ...(etaDetail ? [etaDetail] : []),
   ];
+
+  // Preserve timer space on phones by sharing the status slot with photo counts and ETA.
+
   const compactLabels = [label, photoDetail, ...(etaDetail ? [etaDetail] : [])];
   const displayedLabel =
     compact && phase === 'working' && !session?.error
@@ -157,7 +161,7 @@ export function AnalysisIsland() {
 
     island.style.removeProperty('height');
     island.parentElement?.style.removeProperty('--activity-island-height');
-    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let targetWidth = -1;
     const resizeIsland = () => {
       const styles = getComputedStyle(island);
       const inlinePadding =
@@ -167,18 +171,25 @@ export function AnalysisIsland() {
       const width = expanded
         ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
         : Math.min(300, availableWidth);
+      if (Math.abs(width - targetWidth) < 0.5) return;
+      targetWidth = width;
       gsap.to(island, {
         width,
-        duration: reducedMotion ? 0 : 0.55,
+        duration: prefersReducedMotion() ? 0 : 0.36,
         ease: 'power3.inOut',
         overwrite: 'auto',
       });
     };
     resizeIsland();
+    const stopObserving = observeReducedMotion(() => {
+      gsap.killTweensOf(island);
+      island.style.width = `${targetWidth}px`;
+    });
     const observer = new ResizeObserver(resizeIsland);
     observer.observe(content);
     window.addEventListener('resize', resizeIsland);
     return () => {
+      stopObserving();
       observer.disconnect();
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
@@ -205,7 +216,14 @@ export function AnalysisIsland() {
             if (!busy) navigate('/');
           }}
         >
-          cabek<span>ai</span>.
+          <span className="brand-letters" aria-hidden="true">
+            {Array.from('cabek').map((letter, index) => (
+              <span key={index} style={{ '--letter-delay': `${index * 25}ms` } as CSSProperties}>
+                {letter}
+              </span>
+            ))}
+          </span>
+          <span>ai</span>.
         </a>
         <div ref={contentRef} className="island-activity" aria-hidden={!expanded} inert={!expanded}>
           <span className="island-pixels" aria-hidden="true">

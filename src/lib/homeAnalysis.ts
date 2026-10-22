@@ -10,6 +10,22 @@ interface RunHomeScanOptions {
   onConnectionMessage: (message: string) => void;
 }
 
+export async function runScanAlongsidePresentation(
+  options: RunHomeScanOptions,
+  presentDocument: () => Promise<void>,
+) {
+  // Attach both handlers immediately: a fast API failure must not become an unhandled rejection.
+
+  const outcome = runHomeScan(options).then(
+    (response) => ({ response }),
+    (error: unknown) => ({ error }),
+  );
+  await presentDocument();
+  const result = await outcome;
+  if ('error' in result) throw result.error;
+  return result.response;
+}
+
 export async function runHomeScan({
   dossierId,
   signal,

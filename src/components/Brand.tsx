@@ -1,6 +1,6 @@
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="brand" aria-label="CABEK AI">
+    <div className="brand" role="img" aria-label="CABEK AI">
       <span className="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" fill="none">
           <path
@@ -13,10 +13,18 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       </span>
       {!compact && (
         <span className="brand-word">
-          cabek<span className="brand-ai">ai</span>
+          <span className="brand-letters" aria-hidden="true">
+            {Array.from('cabek').map((letter, index) => (
+              <span key={index} style={{ '--letter-delay': `${index * 25}ms` } as CSSProperties}>
+                {letter}
+              </span>
+            ))}
+          </span>
+          <span className="brand-ai">ai</span>
           <span className="brand-period">.</span>
         </span>
       )}
     </div>
   );
 }
+import type { CSSProperties } from 'react';

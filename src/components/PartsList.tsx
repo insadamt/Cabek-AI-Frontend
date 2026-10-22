@@ -2,6 +2,7 @@ import { ArrowUpRight, ChevronDown, CircleCheck, Layers3, Wrench } from 'lucide-
 import type { AnalysisResult } from '../types';
 import { financialWarnings, formatMoney } from '../lib/format';
 import { FinancialBreakdown } from './FinancialSummary';
+import { AnimatedDetails } from './AnimatedDetails';
 
 const severityLabels: Record<string, string> = {
   low: 'Légère',
@@ -43,46 +44,51 @@ export function PartsList({ result }: { result: AnalysisResult }) {
           const financial = part.financial;
           const complete = financial?.status === 'complete' && financial.estimated_total != null;
           return (
-            <details className="surface part-card" key={`${part.part_id ?? 'part'}-${partIndex}`}>
-              <summary>
-                <span className="part-icon">
-                  <Layers3 size={23} strokeWidth={1.2} />
-                </span>
-                <span className="part-identity">
-                  <strong>{part.name || 'Pièce non identifiée'}</strong>
-                  <span>
-                    {detections.length} dommage{detections.length > 1 ? 's' : ''} ·{' '}
-                    {part.source_images?.length ?? 0} vue(s) source(s)
+            <AnimatedDetails
+              className="surface part-card"
+              key={`${part.part_id ?? 'part'}-${partIndex}`}
+              summary={
+                <>
+                  <span className="part-icon">
+                    <Layers3 size={23} strokeWidth={1.2} />
                   </span>
-                </span>
-                <span className="part-decision">
-                  {unidentified ? (
-                    <>
-                      <Layers3 size={13} />À vérifier
-                    </>
-                  ) : part.action === 'replace' ? (
-                    <>
-                      <ArrowUpRight size={13} />
-                      Remplacer
-                    </>
-                  ) : (
-                    <>
-                      <Wrench size={13} />
-                      Réparer
-                    </>
-                  )}
-                </span>
-                <span className="part-amount">
-                  {complete ? (
-                    <>
-                      {formatMoney(financial.estimated_total)} <small>MAD</small>
-                    </>
-                  ) : (
-                    'Prix incomplet'
-                  )}
-                </span>
-                <ChevronDown className="details-chevron" size={17} />
-              </summary>
+                  <span className="part-identity">
+                    <strong>{part.name || 'Pièce non identifiée'}</strong>
+                    <span>
+                      {detections.length} dommage{detections.length > 1 ? 's' : ''} ·{' '}
+                      {part.source_images?.length ?? 0} vue(s) source(s)
+                    </span>
+                  </span>
+                  <span className="part-decision">
+                    {unidentified ? (
+                      <>
+                        <Layers3 size={13} />À vérifier
+                      </>
+                    ) : part.action === 'replace' ? (
+                      <>
+                        <ArrowUpRight size={13} />
+                        Remplacer
+                      </>
+                    ) : (
+                      <>
+                        <Wrench size={13} />
+                        Réparer
+                      </>
+                    )}
+                  </span>
+                  <span className="part-amount">
+                    {complete ? (
+                      <>
+                        {formatMoney(financial.estimated_total)} <small>MAD</small>
+                      </>
+                    ) : (
+                      'Prix incomplet'
+                    )}
+                  </span>
+                  <ChevronDown className="details-chevron" size={17} />
+                </>
+              }
+            >
               <div className="part-details">
                 {detections.length > 0 && (
                   <div className="damage-table">
@@ -116,7 +122,7 @@ export function PartsList({ result }: { result: AnalysisResult }) {
                   <p className="source-images">Vues sources : {part.source_images.join(' · ')}</p>
                 )}
               </div>
-            </details>
+            </AnimatedDetails>
           );
         })}
       </div>

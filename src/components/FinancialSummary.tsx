@@ -1,6 +1,7 @@
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
 import { financialCategories, type FinancialResult } from '../types';
 import { displayTotal, financialWarnings, formatMoney } from '../lib/format';
+import { AnimatedDetails } from './AnimatedDetails';
 
 export function FinancialBreakdown({ financial }: { financial: FinancialResult }) {
   return (
@@ -52,13 +53,18 @@ export function FinancialSummary({ financial }: { financial: FinancialResult }) 
           </div>
         </div>
       )}
-      <details className="financial-details" open={!complete}>
-        <summary>
-          Comprendre le chiffrage
-          <ChevronDown size={16} />
-        </summary>
+      <AnimatedDetails
+        className="financial-details"
+        defaultOpen={!complete}
+        summary={
+          <>
+            Comprendre le chiffrage
+            <ChevronDown size={16} />
+          </>
+        }
+      >
         <FinancialBreakdown financial={financial} />
-      </details>
+      </AnimatedDetails>
       <div className="provisional-note">
         <span className="tiny-dot" />À vérifier par un expert avant toute décision.
       </div>

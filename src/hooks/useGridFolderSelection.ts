@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { animateGridFolderPositions, captureGridFolderPositions } from '../lib/gridFolderMotion';
 import type { DossierSummary } from '../types';
+import { observeReducedMotion } from '../lib/motion';
 
 export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>) {
   const [selectedFolder, setSelectedFolder] = useState<DossierSummary | null>(null);
@@ -20,18 +21,14 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
     scrollPosition.current = grid.scrollTop;
     selectedButton.current = document.activeElement as HTMLButtonElement;
     const positions = captureGridFolderPositions(sectionRef.current);
-    const selectedPreview = sectionRef.current.querySelector<HTMLElement>(
-      `[data-folder-id="${CSS.escape(dossier.dossier_id)}"] .home-grid-folder-preview`,
-    )!;
-    sectionRef.current.style.setProperty(
-      '--focused-folder-width',
-      `${selectedPreview.offsetWidth}px`,
-    );
     setBusy(true);
     const neighboringFolders = Array.from(
       grid.querySelectorAll<HTMLElement>('.home-grid-folder'),
     ).filter((folder) => folder.dataset.folderId !== dossier.dossier_id);
-    animation.current = gsap.timeline().to(neighboringFolders, {
+    const outgoingControls = sectionRef.current.querySelectorAll<HTMLElement>(
+      '[data-flip-id="home-search"], [data-flip-id="home-action"]',
+    );
+    animation.current = gsap.timeline().to([...neighboringFolders, ...outgoingControls], {
       opacity: 0,
       duration: reducedMotion() ? 0 : 0.12,
       onComplete: () => {
@@ -92,16 +89,25 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
 
     if (!moving && returning.current) {
       returning.current = false;
-      queueMicrotask(restoreGrid);
+      queueMicrotask(() => {
+        if (!sectionRef.current) return;
+        animation.current = gsap.timeline().to(
+          sectionRef.current.querySelectorAll(
+            '[data-flip-id="home-search"], [data-flip-id="home-action"]',
+          ),
+          { opacity: 0, duration: reducedMotion() ? 0 : 0.12, onComplete: restoreGrid },
+        );
+      });
     }
   }
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const stopObserving = observeReducedMotion(() => animation.current?.progress(1));
+    return () => {
+      stopObserving();
       animation.current?.kill();
-    },
-    [],
-  );
+    };
+  }, []);
   return {
     selectedFolder,
     documentOpen,

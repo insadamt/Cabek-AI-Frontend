@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
 import type { Vehicle, VehicleOption } from '../types';
 import { describeError, isPreview, listBrands, listModels, saveVehicle } from '../lib/api';
+import { AnimatedText } from './AnimatedText';
 
 export function VehicleForm({
   dossierId,
@@ -163,25 +164,29 @@ export function VehicleForm({
           </div>
         )}
         <div className="form-footer">
-          <span aria-live="polite">
-            {saved ? (
-              <>
-                <Check size={14} />
-                Véhicule enregistré
-              </>
-            ) : isPreview ? (
-              'Sélection non modifiable dans l’aperçu.'
-            ) : (
-              'Les modifications sont enregistrées uniquement après confirmation.'
-            )}
+          <span aria-live="polite" className="vehicle-save-feedback">
+            <AnimatedText text={saved ? 'saved' : 'pending'}>
+              {saved ? (
+                <>
+                  <Check size={14} />
+                  Véhicule enregistré
+                </>
+              ) : isPreview ? (
+                'Sélection non modifiable dans l’aperçu.'
+              ) : (
+                'Les modifications sont enregistrées uniquement après confirmation.'
+              )}
+            </AnimatedText>
           </span>
           <button
             className="button button-secondary"
             disabled={!brandId || !modelId || saving || isPreview}
             type="submit"
           >
-            {saving && <LoaderCircle size={14} className="spin" />}
-            {saving ? 'Enregistrement…' : 'Enregistrer le véhicule'}
+            <AnimatedText text={saving ? 'Enregistrement…' : 'Enregistrer le véhicule'}>
+              {saving && <LoaderCircle size={14} className="spin" />}
+              {saving ? 'Enregistrement…' : 'Enregistrer le véhicule'}
+            </AnimatedText>
           </button>
         </div>
       </form>

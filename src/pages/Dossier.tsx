@@ -20,6 +20,8 @@ import { PartsList } from '../components/PartsList';
 import { ScanProgressPanel } from '../components/ScanProgress';
 import { StatusBadge } from '../components/StatusBadge';
 import { VehicleForm } from '../components/VehicleForm';
+import { AnimatedHeading } from '../components/AnimatedText';
+import { AnimatedPresence } from '../components/AnimatedPresence';
 import { useEntrance } from '../hooks/useEntrance';
 import { navigate } from '../hooks/useNavigation';
 import { useResource } from '../hooks/useResource';
@@ -52,6 +54,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   const [launchUncertain, setLaunchUncertain] = useState(false);
   const [actionError, setActionError] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [downloadPrepared, setDownloadPrepared] = useState(false);
   const [vehicleBusy, setVehicleBusy] = useState(false);
   const [vehicleDirty, setVehicleDirty] = useState(false);
   const response = resource.data;
@@ -69,6 +72,11 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   useEffect(() => {
     document.title = `${vehicle ? vehicleName(vehicle) : 'Dossier'} — CABEK AI`;
   }, [vehicle]);
+  useEffect(() => {
+    if (!downloadPrepared) return;
+    const timer = window.setTimeout(() => setDownloadPrepared(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [downloadPrepared]);
 
   async function launchScan() {
     if (starting || !canAnalyze || launchUncertain || isPreview || vehicleBusy || vehicleDirty)
@@ -102,9 +110,11 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   async function download() {
     if (!result || downloading) return;
     setDownloading(true);
+    setDownloadPrepared(false);
     setActionError('');
     try {
       await downloadReport(dossierId, result.report_url);
+      setDownloadPrepared(true);
     } catch (error) {
       setActionError(describeError(error));
     } finally {
@@ -127,7 +137,9 @@ export function Dossier({ dossierId }: { dossierId: string }) {
       <div className="page-heading dossier-page-heading" data-enter>
         <div>
           <div className="eyebrow">VOTRE DOSSIER D’EXPERTISE</div>
-          <h1>{vehicle ? vehicleName(vehicle) : 'Dossier automobile'}</h1>
+          <h1>
+            <AnimatedHeading text={vehicle ? vehicleName(vehicle) : 'Dossier automobile'} />
+          </h1>
           <div className="dossier-header-meta">
             <span className="plate">{vehicle?.matricule || 'Immatriculation non renseignée'}</span>
             <span className="meta-dot">·</span>
@@ -149,7 +161,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
           </button>
         </div>
       </div>
-      {resource.error != null && (
+      <AnimatedPresence visible={resource.error != null}>
         <div className="notice error-notice" role="alert">
           <TriangleAlert size={18} />
           <div>
@@ -159,7 +171,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
           </div>
           <button onClick={resource.refresh}>Réessayer</button>
         </div>
-      )}
+      </AnimatedPresence>
       {!response && resource.loading && (
         <div className="surface detail-skeleton">
           <div className="skeleton skeleton-title" />
@@ -167,7 +179,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
           <div className="skeleton skeleton-block" />
         </div>
       )}
-      {actionError && (
+      <AnimatedPresence visible={!!actionError}>
         <div className="notice error-notice" role="alert">
           <TriangleAlert size={17} />
           <div>
@@ -185,7 +197,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
           </div>
           {launchUncertain && <button onClick={resource.refresh}>Vérifier l’état</button>}
         </div>
-      )}
+      </AnimatedPresence>
       {response && (
         <>
           <div className="vehicle-facts" data-enter>
@@ -210,16 +222,16 @@ export function Dossier({ dossierId }: { dossierId: string }) {
               </strong>
             </div>
           </div>
-          {scanActive && (
+          <AnimatedPresence visible={scanActive}>
             <div data-enter>
-              <ScanProgressPanel response={response} />
+              {scanActive && <ScanProgressPanel response={response} />}
               {isPreview && (
                 <p className="preview-footnote">
                   Exemple de suivi figé pour l’aperçu. Aucune analyse n’est en cours.
                 </p>
               )}
             </div>
-          )}
+          </AnimatedPresence>
           {canAnalyze && (
             <div className="preparation-layout" data-enter>
               <div className="preparation-main">
@@ -384,13 +396,23 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                       onClick={download}
                       disabled={downloading || isPreview || !result.report_url}
                       aria-label="Télécharger le rapport PDF"
+                      title={
+                        downloadPrepared
+                          ? 'Rapport prêt au téléchargement'
+                          : 'Télécharger le rapport PDF'
+                      }
                     >
                       {downloading ? (
                         <LoaderCircle size={19} className="spin" />
+                      ) : downloadPrepared ? (
+                        <Check size={19} className="download-prepared" />
                       ) : (
                         <Download size={19} />
                       )}
                     </button>
+                    <span className="visually-hidden" role="status">
+                      {downloadPrepared ? 'Rapport prêt au téléchargement' : ''}
+                    </span>
                   </section>
                 </div>
               </div>

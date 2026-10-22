@@ -24,6 +24,7 @@ import './styles/home-actions.css';
 import './styles/home-search.css';
 import './styles/analysis-island.css';
 import './styles/analysis-motion.css';
+import './styles/motion.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

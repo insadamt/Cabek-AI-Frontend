@@ -12,10 +12,14 @@ function currentLocation() {
 const scrollPositions = new Map<string, number>();
 
 export function navigate(path: string) {
+  const previousPathname = window.location.pathname;
   scrollPositions.set(currentLocation(), window.scrollY);
   window.history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  // Filtering changes the URL in place; only a new screen should reset the page scroll.
+
+  if (previousPathname !== window.location.pathname)
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 export function restoreScrollPosition() {

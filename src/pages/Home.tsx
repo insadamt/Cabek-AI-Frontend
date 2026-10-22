@@ -7,6 +7,7 @@ import { useResource } from '../hooks/useResource';
 import { isPreview } from '../lib/api';
 import { loadHomeDossierWindow } from '../lib/homeDossiers';
 import type { DossierQuery } from '../types';
+import { finishHomeViewTransition } from '../lib/homeViewTransition';
 
 const dossiersPerPage = 12;
 
@@ -82,6 +83,7 @@ function HomeCarousel() {
 
 export function Home() {
   const { searchParams } = useNavigation();
+  useEffect(() => () => finishHomeViewTransition(), []);
 
   // Presence of the query enables the grid even when an empty search requests all folders.
 

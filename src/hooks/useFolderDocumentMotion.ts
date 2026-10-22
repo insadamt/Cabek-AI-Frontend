@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { useLayoutEffect, useRef } from 'react';
+import { observeReducedMotion } from '../lib/motion';
 
 interface FolderDocumentMotionOptions {
   isOpen: boolean;
@@ -80,6 +81,21 @@ export function useFolderDocumentMotion({ isOpen, onMotionChange }: FolderDocume
   openState.current = isOpen;
   motionCallback.current = onMotionChange;
 
+  function notifyMotionState(moving: boolean, open: boolean) {
+    const paper = documentElement.current;
+    if (paper) {
+      paper.dataset.motionState = moving
+        ? open
+          ? 'opening'
+          : 'closing'
+        : open
+          ? 'open'
+          : 'closed';
+      if (!moving) paper.dispatchEvent(new Event('document-motion-settled'));
+    }
+    motionCallback.current(moving);
+  }
+
   useLayoutEffect(() => {
     const paper = documentElement.current;
     if (!paper) return;
@@ -90,28 +106,33 @@ export function useFolderDocumentMotion({ isOpen, onMotionChange }: FolderDocume
       animation.current?.kill();
       const timeline = createDocumentTimeline(paper);
       animation.current = timeline;
-      timeline.eventCallback('onComplete', () => motionCallback.current(false));
-      timeline.eventCallback('onReverseComplete', () => motionCallback.current(false));
+      timeline.eventCallback('onComplete', () => notifyMotionState(false, true));
+      timeline.eventCallback('onReverseComplete', () => notifyMotionState(false, false));
       timeline.progress(progress).pause();
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
         timeline.progress(openState.current ? 1 : 0);
-        motionCallback.current(false);
+        notifyMotionState(false, openState.current);
       } else if (openState.current) {
-        motionCallback.current(progress < 1);
+        notifyMotionState(progress < 1, true);
         timeline.play();
       } else {
-        motionCallback.current(progress > 0);
+        notifyMotionState(progress > 0, false);
         timeline.reverse();
       }
     }
 
     rebuildAnimation();
+    const stopObserving = observeReducedMotion(() => {
+      animation.current?.pause().progress(openState.current ? 1 : 0);
+      notifyMotionState(false, openState.current);
+    });
     const resizeObserver = new ResizeObserver(rebuildAnimation);
     window.addEventListener('resize', rebuildAnimation);
     paper.parentElement?.addEventListener('folder-layout-settled', rebuildAnimation);
     resizeObserver.observe(paper);
     if (paper.parentElement) resizeObserver.observe(paper.parentElement);
     return () => {
+      stopObserving();
       window.removeEventListener('resize', rebuildAnimation);
       paper.parentElement?.removeEventListener('folder-layout-settled', rebuildAnimation);
       resizeObserver.disconnect();
@@ -125,10 +146,10 @@ export function useFolderDocumentMotion({ isOpen, onMotionChange }: FolderDocume
     if (!timeline) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       timeline.pause().progress(isOpen ? 1 : 0);
-      motionCallback.current(false);
+      notifyMotionState(false, isOpen);
       return;
     }
-    motionCallback.current(isOpen ? timeline.progress() < 1 : timeline.progress() > 0);
+    notifyMotionState(isOpen ? timeline.progress() < 1 : timeline.progress() > 0, isOpen);
     if (isOpen) timeline.play();
     else timeline.reverse();
   }, [isOpen]);

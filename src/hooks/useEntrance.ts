@@ -1,28 +1,31 @@
-import { useLayoutEffect, type RefObject } from 'react';
-import gsap from 'gsap';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { animateElement } from '../lib/motion';
 
 export function useEntrance(container: RefObject<HTMLElement | null>, dependency: string) {
+  const entered = useRef(new WeakSet<Element>());
   useLayoutEffect(() => {
-    if (!container.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const context = gsap.context(() => {
-      // Offscreen cards stay visible, so a long mobile list never waits for an entrance sequence.
+    if (!container.current) return;
+    const animations: Animation[] = [];
+    const elements = [...container.current.querySelectorAll('[data-enter]')];
+    let entranceIndex = 0;
+    elements.forEach((element) => {
+      if (entered.current.has(element)) return;
+      entered.current.add(element);
 
-      const visibleElements = [...container.current!.querySelectorAll('[data-enter]')].filter(
-        (element) => element.getBoundingClientRect().top < window.innerHeight,
+      // Existing headings and offscreen content stay steady across refreshes and status changes.
+
+      const bounds = element.getBoundingClientRect();
+      if (bounds.top >= window.innerHeight || bounds.bottom <= 0) return;
+      const animation = animateElement(
+        element,
+        [
+          { opacity: 0, transform: 'translateY(8px)' },
+          { opacity: 1, transform: 'translateY(0)' },
+        ],
+        { duration: 280, delay: Math.min(entranceIndex++ * 25, 100), fill: 'backwards' },
       );
-      gsap.fromTo(
-        visibleElements,
-        { opacity: 0, y: 10 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.35,
-          stagger: Math.min(0.035, 0.15 / Math.max(1, visibleElements.length)),
-          ease: 'power2.out',
-          clearProps: 'transform,opacity',
-        },
-      );
-    }, container);
-    return () => context.revert();
+      if (animation) animations.push(animation);
+    });
+    return () => animations.forEach((animation) => animation.cancel());
   }, [container, dependency]);
 }

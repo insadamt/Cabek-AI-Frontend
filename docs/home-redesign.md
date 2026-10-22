@@ -250,9 +250,11 @@ Suggested commit: `feat(home): focus grid folders with reversible document and c
 
 ### Preserve proportions during folder selection
 
-Grid selection now uses GSAP translation instead of Flip scaling. The focused folder keeps its original grid width. Search/Back and Clear/action controls render at their natural sizes and move by their centers, keeping text and icons undistorted. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
+Grid selection uses GSAP translation instead of Flip scaling. The focused folder shares the home carousel's responsive width, capped by the available search area, rather than retaining its smaller grid thumbnail width. Desktop, phone and landscape sizes follow the same shared CSS property and update on resize. Search/Back and Clear/action controls render at their natural sizes and move by their centers, keeping text and icons undistorted. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
 
 - [ ] Select and return from several grid positions: verify folder proportions, text, and icons never stretch.
+- [ ] Compare a selected search folder with the home folder on desktop, tablet, phone portrait and landscape; verify matching size where space allows.
+- [ ] Resize with a search folder selected, then use Retour/Escape; verify responsive sizing, original grid thumbnails, scroll position and focus.
 - [ ] Check short queries, long registration titles, scroll restoration, mobile rotation, and reduced motion.
 
 Suggested commit: `fix(home): preserve proportions during grid folder transitions`
@@ -261,7 +263,7 @@ Suggested commit: `fix(home): preserve proportions during grid folder transition
 
 Analyser now starts analysis in place from the carousel or a focused search folder. The action shows an upward upload animation while the vehicle sheet lifts out of its pocket. A temporary, inaccessible copy travels above the workspace clipping, shrinks into the Cabek AI island, and disappears with a small elastic response. The original sheet remains hidden and its folder empty while processing. On success, the island releases the document, it returns along the same central route and slides into the pocket. The action displays a drawn check and Terminé for 1.4 seconds before becoming Ouvrir. The island then returns to its brand state. An already-open sheet stays open during transmission.
 
-The black island attaches to the top frame with concave shoulders and rounded lower corners. It keeps a fixed 64px height in every state; only its width follows the content with GSAP. It displays the dossier reference, photograph counts, an overlapping fade between operation labels, independently morphing pink/orange/purple/cyan pixels, server ETA when available, and a photo progress track. The elapsed timer interpolates between server samples without moving backward. Photograph counts, stage, ETA and completion remain server-sourced; the interface never invents analysis progress.
+The black island attaches to the top frame with concave shoulders and rounded lower corners. It keeps a fixed 44px height in every state; only its width follows the content with GSAP. It displays the dossier reference, photograph counts, an overlapping fade between operation labels, independently morphing pink/orange/purple/cyan pixels, server ETA when available, and a photo progress track. The elapsed timer interpolates between server samples without moving backward. Photograph counts, stage, ETA and completion remain server-sourced; the interface never invents analysis progress.
 
 Before starting, the client reads current status so a stale folder cannot resubmit a completed scan. Queued/processing dossiers use the same island to follow their existing work. Following a scan does not automatically retry a failure. A lost POST response or scan conflict is recovered through GET requests; the POST is never automatically repeated. Poll failures keep the document in the island and retry with backoff. Explicit failures return the sheet and show an error with a dossier link, without showing success. Navigation away cancels presentation and requests; accepted backend work remains independent. Preview mode stays read-only and returns the existing API-connection message instead of simulating completion.
 
@@ -293,7 +295,7 @@ Suggested commits:
 
 ### Fixed-height island and reversible document fusion
 
-The activity island attaches to the frame through curved shoulders, with rounded lower corners and a soft shadow. Its height stays at 64px for branding, transmission, activity, success, reconnection and errors. The top line holds the reference and photo count, alternating with server ETA every four seconds when available. Error text and its dossier link use that same line; long text is truncated visually with a full title/accessibility label. The second line holds the activity, pixels/check and a fixed-width elapsed timer. The progress track fits beneath those two lines inside the same surface. Header space stays constant between states, including mobile, so width changes do not push navigation or folders.
+The activity island attaches to the frame through curved shoulders, with rounded lower corners and a soft shadow. Its height stays at 44px for branding, transmission, activity, success, reconnection and errors. A single row holds the pixels/check, activity, compact metadata and a fixed-width elapsed timer. Reference, photo count and server ETA alternate in the metadata slot. On phones, the activity, photo count and ETA share the primary text slot. Error details are available through the title and accessible dossier link; all visible text stays on one line. A thin progress track sits inside the lower edge without adding another text row. Header space stays constant between states, including mobile, so width changes do not push navigation or folders.
 
 One reversible GSAP timeline controls the sheet's travel and material. During approach, a soft dark front sweeps downward from its leading edge, covering the actual logo and text. Corners round and the shadow melts away as the sheet becomes the island's exact black. A viewport clip at the island's lower edge hides the final merge, including very tall documents, without an opacity fade. Release reverses that same timeline: a black shape emerges, white paper is revealed from the bottom upward, and normal corners, shadow and native dimensions return before pocket insertion. Temporary copies remain inaccessible and are removed on completion or cancellation.
 
@@ -301,12 +303,12 @@ Contact briefly deforms only the island's surface horizontally; its height and t
 
 Manual test checklist:
 
-- [ ] Check the connected shoulders and soft shadow; verify the island is exactly 64px tall and at the same vertical position in every state, including errors.
+- [ ] Check the connected shoulders and soft shadow; verify the island is exactly 44px tall and at the same vertical position in every state, including errors.
 - [ ] Watch absorption slowly: darkness should travel from top to bottom through logo/text, corners soften, shadow disappears, and no detached black fragment remains below the island.
 - [ ] Watch release: the black sheet emerges first, white returns from the bottom upward, and the sheet regains its normal material and size before entering the folder.
 - [ ] Test closed and already-open carousel sheets and focused search folders; verify no duplicate paper or visible return seam.
 - [ ] Verify width changes, photo/ETA crossfades, pixel gathering, drawn checks, stable timer spacing and Terminé → Ouvrir.
-- [ ] Check long references, long error text and the dossier link without adding a third line or changing height.
+- [ ] Check long references, long error text and the dossier link without wrapping or changing height.
 - [ ] Check 320px/390px phones, desktop, tablet, landscape, safe areas and resizing. Navigation, sheet and bottom controls must remain reachable without overlap.
 - [ ] Navigate away during absorption/release and confirm no temporary document remains.
 - [ ] Check reduced motion, keyboard navigation, visible focus, reconnect recovery and existing scan behavior.
@@ -318,14 +320,14 @@ Suggested commit: `feat(home): refine floating island and document fusion motion
 
 ### Attached island with more room between elements
 
-The island rejoins the top border through 18px concave shoulders and keeps the fixed 64px height, current material-fusion timeline, two-line activity layout and width-only resizing. The body has 24px lower corners, a softer layered shadow and a subtle lower edge. The surface and shoulders share one animated element so absorption/release feedback does not separate their connection. The document still measures the island's actual lower edge for its merge and return.
+The island rejoins the top border through 14px concave shoulders and keeps the fixed 44px height, current material-fusion timeline, single-line activity layout and width-only resizing. The body has 18px lower corners, a softer layered shadow and a subtle lower edge. The surface and shoulders share one animated element so absorption/release feedback does not separate their connection. The document still measures the island's actual lower edge for its merge and return.
 
-Desktop horizontal padding increases to 28px and the minimum activity content width to 260px. The two text rows use an 8px gap, and status/pixel/timer columns use 12px gaps. Metadata gets a muted capsule, and the fixed-width timer gains a light separator with extra inset. Phone layouts use 22px padding and 9px status gaps; shoulder gutters keep the connected shape inside the frame. The idle wordmark also gains more horizontal room. Width measurements read the same CSS spacing variables as the layout so the animated surface includes the extra padding.
+Desktop horizontal padding increases to 28px and the minimum activity content width to 260px. The single activity row uses 12px gaps between its elements. Metadata gets a muted capsule, and the fixed-width timer gains a light separator with extra inset. Phone layouts use 22px padding and 9px status gaps; shoulder gutters keep the connected shape inside the frame. The idle wordmark also gains more horizontal room. Width measurements read the same CSS spacing variables as the layout so the animated surface includes the extra padding.
 
 Manual test checklist:
 
 - [ ] Confirm both shoulders join the top frame in idle, processing, error and success states, including while width and contact animations run.
-- [ ] Check the larger spacing between rows, pixel symbol, label and timer; the island must stay 64px tall without clipping.
+- [ ] Check the spacing between the pixel symbol, label, metadata and timer; the island must stay 44px tall without clipping.
 - [ ] Verify long references, photo/ETA changes, long errors, metadata capsule and timer separator on 320px/390px phones and desktop.
 - [ ] Run analysis from carousel and focused search folders; confirm dark absorption, reverse reveal and Terminé → Ouvrir still follow the same document.
 - [ ] Check navigation spacing, landscape, reduced motion and visible keyboard focus. Browser/device visual review remains manual; Playwright was not run.
@@ -334,7 +336,7 @@ Suggested commit: `style(home): restore attached island and refine activity spac
 
 ### Wider attached island
 
-The idle island increases from 240px to 300px. Desktop activity content increases from 260px to 320px, making the active surface at least 376px wide including padding. Narrow desktop headers retain the previous activity minimum to keep shoulders clear of navigation; phones remain limited by their existing screen gutters. Height stays at 64px.
+The idle island increases from 240px to 300px. Desktop activity content increases from 260px to 320px, making the active surface at least 376px wide including padding. Narrow desktop headers retain the previous activity minimum to keep shoulders clear of navigation; phones remain limited by their existing screen gutters. Height stays at 44px.
 
 Manual checks:
 
@@ -348,7 +350,7 @@ Suggested commit: `style(home): widen the attached activity island`
 
 The island surface now uses one SVG contour for the top connection, concave shoulders and rounded body. Its fill inherits the frame's ink color, and its top edge overlaps the clipping boundary by one pixel to avoid an antialiased hairline. The island starts at the frame's inner top edge instead of clipping separate shoulder gradients with a negative offset. Its shadow follows the full outline, including during contact feedback, rather than outlining a rectangular body beneath separate shoulders.
 
-A resize observer updates the contour from the actual animated width without retargeting the width animation. The wider dimensions, 64px height, spacing and document fusion remain unchanged.
+A resize observer updates the contour from the actual animated width without retargeting the width animation. The wider dimensions, 44px height, spacing and document fusion remain unchanged.
 
 Manual checks:
 
@@ -358,3 +360,29 @@ Manual checks:
 - [ ] Confirm the document still merges at the lower edge and returns to its folder. Visual browser review remains manual; Playwright was not run.
 
 Suggested commit: `fix(home): join island and frame with a continuous contour`
+
+
+### Compact single-line island
+
+The attached island is 44px high in every state. The continuous surface uses smaller 14px shoulders and 18px lower corners with a lighter shadow. Branding, activity text, status symbols and the internal progress track fit the shorter profile. All activity is one horizontal row; no dossier/status rows are stacked.
+
+Desktop shows pixels → short operation label → rotating dossier/photo/ETA detail → fixed-width timer. A compact arrow opens the dossier when an error needs attention, with the full error in its title and accessible label. Narrow desktop headers reserve room for navigation. On phones, the separate detail capsule is hidden and the primary text alternates between activity, photograph count and server ETA every four seconds during processing. Stage changes restore the activity label immediately. Short labels, ellipsis and a stable timer width keep the row from wrapping. Progress remains server-sourced.
+
+The document flight already measures the live lower edge, so absorption and reverse reveal follow the new height. Header and folder spacing follow the same height variable. Reduced motion, the success hold and Terminé → Ouvrir remain supported.
+
+Manual test checklist:
+
+- [ ] Confirm the island stays 44px tall from branding through upload, processing, failure and success.
+- [ ] Verify all text stays on one row; check pixels, status, metadata, timer, progress track and error arrow for clipping.
+- [ ] On 320px/390px phones, wait for photo-count/ETA rotation and verify stage changes restore the activity immediately.
+- [ ] Check desktop and 651–900px header navigation, long references, long errors and keyboard access to the error link.
+- [ ] Run absorption/release from carousel and focused search folders; confirm contact aligns with the shorter surface and the paper returns normally.
+- [ ] Check continuous frame joins, reduced motion, resizing and landscape. Visual browser/device review remains manual; Playwright was not run.
+
+Suggested commit: `style(home): compact the activity island into a single row`
+
+### Shared application motion
+
+Scan reads and the guarded launch now begin alongside the document presentation. Extraction and insertion wait for actual document completion events. Browsing unlocks once insertion finishes, while the brief success confirmation remains visible. An older success timer cannot reset a newer session. The compact 44px island and current single-line layout remain intact.
+
+Carousel hover tilt updates CSS directly, settling duration follows the remaining distance, and unchanged search folders stay still during data updates. Shared text/control feedback, dialogs, result disclosures and comparison loading are documented with the full manual checklist in [motion-enhancements.md](motion-enhancements.md).

@@ -5,6 +5,7 @@ import { useNavigation } from './hooks/useNavigation';
 import { Dashboard } from './pages/Dashboard';
 import { Dossier } from './pages/Dossier';
 import { Home } from './pages/Home';
+import { useRouteMotion } from './hooks/useRouteMotion';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -29,6 +30,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
 
 export default function App() {
   const { pathname, navigate } = useNavigation();
+  const routeRef = useRouteMotion(pathname);
   const match = /^\/dossiers\/([^/]+)\/?$/.exec(pathname);
   let dossierId: string | undefined;
   try {
@@ -38,26 +40,28 @@ export default function App() {
   }
   return (
     <ErrorBoundary>
-      {pathname === '/' ? (
-        <Home />
-      ) : (
-        <Layout>
-          {dossierId ? (
-            <Dossier key={dossierId} dossierId={dossierId} />
-          ) : pathname === '/dossiers' ? (
-            <Dashboard />
-          ) : (
-            <div className="page">
-              <EmptyState
-                title="Cette page est introuvable"
-                description="Retrouvez vos expertises depuis votre espace dossiers."
-                onRetry={() => navigate('/dossiers')}
-                actionLabel="Voir les dossiers"
-              />
-            </div>
-          )}
-        </Layout>
-      )}
+      <div ref={routeRef} className="route-viewport">
+        {pathname === '/' ? (
+          <Home />
+        ) : (
+          <Layout>
+            {dossierId ? (
+              <Dossier key={dossierId} dossierId={dossierId} />
+            ) : pathname === '/dossiers' ? (
+              <Dashboard />
+            ) : (
+              <div className="page">
+                <EmptyState
+                  title="Cette page est introuvable"
+                  description="Retrouvez vos expertises depuis votre espace dossiers."
+                  onRetry={() => navigate('/dossiers')}
+                  actionLabel="Voir les dossiers"
+                />
+              </div>
+            )}
+          </Layout>
+        )}
+      </div>
     </ErrorBoundary>
   );
 }
