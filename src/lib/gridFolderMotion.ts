@@ -5,7 +5,9 @@ const controlSelector = '[data-flip-id="home-search"], [data-flip-id="home-actio
 
 function getMotionElements(section: HTMLElement) {
   return Array.from(
-    section.querySelectorAll<HTMLElement>(`.home-grid-folder-preview, ${controlSelector}`),
+    section.querySelectorAll<HTMLElement>(
+      `.home-grid-folder-preview > .dossier-folder, ${controlSelector}`,
+    ),
   ).filter((element) => element.getClientRects().length > 0);
 }
 
@@ -31,6 +33,7 @@ export function animateGridFolderPositions(
   onComplete: () => void,
 ) {
   const timeline = gsap.timeline({ onComplete });
+  const travelDuration = reducedMotion ? 0 : 0.42;
   const elements = getMotionElements(section).map((element) => ({
     element,
     bounds: element.getBoundingClientRect(),
@@ -72,22 +75,59 @@ export function animateGridFolderPositions(
       return;
     }
 
-    // Folder artwork keeps its natural proportions instead of stretching with the controls.
+    if (!previous) {
+      // Keep restored cards invisible until the selected folder reaches its grid cell.
+
+      timeline.fromTo(
+        element.closest<HTMLElement>('.home-grid-folder') ?? element,
+        { opacity: 0 },
+        {
+          opacity: 1,
+          duration: reducedMotion ? 0 : 0.18,
+          ease: 'power2.out',
+          clearProps: 'opacity',
+        },
+        travelDuration,
+      );
+      return;
+    }
+
+    // Keep the preview's layout space while the real folder travels above the scroll clip.
+
+    const metadata = element
+      .closest<HTMLElement>('.home-grid-folder')
+      ?.querySelectorAll<HTMLElement>(':scope > .home-result-title, :scope > .status-badge');
+    if (metadata?.length)
+      timeline.fromTo(
+        metadata,
+        { opacity: 0 },
+        { opacity: 1, duration: reducedMotion ? 0 : 0.18, clearProps: 'opacity' },
+        travelDuration,
+      );
+
+    // One scale preserves the artwork's aspect ratio and removes the instant thumbnail size jump.
 
     timeline.fromTo(
       element,
       {
-        x: previous ? previous.left + previous.width / 2 - current.left - current.width / 2 : 0,
-        y: previous ? previous.top + previous.height / 2 - current.top - current.height / 2 : 8,
-        opacity: previous ? 1 : 0,
+        position: 'fixed',
+        left: current.left,
+        top: current.top,
+        width: current.width,
+        height: current.height,
+        zIndex: 5,
+        transformOrigin: '50% 50%',
+        x: previous.left + previous.width / 2 - current.left - current.width / 2,
+        y: previous.top + previous.height / 2 - current.top - current.height / 2,
+        scale: current.width > 0 ? previous.width / current.width : 1,
       },
       {
         x: 0,
         y: 0,
-        opacity: 1,
-        duration: reducedMotion ? 0 : 0.36,
-        ease: 'power2.inOut',
-        clearProps: 'transform,opacity',
+        scale: 1,
+        duration: travelDuration,
+        ease: 'power3.inOut',
+        clearProps: 'position,left,top,width,height,zIndex,transformOrigin,transform',
       },
       0,
     );

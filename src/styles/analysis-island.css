@@ -280,13 +280,6 @@
   .home-header {
     padding-bottom: 10px;
   }
-  .dossier-carousel {
-    --mobile-controls-top: calc(
-      var(--home-header-height) +
-        (100% - var(--home-header-height) - 160px - env(safe-area-inset-bottom)) * 0.62 +
-        var(--mobile-folder-width) / 2.72 + 12px
-    );
-  }
   .island-activity {
     min-width: min(
       256px,

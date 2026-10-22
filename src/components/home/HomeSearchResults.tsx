@@ -28,7 +28,7 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
   const previousData = useRef(resource.data);
   if (resource.data) previousData.current = resource.data;
   const data = resource.data ?? previousData.current;
-  const gridRef = useFolderGridMotion(data, !!selectedFolder);
+  const gridRef = useFolderGridMotion(data, busy || !!selectedFolder);
 
   const folders = data?.items ?? [];
   const visibleFolders =
@@ -56,7 +56,7 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
       </div>
       <div
         ref={gridRef}
-        inert={analysis.busy}
+        inert={busy || analysis.busy}
         aria-busy={resource.loading}
         className={`home-folder-grid ${data?.total === 1 ? 'has-single-folder' : ''}`}
       >

@@ -97,22 +97,15 @@
   .home-bottom-bar .home-open-dossier {
     padding: 0 16px;
   }
-  /* Match the folder center and half-height so navigation stays just below its cover. */
+  /* Anchor navigation above search so tall phones keep the buttons within easy reach. */
 
-  .dossier-carousel {
-    --mobile-folder-width: clamp(250px, 82vw, 370px);
-    --mobile-controls-top: calc(
-      96px + (100% - 256px - env(safe-area-inset-bottom)) * 0.62 + var(--mobile-folder-width) /
-        2.72 + 12px
-    );
-  }
   .carousel-edge {
-    top: var(--mobile-controls-top);
-    bottom: auto;
+    top: auto;
+    bottom: calc(104px + env(safe-area-inset-bottom));
   }
   .carousel-counter {
-    top: calc(var(--mobile-controls-top) + 16px);
-    bottom: auto;
+    top: auto;
+    bottom: calc(120px + env(safe-area-inset-bottom));
   }
   .carousel-stage {
     bottom: calc(160px + env(safe-area-inset-bottom));

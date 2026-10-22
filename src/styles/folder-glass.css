@@ -63,6 +63,97 @@
   width: 100%;
   height: 100%;
 }
+.folder-registration-plate {
+  position: absolute;
+  top: 62%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: stretch;
+  width: 72%;
+  height: clamp(38px, 4.5vw, 58px);
+  overflow: hidden;
+  border: 2px solid #202223;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f4f4f0, #d8dad7);
+  box-shadow:
+    0 1px 2px #00000045,
+    inset 0 0 0 1px #ffffffb3;
+  color: #17191a;
+  font-family: 'Arial Narrow', 'Liberation Sans Narrow', sans-serif;
+  font-size: clamp(19px, 2.5vw, 31px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
+.folder-registration-plate > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 5px;
+}
+.folder-registration-plate > * + * {
+  border-left: 1px solid #454748;
+}
+.folder-registration-country {
+  flex: 0 0 19%;
+  font-size: 0.72em;
+  letter-spacing: -0.04em;
+}
+.folder-registration-number {
+  flex: 1;
+  letter-spacing: 0.02em;
+}
+.folder-registration-letter,
+.folder-registration-region {
+  flex: 0 0 18%;
+}
+.folder-registration-letter {
+  text-transform: uppercase;
+}
+.folder-registration-plate > .folder-registration-letter-pair {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  padding: 0;
+  font-size: 0.58em;
+  justify-content: stretch;
+}
+.folder-registration-letter-pair > bdi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 0;
+}
+.folder-registration-letter-pair > bdi[lang='ar'] {
+  /* Leave room above tall Arabic marks such as the hamza in أ. */
+
+  font-family: Arial, sans-serif;
+  font-size: 0.9em;
+  padding-top: 2px;
+}
+.folder-registration-letter-pair > bdi + bdi {
+  border-top: 1px solid #454748;
+}
+/* Compress around the shared bottom fold as the pocket opens, keeping its markings attached. */
+
+.folder-front-markings {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 99%;
+  transform: scaleY(calc(1 - var(--folder-pocket-open, 0) * 0.14));
+  pointer-events: none;
+}
+.folder-registration-value {
+  flex: 1;
+  padding: 5px 8px;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 0.48em;
+  line-height: 1.15;
+}
 .folder-label {
   position: absolute;
   bottom: 22px;

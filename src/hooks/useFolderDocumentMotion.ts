@@ -21,7 +21,22 @@ function measurePocketScale(paper: HTMLElement, folder: HTMLElement) {
 
 export function createDocumentTimeline(paper: HTMLElement) {
   const folder = paper.parentElement!;
-  const pocketScale = measurePocketScale(paper, folder);
+  const isGridFolder = !!folder.closest('.home-grid-folder');
+  const pocketScale = isGridFolder ? 1 : measurePocketScale(paper, folder);
+  const rotationRadians = (3 * Math.PI) / 180;
+  const visiblePocketHeight = Math.max(
+    0,
+    (folder.offsetHeight * 0.94 -
+      paper.offsetTop -
+      (paper.offsetWidth / 2) * Math.sin(rotationRadians)) /
+      Math.cos(rotationRadians),
+  );
+  // Grid thumbnails change size during focus; clipping keeps the sheet from independently shrinking.
+
+  const pocketClip = isGridFolder
+    ? `inset(0px 0px ${Math.max(0, paper.offsetHeight - visiblePocketHeight)}px 0px)`
+    : 'inset(0px 0px 0px 0px)';
+  const pocketClipProperties = isGridFolder ? { clipPath: pocketClip } : {};
   const styles = getComputedStyle(paper);
   const headerBottom =
     folder.closest('.home-frame')?.querySelector('.home-header')?.getBoundingClientRect().bottom ??
@@ -37,7 +52,14 @@ export function createDocumentTimeline(paper: HTMLElement) {
 
   // At time zero GSAP reverts timeline sets, so the fitted pocket state must exist beforehand.
 
-  gsap.set(paper, { zIndex: 2, y: 0, yPercent: 0, rotation: -3, scale: pocketScale });
+  gsap.set(paper, {
+    zIndex: 2,
+    y: 0,
+    yPercent: 0,
+    rotation: -3,
+    scale: pocketScale,
+    ...pocketClipProperties,
+  });
 
   // Reversing this same timeline also reverses the layer change at the pocket mouth.
 
@@ -46,12 +68,15 @@ export function createDocumentTimeline(paper: HTMLElement) {
     .set(paper, { zIndex: 2 })
     .fromTo(
       paper,
-      { y: 0, yPercent: 0, rotation: -3, scale: pocketScale },
+      { y: 0, yPercent: 0, rotation: -3, scale: pocketScale, ...pocketClipProperties },
       {
         yPercent: -100,
         y: clearanceOffset,
         rotation: 0,
         scale: 1,
+        // Leave room for the extracted sheet's shadow once it clears the pocket.
+
+        ...(isGridFolder ? { clipPath: 'inset(-60px -60px -60px -60px)' } : {}),
         duration: 0.28,
         ease: 'power2.inOut',
         immediateRender: false,

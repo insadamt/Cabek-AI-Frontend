@@ -19,15 +19,20 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
     if (selectedFolder || busy || !sectionRef.current) return;
     const grid = sectionRef.current.querySelector<HTMLElement>('.home-folder-grid')!;
     scrollPosition.current = grid.scrollTop;
-    selectedButton.current = document.activeElement as HTMLButtonElement;
+    selectedButton.current =
+      Array.from(grid.querySelectorAll<HTMLElement>('[data-folder-id]'))
+        .find((folder) => folder.dataset.folderId === dossier.dossier_id)
+        ?.querySelector<HTMLButtonElement>('.folder-cover') ?? null;
+    // Stop grid entrances before measuring; their transforms otherwise offset the fixed travel path.
+
+    flushSync(() => setBusy(true));
     const positions = captureGridFolderPositions(sectionRef.current);
-    setBusy(true);
     const neighboringFolders = Array.from(
       grid.querySelectorAll<HTMLElement>('.home-grid-folder'),
     ).filter((folder) => folder.dataset.folderId !== dossier.dossier_id);
     animation.current = gsap.timeline().to(neighboringFolders, {
       opacity: 0,
-      duration: reducedMotion() ? 0 : 0.12,
+      duration: reducedMotion() ? 0 : 0.08,
       onComplete: () => {
         if (!sectionRef.current) return;
         flushSync(() => {
@@ -91,9 +96,14 @@ export function useGridFolderSelection(sectionRef: RefObject<HTMLElement | null>
   }
 
   useEffect(() => {
-    const stopObserving = observeReducedMotion(() => animation.current?.progress(1));
+    // Fixed travel coordinates become stale on rotation; settle before the responsive layout changes.
+
+    const finishLayoutMotion = () => animation.current?.progress(1);
+    const stopObserving = observeReducedMotion(finishLayoutMotion);
+    window.addEventListener('resize', finishLayoutMotion);
     return () => {
       stopObserving();
+      window.removeEventListener('resize', finishLayoutMotion);
       animation.current?.kill();
     };
   }, []);

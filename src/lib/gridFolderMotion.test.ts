@@ -78,19 +78,75 @@ describe('search control transitions', () => {
     animateGridFolderPositions(section, positions, false, () => {});
   });
 
-  it('keeps folder movement at its natural size', () => {
-    const folder = { ...createControl(400), matches: () => false };
+  it.each([
+    [280, 420, false],
+    [420, 280, false],
+    [280, 420, true],
+  ])(
+    'preserves the source rectangle while moving a %ipx folder to %ipx (reduced: %s)',
+    (oldWidth, width, reduced) => {
+      const folder = {
+        ...createControl(width),
+        matches: () => false,
+        closest: () => null,
+        getBoundingClientRect: () => ({ left: 200, top: 300, width, height: width / 1.36 }),
+      };
+      const section = { querySelectorAll: () => [folder] } as unknown as HTMLElement;
+      const positions = new Map([
+        [
+          'home-search',
+          { left: 100, top: 400, width: oldWidth, height: oldWidth / 1.36 } as DOMRect,
+        ],
+      ]);
+      animateGridFolderPositions(section, positions, reduced, () => {});
+      const [, from, to] = motion.fromTo.mock.calls.at(-1)!;
+      expect(from.position).toBe('fixed');
+      expect(from.transformOrigin).toBe('50% 50%');
+      expect(from.scale).toBe(oldWidth / width);
+      expect(from.left + from.x + (width * (1 - from.scale)) / 2).toBeCloseTo(100);
+      expect(from.top + from.y + ((width / 1.36) * (1 - from.scale)) / 2).toBeCloseTo(400);
+      expect(to).toMatchObject({ x: 0, y: 0, scale: 1, duration: reduced ? 0 : 0.42 });
+      expect(to.clearProps).toBe('position,left,top,width,height,zIndex,transformOrigin,transform');
+      expect(from).not.toHaveProperty('scaleX');
+      expect(from).not.toHaveProperty('scaleY');
+    },
+  );
+
+  it.each([false, true])('fades neighboring cards only after arrival (reduced: %s)', (reduced) => {
+    const article = {};
+    const folder = {
+      ...createControl(280),
+      matches: () => false,
+      closest: () => article,
+    };
+    const section = { querySelectorAll: () => [folder] } as unknown as HTMLElement;
+    animateGridFolderPositions(section, new Map(), reduced, () => {});
+    const [target, from, to, start] = motion.fromTo.mock.calls.at(-1)!;
+    expect(target).toBe(article);
+    expect(from.opacity).toBe(0);
+    expect(to.opacity).toBe(1);
+    expect(from).not.toHaveProperty('y');
+    expect(start).toBe(reduced ? 0 : 0.42);
+  });
+
+  it('keeps the returning folder title and status hidden until its travel finishes', () => {
+    const metadata = [{}, {}];
+    const folder = {
+      ...createControl(280),
+      matches: () => false,
+      closest: () => ({ querySelectorAll: () => metadata }),
+    };
     const section = { querySelectorAll: () => [folder] } as unknown as HTMLElement;
     const positions = new Map([
-      ['home-search', { left: 100, top: 400, width: 300, height: 50 } as DOMRect],
+      ['home-search', { left: 100, top: 100, width: 420, height: 309 } as DOMRect],
     ]);
     animateGridFolderPositions(section, positions, false, () => {});
-    const [, from, to] = motion.fromTo.mock.calls.at(-1)!;
-    expect(from).toEqual({ x: -150, y: 100, opacity: 1 });
-    for (const properties of [from, to]) {
-      expect(properties).not.toHaveProperty('scale');
-      expect(properties).not.toHaveProperty('width');
-      expect(properties).not.toHaveProperty('height');
-    }
+    const [, , travel] = motion.fromTo.mock.calls.filter(([target]) => target === folder).at(-1)!;
+    const [, from, to, start] = motion.fromTo.mock.calls
+      .filter(([target]) => target === metadata)
+      .at(-1)!;
+    expect(from.opacity).toBe(0);
+    expect(to.opacity).toBe(1);
+    expect(start).toBe(travel.duration);
   });
 });

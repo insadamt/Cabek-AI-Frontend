@@ -191,6 +191,10 @@ export function DossierCarousel({
             event.preventDefault();
             if (analysis.busy) return;
             const search = String(new FormData(event.currentTarget).get('search') ?? '').trim();
+
+            // The carousel stays mounted during search, so reset its field before Clear reveals it.
+
+            event.currentTarget.reset();
             transitionHomeView(`/?${new URLSearchParams({ search })}`);
           }}
         >

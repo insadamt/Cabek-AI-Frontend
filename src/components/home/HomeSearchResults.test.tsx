@@ -28,6 +28,7 @@ describe('focused grid folder controls', () => {
   beforeEach(() => {
     selection.selectedFolder = null;
     selection.documentOpen = false;
+    selection.busy = false;
   });
   it('keeps the grid selection on the page instead of linking straight to a dossier', () => {
     const markup = render();
@@ -53,5 +54,13 @@ describe('focused grid folder controls', () => {
     expect(markup).toContain('aria-expanded="true"');
     expect(markup).not.toContain('role="search"');
     expect(markup).not.toContain('Effacer');
+  });
+  it('prevents grid interaction until the folder return and neighbor fade finish', () => {
+    selection.busy = true;
+    const markup = render();
+    expect(markup).toContain('<div inert="" aria-busy="false" class="home-folder-grid');
+    expect(markup).toContain(
+      'class="home-clear-search" data-flip-id="home-action" type="button" disabled=""',
+    );
   });
 });

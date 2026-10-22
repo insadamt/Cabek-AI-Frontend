@@ -214,6 +214,8 @@ Suggested commit: `feat(home): reverse GSAP search transitions and highlight mat
 
 ### Clear without a white flash
 
+The carousel search form resets after its query is captured for submission. Because the carousel stays mounted behind the results, this prevents Effacer from revealing the previous query in its input.
+
 Search and Clear commit the destination immediately and run the GSAP Flip control movement in the same frame. The home container stays fully opaque; only the folder area gets a subtle entrance. Clear therefore moves the controls directly back to their carousel position without fading the page out first. Interrupted transitions finish before the next layout snapshot.
 
 - [ ] Search and Clear on desktop and phone: verify both controls move together without a white frame.
@@ -224,7 +226,7 @@ Suggested commit: `fix(home): remove page flash during search and clear morphs`
 
 ### Mobile navigation above search
 
-On phones the previous/next controls and counter sit immediately below the folder cover, above the search/action row. Their portrait position follows the folder center and half-height. Search remains near the bottom safe area. Landscape places navigation in a separate row above search.
+On phones the previous/next controls and counter sit near the bottom, above the search/action row. Portrait arrows sit 104px above the bottom safe area, with the counter centered between them, so navigation stays within easy reach regardless of folder or header position. Search remains near the bottom safe area. Landscape places navigation in a separate row above search.
 
 - [ ] At 320px and 390px widths, verify arrows/counter sit below the folder and above search without overlap.
 - [ ] Check short phones, landscape, opening the sheet, swiping, and search/Clear morphs.
@@ -250,18 +252,23 @@ Suggested commit: `feat(home): focus grid folders with reversible document and c
 
 ### Preserve proportions during folder selection
 
-Grid selection uses GSAP translation instead of Flip scaling. The focused folder shares the home carousel's responsive width, capped by the available search area, rather than retaining its smaller grid thumbnail width. Desktop, phone and landscape sizes follow the same shared CSS property and update on resize.
+Grid selection moves and uniformly scales the folder artwork together over 420ms. The previous translation-only implementation changed the folder's size immediately before movement, causing a visible jump in both directions. The focused folder shares the home carousel's responsive width, capped by the available search area. Desktop, phone and landscape sizes follow the same shared CSS property and update on resize.
 
-Search and Retour now share one persistent, opaque surface. Its width collapses into the button while the magnifier's SVG paths interpolate into a back arrow. Query and Retour text share the same left origin and exchange locally, with the submit icon disappearing inside the collapsing field. Returning expands the same control and reverses the icon/text changes. The query input stays mounted to preserve entered text; inactive form/button layers are inert and hidden from assistive technology. There is no whole-control fade or removal between states. All destination bounds are captured before controls leave flex flow; a reserved 50px control row prevents layout collapse. Text and icons remain unscaled. Temporary positioning and dimensions clear when movement finishes. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
+The real folder temporarily uses fixed positioning while its preview reserves the destination space. This keeps the return path above the scrollable grid's clipping boundary without copying interactive elements or SVG identifiers. Temporary positioning and transforms clear at completion. Complete neighboring cards and the selected card's metadata fade in during the last 180ms of return. Resizing or enabling reduced motion settles the current layout movement. Return restores the actual selected folder button's keyboard focus, including when selection started with a pointer.
 
-- [ ] Select and return from several grid positions: verify folder proportions, text, and icons never stretch.
+Search and Retour now share one persistent, opaque surface. Its width collapses into the button while the magnifier's SVG paths interpolate into a back arrow. Query and Retour text share the same left origin and exchange locally, with the submit icon disappearing inside the collapsing field. Returning expands the same control and reverses the icon/text changes. The query input stays mounted to preserve entered text; inactive form/button layers are inert and hidden from assistive technology. There is no whole-control fade or removal between states. All destination bounds are captured before controls leave flex flow; a reserved 50px control row prevents layout collapse. Control text and icons remain unscaled. Temporary positioning and dimensions clear when movement finishes. Neighbors fade before focus and fade back in on return. Paper extraction still starts after the folder settles and closes before return.
+
+- [ ] Select and return from several grid positions: verify the folder moves and grows/shrinks together, without a size jump or distorted proportions.
+- [ ] Select from a scrolled grid, then return: verify the entire travel path stays visible and all neighboring titles/status badges fade in together.
 - [ ] Watch Search → Retour and Retour → Search: verify width changes smoothly with no overlapping controls, row jump, wrapped labels or stretched icons. Repeat with each action status, pagination and reduced motion.
 - [ ] Verify the search surface stays visible throughout collapse, the magnifier becomes the back arrow, and query text transitions into Retour at the same left edge. Type a query before selection and confirm it survives return. Tab must skip the inactive input/button layer.
 - [ ] Compare a selected search folder with the home folder on desktop, tablet, phone portrait and landscape; verify matching size where space allows.
 - [ ] Resize with a search folder selected, then use Retour/Escape; verify responsive sizing, original grid thumbnails, scroll position and focus.
 - [ ] Check short queries, long registration titles, scroll restoration, mobile rotation, and reduced motion.
 
-Suggested commit: `fix(home): preserve proportions during grid folder transitions`
+Verification: `npm test` passes (96 tests across 17 files), `npm run build` passes. Regression checks cover source/destination geometry in both directions, proportional scale, reduced motion, style cleanup and delayed neighboring card appearance. Browser/device review remains manual; Playwright was not run.
+
+Suggested commit: `fix(home): smooth grid focus transitions in both directions`
 
 ### Analysis activity island and document journey
 
@@ -390,3 +397,50 @@ Suggested commit: `style(home): compact the activity island into a single row`
 Scan reads and the guarded launch now begin alongside the document presentation. Extraction and insertion wait for actual document completion events. Browsing unlocks once insertion finishes, while the brief success confirmation remains visible. An older success timer cannot reset a newer session. The compact 44px island and current single-line layout remain intact.
 
 Carousel hover tilt updates CSS directly, settling duration follows the remaining distance, and unchanged search folders stay still during data updates. Shared text/control feedback, dialogs, result disclosures and comparison loading are documented with the full manual checklist in [motion-enhancements.md](motion-enhancements.md).
+
+### Registration plates on folder covers
+
+Folder covers display the vehicle's existing matricule in a light plate with a dark outline and divided MA, serial, letter and region sections, inspired by the supplied reference. A value such as `0000-a-00` keeps its leading zeroes. The series cell stacks the Arabic letter above its uppercase Latin equivalent with a horizontal divider, matching the reference's `ب / B` arrangement. The fifteen series correspondences follow the [table reported by Autonews](https://autonews.ma/actualite-auto/actualite-nationale/25193-plaques-dimmatriculation-au-maroc-ce-qui-change), including `أ / A`, `و / E` and `ص / C`. Either script can be supplied; unsupported letters remain unchanged. Existing one-to-five-digit serials and one-to-two-digit regions are preserved. Hyphens, middle dots and vertical bars are recognized separators. Other formats appear intact in one value area; missing values show “Non renseignée”. This is presentation only, with no new API request or registration validation rule. The dossier reference stays below the plate, and the folder button's accessible name includes the matricule.
+
+The plate and reference share a front-markings layer inside the cover. The same GSAP timeline drives the pocket outline and the markings' compression around the fixed bottom fold, including interrupted transitions and reduced-motion end states. A shallow contact shadow helps the plate feel mounted on the cover.
+
+The Arabic series glyph uses a slightly smaller size and 2px of top padding to keep tall marks, including the hamza in `أ`, clear of the plate's upper border.
+
+Validation: production build and targeted formatting check. Browser/device visual review remains manual; Playwright was not run.
+
+Manual test checklist:
+
+- [ ] Check the plate's placement, border, dividers and contrast on desktop, 320px/390px phones and landscape.
+- [ ] Verify `0000-a-00`, `12345 · A · 6` and an Arabic-letter registration keep the correct values and cell order.
+- [ ] Check `0000-b-00` and `0000-ب-00` both show `ب` above `B` with a divider; check `E / و`, `C / ص` and an unsupported letter.
+- [ ] Check missing, unfamiliar and long registration values, along with long dossier references, for clipping or overlap.
+- [ ] Open and close folders, switch carousel folders and open a focused search result; confirm the plate follows its cover and does not block controls.
+- [ ] Hover, leave, reopen during closing and use reduced motion; confirm the plate and reference follow the front pocket without drifting or exposing another bottom edge.
+- [ ] Verify keyboard focus, Enter/Space opening, screen-reader registration text and reduced motion.
+
+Suggested commit: `feat(home): add plate-style matricules to folder covers`
+
+Suggested refinement commit: `feat(home): pair plate letters and attach markings to pocket motion`
+
+### Grid folder focus and return sequence
+
+Selecting a search result pauses grid entrance/rearrangement animations before measuring the folder, fades out neighboring folders, and moves the selected folder to the center before opening its sheet. Returning first stows the sheet, then moves the folder back into the restored grid position and scroll offset. Neighboring cards and the selected card's title/status fade in only after the 420ms travel completes. The grid remains inert through movement and the final 180ms fade so another selection cannot interrupt the sequence. Reduced motion skips these durations.
+
+Validation: `npm test` (92 tests), `npm run build`. Browser automation was not used; visual verification remains manual.
+
+Manual test checklist:
+
+- [ ] Select folders from different grid columns and rows: neighbors disappear, the selected folder moves smoothly to the center, then its sheet opens.
+- [ ] Press Retour or Escape: the sheet stows, the folder returns to its original cell, then other folders and metadata fade in without sliding.
+- [ ] Scroll down before selecting a folder; verify returning restores its cell and the previous scroll position.
+- [ ] Select a folder immediately after search results appear; verify no jump from overlapping entrance animations.
+- [ ] Click repeatedly during selection/return; verify no extra selection starts and keyboard focus returns to the selected folder.
+- [ ] Repeat on desktop and narrow mobile widths, resize during travel, and enable reduced motion before and during a transition.
+
+Suggested commit: `fix(home): sequence folder focus and grid return animations`
+
+Grid sheets retain their natural width inside the pocket and during extraction. Their lower edge is clipped to the pocket depth instead of uniformly scaling the sheet down to fit the thumbnail. Extraction reveals that edge as the sheet lifts; returning reverses the same clip. This avoids an independent width expansion/collapse when switching between grid and focus sizes. The carousel retains its fitted sheet scale. The extracted grid sheet keeps its full content height, scrolling and shadow.
+
+Manual checks: open and return folders at desktop/mobile sizes, compare the sheet's width with its folder throughout travel, and check long vehicle values, bottom-edge containment, scrolling, interrupted closing and reduced motion.
+
+Suggested commit: `fix(home): keep grid document width stable inside folder pockets`

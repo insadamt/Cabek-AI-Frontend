@@ -4,6 +4,7 @@ import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { vehicleName } from '../../lib/format';
 import type { DossierSummary } from '../../types';
 import { FolderDocument } from './FolderDocument';
+import { FolderRegistrationPlate } from './FolderRegistrationPlate';
 
 const closedPocketOutline =
   'M.06 .19H.46C.52 .19 .53 .37 .62 .37H.94Q1 .37 .99 .46L.95 .91Q.94 .99 .87 .99H.11Q.035 .99 .03 .91L.005 .29Q0 .19 .06 .19Z';
@@ -49,15 +50,19 @@ export function DossierFolder({
   }, [isActive]);
 
   useLayoutEffect(() => {
-    // Morph only the pocket mouth; the bottom contour stays attached to the rear face.
+    // Share mouth progress with the markings so they follow the front face around its fixed fold.
 
     const outlines = folderElement.current!.querySelectorAll('.folder-front-outline');
-    const animation = gsap.to(outlines, {
-      attr: { d: mouthOpen ? openPocketOutline : closedPocketOutline },
-      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.35,
-      ease: 'power2.out',
-      overwrite: true,
-    });
+    const animation = gsap
+      .timeline({
+        defaults: {
+          duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.35,
+          ease: 'power2.out',
+          overwrite: true,
+        },
+      })
+      .to(outlines, { attr: { d: mouthOpen ? openPocketOutline : closedPocketOutline } }, 0)
+      .to(folderElement.current, { '--folder-pocket-open': mouthOpen ? 1 : 0 }, 0);
     return () => {
       animation.kill();
     };
@@ -101,7 +106,7 @@ export function DossierFolder({
         className="folder-cover"
         type="button"
         style={{ clipPath: `url(#${folderId}-shape)` }}
-        aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.dossier_id}`}
+        aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.vehicle.matricule?.trim() || 'Immatriculation non renseignée'}, ${dossier.dossier_id}`}
         aria-pressed={isActive}
         aria-disabled={!isActive}
         aria-expanded={documentOpen && !documentAway}
@@ -154,7 +159,10 @@ export function DossierFolder({
             strokeWidth="0.005"
           />
         </svg>
-        <span className="folder-label">{dossier.dossier_id}</span>
+        <span className="folder-front-markings">
+          <FolderRegistrationPlate matricule={dossier.vehicle.matricule || ''} />
+          <span className="folder-label">{dossier.dossier_id}</span>
+        </span>
       </button>
     </div>
   );
