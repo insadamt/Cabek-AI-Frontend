@@ -5,13 +5,14 @@ verification results and manual acceptance checks. It depends on the existing gl
 folder/carousel motion, dossier viewer and CABEK Global workflow API.
 
 Implemented on `codex/category-workflows`, branched from `codex/categoriesFolders`.
-The requested changes are delivered in one consolidated commit.
+The workflow implementation was delivered in `c267cd3`. The subsequent category
+landing refinement is documented in [category-stage.md](category-stage.md).
 
 ## Routes and behavior
 
 | Route                              | Experience                                                            |
 | ---------------------------------- | --------------------------------------------------------------------- |
-| `/`                                | Exactly three interactive glass category folders                      |
+| `/`                                | Cinematic stage with exactly three category selectors                 |
 | `/categories/forfait-expertise`    | Existing externally created expertise collection; no creation action  |
 | `/categories/chiffrage-rapide`     | Quick-estimation collection and creation action                       |
 | `/categories/verification`         | Before/after collection and creation action                           |
@@ -54,18 +55,20 @@ Frontend action eligibility and the scan lifecycle both reject verification.
 
 ## Motion and accessibility
 
-Category selection starts navigation immediately and uses GSAP Flip to move the
-selected object into the collection marker. New vehicle forms and side/phase
-changes use scoped GSAP reveals. Newly saved photo IDs trigger local confirmation
-motion; unchanged polling data does not replay it. Resize, navigation and reduced
-motion settle or clean up active animations.
+Category selection changes the rendered scene, copy and collection destination;
+the separate collection link navigates immediately. GSAP crossfades the selected
+scene, and the existing selection indicator follows the active control. New
+vehicle forms and side/phase changes use scoped GSAP reveals. Newly saved photo
+IDs trigger local confirmation motion; unchanged polling data does not replay it.
+Resize, navigation and reduced motion settle or clean up active animations.
 
 The existing carousel momentum, document extraction, folder opening, grid focus,
 search-control Flip morph, grid rearrangement, activity island and dossier entrance
-are reused. New motion does not introduce network delays. Categories are native
-links; forms have labels, required fields and error/status announcements. Sides,
-phases and views are native buttons with pressed states, 44px targets and moving
-selection backgrounds. Registration values retain bidirectional text support.
+are reused. New motion does not introduce network delays. Category selectors are
+native buttons in a keyboard-accessible tablist, with a separate collection link.
+Forms have labels, required fields and error/status announcements. Sides, phases
+and views are native buttons with pressed states, 44px targets and moving selection
+backgrounds. Registration values retain bidirectional text support.
 
 ## Backend contract
 
@@ -108,7 +111,8 @@ fixtures remain read only.
 
 ## Verification
 
-- `npm test`: **262 tests passed across 31 files**.
+- `npm test`: **273 tests passed across 32 files**, including the cinematic
+  landing and media lifecycle refinement.
 - `npm run build`: TypeScript and Vite passed. Vite reports a JavaScript chunk
   slightly above its 500 kB advisory threshold.
 - `git diff --check`: passed.
@@ -121,8 +125,8 @@ fixtures remain read only.
 
 ## Manual test checklist
 
-- [ ] Open `/`; confirm exactly three category folders, readable labels, hover/focus feedback and working Enter activation.
-- [ ] Open each category directly and by selecting its folder; confirm its identity, isolated dossier collection and Back to home.
+- [ ] Open `/`; confirm exactly three category selectors, readable labels, hover/focus feedback and keyboard selection. Use the scene checklist in [category-stage.md](category-stage.md).
+- [ ] Open each category directly and through its collection link; confirm its identity, isolated dossier collection and Back to home.
 - [ ] Verify expertise has no creation button and its `/new` URL is unavailable.
 - [ ] Search by reference, matricule, marque and modèle; apply every category status, date range and supported sort. Check the actual API query and pagination.
 - [ ] Switch grid/carousel, select a folder, open it and return with page Back and browser Back. Confirm search, filters, page, display and selected slide survive.

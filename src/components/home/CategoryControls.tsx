@@ -17,7 +17,7 @@ export function CategoryControls({ category }: { category: Category }) {
   return (
     <div className="category-controls" inert={busy}>
       <div className="category-heading">
-        <button className="back-link" onClick={() => navigate('/')}>
+        <button className="back-link" onClick={() => navigate(`/?parcours=${category.slug}`)}>
           <ArrowLeft size={15} /> Accueil
         </button>
         <span

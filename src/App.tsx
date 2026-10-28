@@ -9,6 +9,7 @@ import { Dossier } from './pages/Dossier';
 import { Home } from './pages/Home';
 import { HomeFrame } from './components/home/HomeFrame';
 import { useRouteMotion } from './hooks/useRouteMotion';
+import { ScannerPreview } from './pages/ScannerPreview';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -47,6 +48,8 @@ export default function App() {
       <div ref={routeRef} className="route-viewport">
         {pathname === '/' ? (
           <Categories />
+        ) : pathname === '/preview/expertise' ? (
+          <ScannerPreview />
         ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
           <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
         ) : workflowRoute ? (

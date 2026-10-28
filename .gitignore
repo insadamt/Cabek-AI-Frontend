@@ -1,4 +1,7 @@
+# Keep local dependencies, generated caches and private environment files out of source control.
 node_modules/
+__pycache__/
+*.pyc
 dist/
 .env
 .env.*

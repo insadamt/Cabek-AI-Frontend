@@ -39,10 +39,26 @@ function render(pathname: string, search = '') {
 describe('category-first application routes', () => {
   it('shows exactly three category choices at home', () => {
     const markup = render('/');
-    expect(markup.match(/class="category-choice"/g)).toHaveLength(3);
+    expect(markup.match(/role="tab"/g)).toHaveLength(3);
+    expect(markup).toContain('id="category-stage-tab-forfait_expertise"');
+    expect(markup).toContain('id="category-stage-tab-chiffrage_rapide"');
+    expect(markup).toContain('id="category-stage-tab-verification"');
     expect(markup).toContain('href="/categories/forfait-expertise"');
-    expect(markup).toContain('href="/categories/chiffrage-rapide"');
-    expect(markup).toContain('href="/categories/verification"');
+    expect(markup).toContain('/cinematic/expertise.webp');
+    expect(markup).not.toContain('<canvas');
+    expect(markup).not.toContain('Voir le passage');
+  });
+  it.each([
+    ['chiffrage-rapide', 'quick'],
+    ['verification', 'verification'],
+  ])('restores selected category %s from the URL and links to its collection', (slug, asset) => {
+    const markup = render('/', `parcours=${slug}`);
+    expect(markup).toContain(`href="/categories/${slug}"`);
+    expect(markup).toContain(`/cinematic/${asset}.webp`);
+    expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
+  });
+  it('keeps the existing preview URL available with the new selector', () => {
+    expect(render('/preview/expertise')).toContain('category-stage');
   });
   it.each(['chiffrage-rapide', 'verification'])(
     'opens the %s collection and creation screens directly',

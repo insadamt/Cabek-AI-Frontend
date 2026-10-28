@@ -1,126 +1,10 @@
-/* Category entry and browsing preserve the glass folders, black frame and lime controls.
+/* Collection browsing keeps folder navigation, filters and lime actions inside the shared frame.
    Depends on home, folder and segmented-control styles loaded before this file. */
 
 /* ============================================================
-   Category objects and collection navigation
+   Collection navigation and filtering
    ============================================================ */
 
-.category-home {
-  height: 100%;
-  overflow-y: auto;
-  padding: 100px clamp(20px, 5vw, 86px) 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: clamp(28px, 5vh, 70px);
-}
-.category-intro h1 {
-  font-size: clamp(32px, 4.5vw, 66px);
-  line-height: 1.12;
-  font-weight: 500;
-  letter-spacing: -0.055em;
-  margin: 18px 0;
-}
-.category-intro h1 span {
-  color: #8c8c8c;
-}
-.category-intro > p:last-child {
-  color: var(--secondary);
-  font-size: 13px;
-}
-.category-folders {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(20px, 4vw, 65px);
-}
-.category-choice {
-  min-width: 0;
-  display: block;
-  border-radius: 12px;
-}
-.category-object {
-  position: relative;
-  aspect-ratio: 1.6;
-  width: 100%;
-  height: auto;
-  max-width: 390px;
-  margin: 0 auto 24px;
-}
-.category-object .folder-back {
-  inset: 8% 3% 0;
-}
-.category-paper {
-  position: absolute;
-  inset: 0 12% 9%;
-  padding: 18px;
-  background: white;
-  border: 1px solid #e1e1e1;
-  border-radius: 10px;
-  transform: rotate(-3deg);
-  transition: translate 240ms ease;
-}
-.category-paper span {
-  font-size: 10px;
-  font-weight: 650;
-}
-.category-paper i {
-  display: block;
-  width: 65%;
-  height: 1px;
-  margin-top: 14px;
-  background: #ddd;
-}
-.category-paper i:last-child {
-  width: 40%;
-}
-.category-pocket {
-  position: absolute;
-  inset: 0;
-  clip-path: polygon(0 18%, 44% 18%, 58% 35%, 100% 35%, 96% 100%, 4% 100%);
-  background: linear-gradient(125deg, #aab1b359, #555c5dbd 70%, #222b2be6);
-  backdrop-filter: blur(8px);
-  border-radius: 18px;
-  color: white;
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  padding: 25px;
-}
-.category-pocket > span:first-child {
-  font-size: clamp(28px, 4vw, 54px);
-  font-weight: 350;
-  letter-spacing: -0.05em;
-}
-.category-pocket > span:last-child {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  padding-bottom: 5px;
-}
-.category-choice:hover .category-paper,
-.category-choice:focus-visible .category-paper {
-  translate: 0 -10px;
-}
-.category-choice:hover .category-pocket,
-.category-choice:focus-visible .category-pocket {
-  background: linear-gradient(125deg, #b9cead66, #555c5dbd 70%, #222b2be6);
-}
-.category-caption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.category-caption h2 {
-  font-size: clamp(15px, 1.7vw, 21px);
-  font-weight: 550;
-  letter-spacing: -0.04em;
-}
-.category-choice > p {
-  font-size: 12px;
-  color: var(--secondary);
-  line-height: 1.7;
-  margin-top: 10px;
-}
 .category-collection {
   height: 100%;
   display: flex;
@@ -240,21 +124,6 @@
 }
 
 @media (max-width: 767px) {
-  .category-home {
-    justify-content: start;
-    padding-top: 90px;
-    gap: 32px;
-  }
-  .category-folders {
-    grid-template-columns: 1fr;
-    gap: 38px;
-    max-width: 420px;
-    align-self: center;
-    width: 100%;
-  }
-  .category-object {
-    max-width: 280px;
-  }
   .category-controls {
     padding-inline: 12px;
   }
@@ -292,23 +161,5 @@
   }
   .category-content .carousel-folder-slot {
     top: 55%;
-  }
-}
-@media (max-height: 650px) and (min-width: 768px) {
-  .category-home {
-    justify-content: start;
-    padding-top: 80px;
-    gap: 25px;
-  }
-  .category-intro h1 {
-    font-size: 34px;
-  }
-  .category-object {
-    max-width: 250px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .category-paper {
-    transition: none;
   }
 }
