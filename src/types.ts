@@ -1,3 +1,5 @@
+/** Shared API DTOs for vehicle, workflow and saved analysis data; used by the API and UI. */
+import type { DossierType, WorkflowStatus, PhotoSide, PhotoPhase } from './workflowTypes';
 export type ScanStatus = 'not_analyzed' | 'queued' | 'processing' | 'completed' | 'failed';
 export type FilterStatus = ScanStatus | 'all';
 export type Stage =
@@ -10,10 +12,15 @@ export interface Vehicle {
   marque_id?: number | null;
   model_id?: number | null;
   annee?: string | null;
+  date_mise_en_circulation?: string | null;
   date_sinistre?: string | null;
 }
 
 export interface DossierSummary {
+  source?: string;
+  type?: DossierType;
+  workflow_status?: WorkflowStatus;
+  updated_at?: string | null;
   dossier_id: string;
   vehicle: Vehicle;
   created_at: string | null;
@@ -22,6 +29,8 @@ export interface DossierSummary {
 }
 
 export interface DossierList {
+  workflow_counts?: Partial<Record<WorkflowStatus, number>>;
+  type_counts?: Partial<Record<DossierType, number>>;
   items: DossierSummary[];
   total: number;
   counts: Record<FilterStatus, number>;
@@ -31,6 +40,11 @@ export interface DossierList {
 }
 
 export interface DossierQuery {
+  type?: DossierType;
+  workflow_status?: WorkflowStatus;
+  created_from?: string;
+  created_to?: string;
+  sort?: import('./workflowTypes').DossierSort;
   search: string;
   status: FilterStatus;
   limit: number;
@@ -89,6 +103,9 @@ export interface Detection {
 }
 
 export interface OriginalPhoto {
+  uploaded_at?: string | null;
+  side?: PhotoSide;
+  phase?: PhotoPhase | null;
   photo_id: string;
   original_url: string;
   preview_url?: string;
@@ -115,6 +132,18 @@ export interface AnalysisResult {
 }
 
 export interface DossierResponse {
+  source?: string;
+  comparison?: {
+    slots: { side: PhotoSide; before: OriginalPhoto | null; after: OriginalPhoto | null }[];
+    missing_before: PhotoSide[];
+    missing_after: PhotoSide[];
+    before_locked: boolean;
+    finalized: boolean;
+  } | null;
+  type?: DossierType;
+  workflow_status?: WorkflowStatus;
+  created_at?: string | null;
+  updated_at?: string | null;
   dossier_id: string;
   vehicle: Vehicle;
   photos: OriginalPhoto[];

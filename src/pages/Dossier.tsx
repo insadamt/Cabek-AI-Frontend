@@ -1,3 +1,8 @@
+/** Dossier identity and physical entrance shared by expertise, quick estimates and repair evidence. */
+import { categoryForType, categoryPath, workflowLabels } from '../lib/workflows';
+import { QuickEstimateWorkspace } from '../components/dossier/QuickEstimateWorkspace';
+import { VerificationWorkspace } from '../components/dossier/VerificationWorkspace';
+import { useHomeAnalysis } from '../hooks/useHomeAnalysis';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DossierFolder } from '../components/home/DossierFolder';
@@ -14,6 +19,7 @@ import type { DossierSummary } from '../types';
 
 export function Dossier({ dossierId }: { dossierId: string }) {
   const container = useRef<HTMLDivElement>(null);
+  const analysis = useHomeAnalysis();
   const [entrance] = useState<DossierEntrance | undefined>(() => {
     const snapshot = window.history.state?.dossierEntrance as DossierEntrance | undefined;
     return snapshot?.dossier.dossier_id === dossierId ? snapshot : undefined;
@@ -21,19 +27,31 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   const resource = useResource(
     dossierId,
     (signal) => readDossier(dossierId, signal),
-    (data) => (!isPreview && isActiveStatus(data?.status) ? 1800 : undefined),
+    (data) =>
+      !isPreview && data?.type !== 'verification' && isActiveStatus(data?.status)
+        ? 1800
+        : undefined,
   );
   const summary = useResource(`summary-${dossierId}`, (signal) =>
     findDossierSummary(dossierId, signal),
   );
   const savedSummary = summary.data ?? entrance?.dossier;
+  const sessionResponse =
+    analysis.session?.dossier.dossier_id === dossierId ? analysis.session.response : undefined;
   const response = resource.data ?? entrance?.response;
+  // Publish scan samples once so later photo edits cannot be hidden by an older island session.
+
+  useEffect(() => {
+    if (sessionResponse) resource.replaceData(sessionResponse);
+  }, [sessionResponse, resource.replaceData]);
   // Current metadata can differ from the immutable vehicle snapshot saved with the analysis.
 
   const vehicle = response?.vehicle ?? response?.result?.vehicle ?? savedSummary?.vehicle;
   const dossier: DossierSummary | undefined = vehicle
     ? {
         dossier_id: dossierId,
+        type: response?.type ?? savedSummary?.type,
+        workflow_status: response?.workflow_status ?? savedSummary?.workflow_status,
         vehicle,
         status: response?.status ?? savedSummary?.status ?? 'not_analyzed',
         photo_count:
@@ -41,7 +59,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
           savedSummary?.photo_count ??
           response?.result?.photos.length ??
           0,
-        created_at: savedSummary?.created_at ?? null,
+        created_at: response?.created_at ?? savedSummary?.created_at ?? null,
       }
     : undefined;
   const entranceComplete = useDossierEntrance({ container, entrance, ready: !!dossier });
@@ -60,8 +78,14 @@ export function Dossier({ dossierId }: { dossierId: string }) {
       <button
         className="back-link"
         onClick={() => {
-          if (window.history.state && window.history.length > 1) window.history.back();
-          else navigate('/');
+          const returnTo = window.history.state?.returnTo;
+          if (
+            typeof returnTo === 'string' &&
+            returnTo.split('?')[0] === categoryPath(dossier?.type)
+          ) {
+            if (window.history.length > 1) window.history.back();
+            else navigate(returnTo);
+          } else navigate(categoryPath(dossier?.type));
         }}
       >
         <ArrowLeft size={15} /> Retour aux dossiers
@@ -83,12 +107,16 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                 />
               </div>
               <div className="dossier-overview-identity" data-dossier-metadata>
-                <p className="eyebrow">DOSSIER D’EXPERTISE</p>
+                <p className="eyebrow">{categoryForType(dossier.type).title}</p>
                 <h1 title={vehicleName(dossier.vehicle)}>{vehicleName(dossier.vehicle)}</h1>
                 <p className="dossier-registration">
                   <bdi>{dossier.vehicle.matricule || 'Immatriculation non renseignée'}</bdi>
                 </p>
-                <StatusBadge status={dossier.status} />
+                {dossier.type && dossier.type !== 'forfait_expertise' && dossier.workflow_status ? (
+                  <span className="status-badge">{workflowLabels[dossier.workflow_status]}</span>
+                ) : (
+                  <StatusBadge status={dossier.status} />
+                )}
               </div>
               <div className="dossier-information" data-dossier-metadata>
                 <h2 className="dossier-information-heading">Informations du dossier</h2>
@@ -122,6 +150,10 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                     </dd>
                   </div>
                   <div data-dossier-metadata>
+                    <dt>Mise en circulation</dt>
+                    <dd>{formatDate(dossier.vehicle.date_mise_en_circulation)}</dd>
+                  </div>
+                  <div data-dossier-metadata>
                     <dt>Date du sinistre</dt>
                     <dd title={String(formatDate(dossier.vehicle.date_sinistre))}>
                       {formatDate(dossier.vehicle.date_sinistre)}
@@ -141,7 +173,9 @@ export function Dossier({ dossierId }: { dossierId: string }) {
               </div>
               {isPreview && (
                 <p className="dossier-preview" data-dossier-metadata>
-                  Aperçu en lecture seule · Données d’exemple
+                  {dossier.type && dossier.type !== 'forfait_expertise'
+                    ? 'Aperçu interactif · Données d’exemple'
+                    : 'Aperçu en lecture seule · Données d’exemple'}
                 </p>
               )}
             </>
@@ -187,15 +221,46 @@ export function Dossier({ dossierId }: { dossierId: string }) {
             data-ready={entranceComplete}
             inert={!entranceComplete}
           >
-            <DossierResultWorkspace
-              key={dossierId}
-              dossierId={dossierId}
-              response={response}
-              status={response?.status ?? dossier.status}
-              loading={!response && resource.loading}
-              error={resource.error}
-              onRetry={resource.refresh}
-            />
+            {resource.error != null &&
+              response &&
+              dossier.type &&
+              dossier.type !== 'forfait_expertise' && (
+                <p role="alert">
+                  {describeError(resource.error)}{' '}
+                  <button className="text-link" onClick={resource.refresh}>
+                    Réessayer
+                  </button>
+                </p>
+              )}
+            {response?.type === 'verification' ? (
+              <VerificationWorkspace
+                response={response}
+                onSaved={resource.replaceData}
+                onRefresh={resource.refresh}
+              />
+            ) : response?.type === 'chiffrage_rapide' ? (
+              <QuickEstimateWorkspace
+                response={response}
+                dossier={dossier}
+                error={resource.error}
+                onSaved={resource.replaceData}
+                onRefresh={resource.refresh}
+              />
+            ) : dossier.type === 'verification' || dossier.type === 'chiffrage_rapide' ? (
+              <div role="status">
+                {resource.error ? 'Photographies indisponibles.' : 'Chargement des photographies…'}
+              </div>
+            ) : (
+              <DossierResultWorkspace
+                key={dossierId}
+                dossierId={dossierId}
+                response={response}
+                status={response?.status ?? dossier.status}
+                loading={!response && resource.loading}
+                error={resource.error}
+                onRetry={resource.refresh}
+              />
+            )}
           </div>
         )}
       </div>

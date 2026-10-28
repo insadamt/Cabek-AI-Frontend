@@ -1,3 +1,4 @@
+/** Scan lifecycle regressions and category admission checks; depends on mocked API and presentation delays. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, readDossier, startScan } from './api';
 import { waitForAnalysisDelay } from './analysisMotion';
@@ -46,6 +47,26 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('home analysis lifecycle', () => {
+  it('rejects verification after reading current metadata, even when a stale action requested a scan', async () => {
+    const scan = createScan();
+    vi.mocked(readDossier).mockResolvedValueOnce({
+      ...response('not_analyzed'),
+      type: 'verification',
+    });
+    await expect(runHomeScan(scan.options)).rejects.toMatchObject({
+      code: 'analysis_not_supported',
+    });
+    expect(startScan).not.toHaveBeenCalled();
+  });
+  it('rejects quick estimation without saved photographs or registration date', async () => {
+    const scan = createScan();
+    vi.mocked(readDossier).mockResolvedValueOnce({
+      ...response('not_analyzed'),
+      type: 'chiffrage_rapide',
+    });
+    await expect(runHomeScan(scan.options)).rejects.toMatchObject({ code: 'no_valid_photos' });
+    expect(startScan).not.toHaveBeenCalled();
+  });
   it('starts reading the server before presentation and waits for both before returning success', async () => {
     const scan = createScan();
     vi.mocked(readDossier).mockResolvedValueOnce(response('completed'));

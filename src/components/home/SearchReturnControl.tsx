@@ -1,3 +1,5 @@
+/** Persistent morphing search/return surface; preserves category filters through URL updates. */
+import { currentCollectionUrl } from '../../lib/workflows';
 import { ArrowUpRight } from 'lucide-react';
 import { transitionHomeView } from '../../lib/homeViewTransition';
 import { searchIconPaths, returnIconPaths } from '../../lib/searchReturnMotion';
@@ -36,7 +38,7 @@ export function SearchReturnControl({
           event.preventDefault();
           if (focused || disabled) return;
           const nextSearch = String(new FormData(event.currentTarget).get('search') ?? '').trim();
-          transitionHomeView(`/?${new URLSearchParams({ search: nextSearch })}`);
+          transitionHomeView(currentCollectionUrl({ search: nextSearch, offset: null }));
         }}
       >
         <input

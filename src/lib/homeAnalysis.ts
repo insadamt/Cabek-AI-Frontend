@@ -1,3 +1,5 @@
+/** Existing guarded scan lifecycle; checks current workflow eligibility before launching any network mutation. */
+import { canAnalyzeDossier } from './workflows';
 import { ApiError, readDossier, startScan } from './api';
 import { waitForAnalysisDelay } from './analysisMotion';
 import type { DossierResponse } from '../types';
@@ -37,6 +39,12 @@ export async function runHomeScan({
 
   let response: DossierResponse | undefined = await readDossier(dossierId, signal);
   signal.throwIfAborted();
+  if (response.type === 'verification') throw new ApiError('analysis_not_supported');
+  if (
+    response.type === 'chiffrage_rapide' &&
+    !canAnalyzeDossier({ ...response, photo_count: response.photos.length })
+  )
+    throw new ApiError('no_valid_photos');
   if (startIfNeeded && (response.status === 'not_analyzed' || response.status === 'failed')) {
     try {
       response = await startScan(dossierId, signal);

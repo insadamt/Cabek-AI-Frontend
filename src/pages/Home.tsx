@@ -1,4 +1,7 @@
+/** Shared category collection, retaining the established carousel, search and document interactions. */
 import { useEffect, useRef } from 'react';
+import { CategoryControls } from '../components/home/CategoryControls';
+import { categoryPath, collectionQuery, collectionUrl, type Category } from '../lib/workflows';
 import { DossierCarousel } from '../components/home/DossierCarousel';
 import { HomeSearchResults } from '../components/home/HomeSearchResults';
 import { HomeFrame } from '../components/home/HomeFrame';
@@ -11,12 +14,17 @@ import { finishHomeViewTransition } from '../lib/homeViewTransition';
 
 const dossiersPerPage = 12;
 
-function HomeCarousel() {
+function HomeCarousel({ category }: { category: Category }) {
   const { searchParams } = useNavigation();
   const requestedSlide = Number(searchParams.get('slide') ?? 0);
   const slide = Number.isSafeInteger(requestedSlide) && requestedSlide >= 0 ? requestedSlide : 0;
   const offset = Math.floor(slide / dossiersPerPage) * dossiersPerPage;
-  const query: DossierQuery = { search: '', status: 'all', offset, limit: dossiersPerPage };
+  const query: DossierQuery = {
+    ...collectionQuery(category, searchParams),
+    search: '',
+    offset,
+    limit: dossiersPerPage,
+  };
   const resource = useResource(
     JSON.stringify(query),
     (signal) => loadHomeDossierWindow(query, signal),
@@ -32,18 +40,23 @@ function HomeCarousel() {
   const activeIndex = Math.max(0, data?.indices.indexOf(slide) ?? 0);
 
   function selectSlide(nextSlide: number) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams);
+    params.delete('slide');
     if (nextSlide > 0) params.set('slide', String(nextSlide));
 
     // Browsing replaces the selection so Back returns from a dossier to the same folder.
 
-    window.history.replaceState({}, '', `/${params.size ? `?${params}` : ''}`);
+    window.history.replaceState(
+      window.history.state,
+      '',
+      collectionUrl(categoryPath(category.type), params, {}),
+    );
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
   useEffect(() => {
-    document.title = 'CABEK AI — Dossiers';
-  }, []);
+    document.title = `CABEK AI — ${category.title}`;
+  }, [category]);
 
   return (
     <>
@@ -64,7 +77,14 @@ function HomeCarousel() {
       ) : (
         <div className="home-state" role="status">
           {resource.error ? (
-            <button onClick={resource.refresh}>Réessayer</button>
+            <div role="alert">
+              <p>
+                {resource.error instanceof Error
+                  ? resource.error.message
+                  : 'Dossiers indisponibles.'}
+              </p>
+              <button onClick={resource.refresh}>Réessayer</button>
+            </div>
           ) : resource.loading ? (
             <span className="home-loading-indicator" aria-label="Chargement des dossiers" />
           ) : (
@@ -81,7 +101,7 @@ function HomeCarousel() {
   );
 }
 
-export function Home() {
+export function Home({ category }: { category: Category }) {
   const { searchParams } = useNavigation();
   useEffect(() => () => finishHomeViewTransition(), []);
 
@@ -92,12 +112,21 @@ export function Home() {
     Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
   return (
     <HomeFrame>
-      <div className="home-carousel-view" hidden={searchParams.has('search')}>
-        <HomeCarousel />
+      <div className="category-collection">
+        <CategoryControls category={category} />
+        <div className="category-content">
+          <div className="home-carousel-view" hidden={searchParams.has('search')}>
+            <HomeCarousel category={category} />
+          </div>
+          {searchParams.has('search') && (
+            <HomeSearchResults
+              search={searchParams.get('search') ?? ''}
+              offset={offset}
+              query={collectionQuery(category, searchParams, 24)}
+            />
+          )}
+        </div>
       </div>
-      {searchParams.has('search') && (
-        <HomeSearchResults search={searchParams.get('search') ?? ''} offset={offset} />
-      )}
     </HomeFrame>
   );
 }

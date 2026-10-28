@@ -1,3 +1,5 @@
+/** Shared scan lifecycle and island presentation; workflow eligibility is checked before any scan work. */
+import { canAnalyzeDossier } from '../lib/workflows';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { describeError, failureMessage } from '../lib/api';
 import { runScanAlongsidePresentation } from '../lib/homeAnalysis';
@@ -59,7 +61,7 @@ export function HomeAnalysisProvider({ children }: { children: ReactNode }) {
   }
 
   async function runAnalysis(dossier: DossierSummary, folder: HTMLElement) {
-    if (running.current) return;
+    if (running.current || !canAnalyzeDossier(dossier)) return;
     const paper = folder.querySelector<HTMLElement>('.folder-document');
     const island = document.querySelector<HTMLElement>('.ai-activity-island');
     if (!paper || !island) return;

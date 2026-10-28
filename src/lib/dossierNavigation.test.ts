@@ -1,3 +1,4 @@
+/** Opening sequence regression checks, including the originating category URL carried into navigation. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { previewDossiers, getPreviewResult } from '../preview/data';
 import type { DossierResponse } from '../types';
@@ -71,7 +72,15 @@ function open(options: Parameters<typeof openDossierFromFolder>[0]) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('window', new EventTarget());
+  vi.stubGlobal(
+    'window',
+    Object.assign(new EventTarget(), {
+      location: {
+        pathname: '/categories/forfait-expertise',
+        search: '?search=Dacia&slide=3',
+      },
+    }),
+  );
   vi.stubGlobal('document', { querySelector: () => ({}) });
   mocks.flyDocument.mockResolvedValue(undefined);
   mocks.flyPhotos.mockResolvedValue(undefined);
@@ -117,6 +126,7 @@ describe('fast prepared dossier opening', () => {
     source.finishInsertion();
     await task;
     expect(mocks.navigate).toHaveBeenCalledWith('/dossiers/test', {
+      returnTo: '/categories/forfait-expertise?search=Dacia&slide=3',
       dossierEntrance: {
         dossier,
         response,

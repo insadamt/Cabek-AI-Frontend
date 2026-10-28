@@ -1,3 +1,4 @@
+/** Coordinates real image loading and physical folder opening; preserves the originating collection URL. */
 import { flushSync } from 'react-dom';
 import { navigate } from '../hooks/useNavigation';
 import type { DossierResponse, DossierSummary } from '../types';
@@ -130,7 +131,10 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     };
     window.removeEventListener('popstate', cancel);
     publishDossierOpening(null);
-    navigate(path, { dossierEntrance: entrance });
+    navigate(path, {
+      dossierEntrance: entrance,
+      returnTo: window.location.pathname + window.location.search,
+    });
   } catch (error) {
     imageLoading.abort();
     if (signal.aborted) return;

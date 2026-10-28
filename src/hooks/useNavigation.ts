@@ -1,3 +1,4 @@
+/** Browser history store shared by routes and filters; replacements keep successful creation out of Back history. */
 import { useSyncExternalStore } from 'react';
 
 function subscribe(listener: () => void) {
@@ -11,10 +12,11 @@ function currentLocation() {
 
 const scrollPositions = new Map<string, number>();
 
-export function navigate(path: string, state: Record<string, unknown> = {}) {
+export function navigate(path: string, state: Record<string, unknown> = {}, replace = false) {
   const previousPathname = window.location.pathname;
   scrollPositions.set(currentLocation(), window.scrollY);
-  window.history.pushState(state, '', path);
+  if (replace) window.history.replaceState(state, '', path);
+  else window.history.pushState(state, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
   // Filtering changes the URL in place; only a new screen should reset the page scroll.
 

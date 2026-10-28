@@ -1,3 +1,7 @@
+/** Application routes for category-first browsing and stable dossier deep links; uses the existing navigation store. */
+import { Categories } from './pages/Categories';
+import { CreateDossier } from './pages/CreateDossier';
+import { parseWorkflowRoute } from './lib/workflows';
 import { Component, type ReactNode } from 'react';
 import { EmptyState } from './components/EmptyState';
 import { useNavigation } from './hooks/useNavigation';
@@ -31,6 +35,7 @@ export default function App() {
   const { pathname, navigate } = useNavigation();
   const routeRef = useRouteMotion(pathname);
   const match = /^\/dossiers\/([^/]+)\/?$/.exec(pathname);
+  const workflowRoute = parseWorkflowRoute(pathname);
   let dossierId: string | undefined;
   try {
     if (match) dossierId = decodeURIComponent(match[1]);
@@ -41,7 +46,11 @@ export default function App() {
     <ErrorBoundary>
       <div ref={routeRef} className="route-viewport">
         {pathname === '/' ? (
-          <Home />
+          <Categories />
+        ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
+          <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
+        ) : workflowRoute ? (
+          <Home key={workflowRoute.category.type} category={workflowRoute.category} />
         ) : dossierId ? (
           <HomeFrame variant="dossier">
             <Dossier key={dossierId} dossierId={dossierId} />

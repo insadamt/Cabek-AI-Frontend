@@ -1,4 +1,12 @@
+/** Shared CABEK Global transport and preview adapters; components never contact AutoEstimate directly. */
 import axios from 'axios';
+import type {
+  CreateDossierInput,
+  UploadDossierPhotosInput,
+  WorkflowApiAdapter,
+} from '../workflowTypes';
+import { createPreviewWorkflow, uploadPreviewPhotos } from '../preview/workflows';
+import { validCreation } from './workflows';
 import type {
   DossierList,
   DossierQuery,
@@ -24,6 +32,63 @@ const client = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+// Upload one multipart file per request, matching CABEK Global's workflow_routes.py contract.
+
+const workflowAdapter: WorkflowApiAdapter = {
+  create: (input, signal) => request(() => client.post('/api/dossiers', input, { signal })),
+  upload: async (input, signal, onPhotoSaved) => {
+    let response: DossierResponse | undefined;
+    let completed = 0;
+    for (const file of input.files) {
+      signal?.throwIfAborted();
+      const body = new FormData();
+      body.append('file', file);
+      body.append('side', input.side);
+      if (input.phase) body.append('phase', input.phase);
+      const saved = await request<DossierResponse>(() =>
+        client.post(`/api/dossiers/${encodeURIComponent(input.dossierId)}/photos`, body, {
+          signal,
+        }),
+      );
+      response = saved;
+      if (!signal?.aborted) onPhotoSaved?.(saved, ++completed);
+    }
+    return response!;
+  },
+};
+export const brandSortAvailable = isPreview;
+
+export async function createDossier(
+  input: CreateDossierInput,
+  signal?: AbortSignal,
+): Promise<DossierResponse> {
+  if (!validCreation(input)) throw new ApiError('invalid_request', 422);
+  signal?.throwIfAborted();
+  if (isPreview) {
+    const brand = getPreviewBrands().find((item) => item.id === input.marque_id);
+    const model = getPreviewModels(input.marque_id).find((item) => item.id === input.model_id);
+    if (!brand || !model) throw new ApiError('invalid_vehicle_selection', 422);
+    return createPreviewWorkflow(input, { marque: brand.libelle, modele: model.libelle });
+  }
+  return workflowAdapter.create(input, signal);
+}
+
+export async function uploadDossierPhotos(
+  input: UploadDossierPhotosInput,
+  signal?: AbortSignal,
+  onPhotoSaved?: (response: DossierResponse, completed: number) => void,
+): Promise<DossierResponse> {
+  if (
+    !input.files.length ||
+    input.files.some((file) => !['image/jpeg', 'image/png'].includes(file.type))
+  )
+    throw new ApiError('invalid_image', 422);
+  if (input.files.some((file) => file.size > 10 * 1024 * 1024))
+    throw new ApiError('upload_too_large', 413);
+  if (isPreview) return uploadPreviewPhotos(input, signal);
+  return workflowAdapter.upload(input, signal, onPhotoSaved);
+}
+
 async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   try {
     return (await operation()).data;
@@ -45,6 +110,7 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
 
 export function listDossiers(query: DossierQuery, signal?: AbortSignal): Promise<DossierList> {
   if (isPreview) return Promise.resolve(getPreviewDossiers(query));
+  if (query.sort === 'brand_asc') return Promise.reject(new ApiError('unsupported_sort'));
   return request(() =>
     client.get('/api/dossiers', {
       signal,

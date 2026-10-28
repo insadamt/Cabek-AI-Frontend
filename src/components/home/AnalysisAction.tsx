@@ -1,3 +1,5 @@
+/** Category-aware dossier action; preserves expertise scans and opens capture-only dossiers safely. */
+import { canAnalyzeDossier } from '../../lib/workflows';
 import { ArrowUpRight, Check, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { useDossierOpening } from '../../hooks/useDossierOpening';
@@ -26,7 +28,11 @@ export function AnalysisAction({
   const session =
     analysis.session?.dossier.dossier_id === dossier?.dossier_id ? analysis.session : null;
   const status = dossier ? analysis.resolveStatus(dossier) : undefined;
-  const canAnalyze = status === 'not_analyzed' || status === 'failed';
+  // Quick dossiers open capture first so returning users can add sides before choosing to scan.
+
+  const supportsAnalysis =
+    !!dossier && dossier.type !== 'chiffrage_rapide' && canAnalyzeDossier(dossier);
+  const canAnalyze = supportsAnalysis && (status === 'not_analyzed' || status === 'failed');
   const complete = session?.phase === 'done' && !opening;
   const uploading = session?.phase === 'uploading';
   const working = (!!session && analysis.busy) || openingThisDossier;
@@ -40,7 +46,7 @@ export function AnalysisAction({
           ? 'Analyse…'
           : canAnalyze
             ? 'Analyser'
-            : status === 'queued' || status === 'processing'
+            : supportsAnalysis && (status === 'queued' || status === 'processing')
               ? 'Suivre'
               : 'Ouvrir';
   const unavailable = !dossier || analysis.busy || openingBusy || disabled;
@@ -62,7 +68,7 @@ export function AnalysisAction({
           scope?.querySelectorAll<HTMLElement>('.dossier-folder') ?? [],
         ).find((element) => element.dataset.dossierId === dossier.dossier_id);
         beforeActivate?.();
-        if (canAnalyze || status === 'queued' || status === 'processing') {
+        if (supportsAnalysis && (canAnalyze || status === 'queued' || status === 'processing')) {
           if (folder) analysis.beginAnalysis({ ...dossier, status: status! }, folder);
         } else {
           const path = event.currentTarget.getAttribute('href')!;

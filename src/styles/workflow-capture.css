@@ -1,0 +1,297 @@
+/* Vehicle creation, side capture and repair comparisons extend the existing dossier shell.
+   Depends on category controls, original-photo comparison and dossier responsive styles. */
+
+/* ============================================================
+   Physical vehicle form
+   ============================================================ */
+
+.workflow-create-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 90px 24px max(30px, env(safe-area-inset-bottom));
+}
+.workflow-create-page > .back-link {
+  max-width: 760px;
+  display: flex;
+  margin: 0 auto 24px;
+}
+.workflow-create-sheet {
+  max-width: 760px;
+  margin: auto;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 18px 45px #00000009;
+  padding: clamp(20px, 4vw, 45px);
+}
+.workflow-create-sheet > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 25px;
+  margin-bottom: 32px;
+  font-size: 11px;
+  color: var(--secondary);
+}
+.workflow-create-sheet > header img {
+  width: 95px;
+  object-fit: contain;
+}
+.workflow-vehicle-form h2 {
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  margin: 14px 0 28px;
+}
+.workflow-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 20px;
+}
+.workflow-fields label {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  font-size: 12px;
+}
+.workflow-fields input,
+.workflow-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+}
+.workflow-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 30px;
+}
+.workflow-note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--secondary);
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-top: 14px;
+}
+.workflow-vehicle-form > [role='alert'],
+.workflow-vehicle-form > [role='status'] {
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+/* ============================================================
+   Saved side evidence and before/after comparison
+   ============================================================ */
+
+.workflow-workspace {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 3px 6px 24px;
+  scrollbar-width: thin;
+}
+.workflow-view-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  margin-bottom: 12px;
+}
+.quick-estimate-workspace {
+  display: flex;
+  flex-direction: column;
+}
+.quick-estimate-workspace > .dossier-result-workspace {
+  flex: 1;
+}
+.workflow-capture {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: white;
+}
+.workflow-capture-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.workflow-capture-heading h2,
+.repair-comparison h2 {
+  font-size: clamp(21px, 2.4vw, 30px);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  margin-top: 12px;
+}
+.workflow-capture-heading > span {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.workflow-sides,
+.workflow-phases {
+  display: flex;
+  width: 100%;
+  gap: 3px;
+  margin-block: 14px;
+}
+.workflow-sides button,
+.workflow-phases button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 44px;
+  flex: 1;
+  font-size: 12px;
+  padding: 8px;
+}
+.workflow-phases button {
+  font-size: 11px;
+}
+.workflow-photo-placeholder {
+  min-height: 200px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 20px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  color: var(--secondary);
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
+}
+.workflow-saved-side > .comparison {
+  height: clamp(220px, 35dvh, 420px);
+  aspect-ratio: auto;
+}
+.workflow-saved-side .comparison img,
+.repair-comparison-pair .comparison img {
+  object-fit: contain;
+}
+.workflow-upload-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 18px;
+}
+.workflow-file-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.workflow-file-label input {
+  max-width: 100%;
+  min-height: 44px;
+  padding-top: 10px;
+  font-size: 12px;
+}
+.workflow-file-list {
+  width: 100%;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 11px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.workflow-capture > [role='status'],
+.workflow-capture > [role='alert'] {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 12px;
+}
+.workflow-photo-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+}
+.workflow-photo-index button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eee;
+}
+.workflow-photo-index button[aria-pressed='true'] {
+  background: #161616;
+  color: white;
+}
+.repair-comparison {
+  padding: 20px 0;
+}
+.repair-comparison-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.repair-comparison-pair figure {
+  min-width: 0;
+  margin: 0;
+}
+.repair-comparison-pair figcaption {
+  font-size: 12px;
+  padding: 10px 0;
+}
+.repair-comparison-pair .comparison {
+  height: clamp(200px, 42dvh, 500px);
+  aspect-ratio: auto;
+}
+
+@media (max-width: 767px), (max-height: 520px) and (max-width: 950px) {
+  .workflow-workspace {
+    height: auto;
+    min-height: 300px;
+    overflow: visible;
+  }
+  .quick-estimate-workspace > .dossier-result-workspace {
+    min-height: 500px;
+  }
+}
+@media (max-width: 600px) {
+  .workflow-fields {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .workflow-create-page {
+    padding-inline: 12px;
+  }
+  .workflow-create-sheet > header {
+    flex-wrap: wrap;
+  }
+  .workflow-capture {
+    padding: 12px;
+  }
+  .workflow-capture .eyebrow {
+    font-size: 9px;
+  }
+  .workflow-form-footer {
+    flex-wrap: wrap;
+  }
+  .workflow-form-footer .workflow-primary {
+    width: 100%;
+  }
+  .repair-comparison-pair {
+    grid-template-columns: 1fr;
+  }
+  .workflow-sides button {
+    font-size: 11px;
+    padding-inline: 5px;
+  }
+}

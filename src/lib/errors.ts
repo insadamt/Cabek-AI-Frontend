@@ -1,4 +1,22 @@
+/** French API feedback shared by requests, capture forms and the activity island. */
 const errorMessages: Record<string, string> = {
+  workflow_contract_unavailable:
+    'Ce parcours sera disponible après connexion de l’API des nouveaux dossiers. Vous pouvez le découvrir dans l’aperçu.',
+  analysis_not_supported: 'L’analyse IA est indisponible pour les photos avant / après.',
+  scan_disabled_for_type: 'L’analyse IA est indisponible pour les photos avant / après.',
+  incomplete_vehicle_metadata:
+    'Complétez le véhicule et sa date de mise en circulation avant l’analyse.',
+  unsupported_sort: 'Le tri par marque n’est pas encore disponible. Choisissez un tri par date.',
+  invalid_date_range: 'La date de début doit précéder la date de fin.',
+  upload_too_large: 'Chaque photo doit faire au maximum 10 Mio.',
+  unsupported_image: 'Choisissez une photographie JPEG ou PNG.',
+  invalid_filename: 'Le nom du fichier image est invalide.',
+  before_photos_incomplete: 'Enregistrez les quatre photos avant réparation pour continuer.',
+  photo_slot_occupied:
+    'Une photo est déjà enregistrée pour ce côté et cette phase. Actualisez le dossier.',
+  invalid_photo_phase: 'Cette phase ne correspond pas au type de dossier.',
+  evidence_finalized: 'Ces photographies sont finalisées et ne peuvent plus être modifiées.',
+  externally_owned_dossier: 'Ce dossier d’expertise est géré par son application d’origine.',
   already_analyzed: 'Ce dossier a déjà été analysé. Ouvrez son résultat enregistré.',
   scan_in_progress: 'Une analyse est déjà en cours pour ce dossier.',
   invalid_request: 'Les paramètres de la demande sont invalides.',

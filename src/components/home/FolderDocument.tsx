@@ -1,3 +1,5 @@
+/** Physical vehicle identity sheet; category workflow labels reuse the existing extraction timeline. */
+import { workflowLabels } from '../../lib/workflows';
 import { useFolderDocumentMotion } from '../../hooks/useFolderDocumentMotion';
 import { shortStatusLabels } from '../../lib/format';
 import type { DossierSummary } from '../../types';
@@ -40,7 +42,9 @@ export function FolderDocument({
           </span>
           <span className={`folder-document-status status-${dossier.status}`}>
             <span aria-hidden="true" />
-            {shortStatusLabels[dossier.status]}
+            {dossier.workflow_status
+              ? workflowLabels[dossier.workflow_status]
+              : shortStatusLabels[dossier.status]}
           </span>
         </div>
       </div>

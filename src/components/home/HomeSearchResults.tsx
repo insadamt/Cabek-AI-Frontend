@@ -1,4 +1,7 @@
+/** Reusable server-backed folder grid; category queries reuse its selection and search motion. */
 import { X } from 'lucide-react';
+import type { DossierQuery } from '../../types';
+import { currentCollectionUrl, workflowLabels } from '../../lib/workflows';
 import { SearchReturnControl } from './SearchReturnControl';
 import { useRef } from 'react';
 import { transitionHomeView } from '../../lib/homeViewTransition';
@@ -16,15 +19,17 @@ import { DossierFolder } from './DossierFolder';
 interface HomeSearchResultsProps {
   search: string;
   offset: number;
+  query?: DossierQuery;
 }
 
-export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
+export function HomeSearchResults({ search, offset, query }: HomeSearchResultsProps) {
   const analysis = useHomeAnalysis();
   const sectionRef = useRef<HTMLElement>(null);
   const selection = useGridFolderSelection(sectionRef);
   const { selectedFolder, documentOpen, busy } = selection;
-  const resource = useResource(JSON.stringify({ search, offset }), (signal) =>
-    listDossiers({ search, status: 'all', limit: 24, offset }, signal),
+  const requestQuery = query ?? { search, status: 'all' as const, limit: 24, offset };
+  const resource = useResource(JSON.stringify(requestQuery), (signal) =>
+    listDossiers(requestQuery, signal),
   );
   const previousData = useRef(resource.data);
   if (resource.data) previousData.current = resource.data;
@@ -39,7 +44,7 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
       : folders;
 
   function showPage(nextOffset: number) {
-    transitionHomeView(`/?${new URLSearchParams({ search, offset: String(nextOffset) })}`);
+    transitionHomeView(currentCollectionUrl({ search, offset: String(nextOffset) }));
   }
 
   return (
@@ -87,11 +92,20 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
               </div>
               <SearchResultTitle dossier={dossier} search={search} />
               <span className={`status-badge status-${dossier.status}`}>
-                {statusLabels[dossier.status]}
+                {dossier.workflow_status
+                  ? workflowLabels[dossier.workflow_status]
+                  : statusLabels[dossier.status]}
               </span>
             </article>
           ))}
-        {resource.error != null && <button onClick={resource.refresh}>Réessayer</button>}
+        {resource.error != null && (
+          <p role="alert">
+            <span>
+              {resource.error instanceof Error ? resource.error.message : 'Dossiers indisponibles.'}
+            </span>{' '}
+            <button onClick={resource.refresh}>Réessayer</button>
+          </p>
+        )}
         {data?.total === 0 && (
           <p className="home-search-empty">Aucun dossier ne correspond à votre recherche.</p>
         )}
@@ -134,7 +148,9 @@ export function HomeSearchResults({ search, offset }: HomeSearchResultsProps) {
             data-flip-id="home-action"
             type="button"
             disabled={busy}
-            onClick={() => transitionHomeView('/', 'reverse')}
+            onClick={() =>
+              transitionHomeView(currentCollectionUrl({ search: null, offset: null }), 'reverse')
+            }
           >
             <X size={18} aria-hidden="true" /> Effacer
           </button>

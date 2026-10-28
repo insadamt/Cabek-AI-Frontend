@@ -1,3 +1,5 @@
+/** Shared physical dossier carousel; current category and filters survive search transitions. */
+import { currentCollectionUrl } from '../../lib/workflows';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
@@ -195,7 +197,7 @@ export function DossierCarousel({
             // The carousel stays mounted during search, so reset its field before Clear reveals it.
 
             event.currentTarget.reset();
-            transitionHomeView(`/?${new URLSearchParams({ search })}`);
+            transitionHomeView(currentCollectionUrl({ search, offset: null }));
           }}
         >
           <Search size={17} aria-hidden="true" />

@@ -1,3 +1,5 @@
+/** Expertise fixtures and simulated server queries; workflow examples extend the same preview API. */
+import { workflowExamples, workflowSummaries } from './workflows';
 import type {
   AnalysisResult,
   DossierList,
@@ -58,7 +60,7 @@ const completeFinancial: FinancialResult = {
   warnings: [],
 };
 
-function previewAnalysis(dossier: DossierSummary): AnalysisResult {
+export function createPreviewAnalysis(dossier: DossierSummary): AnalysisResult {
   const incomplete = dossier.vehicle.marque === 'Toyota';
   const empty = dossier.vehicle.modele === 'Duster';
   const financial: FinancialResult = empty
@@ -159,11 +161,15 @@ function previewAnalysis(dossier: DossierSummary): AnalysisResult {
 
 export function getPreviewDossiers(query: DossierQuery): DossierList {
   const search = query.search.trim().toLocaleLowerCase('fr');
-  const matches = previewDossiers.filter((item) =>
-    [item.dossier_id, item.vehicle.marque, item.vehicle.modele, item.vehicle.matricule]
-      .join(' ')
-      .toLocaleLowerCase('fr')
-      .includes(search),
+  const matches = [...previewDossiers, ...workflowSummaries()].filter(
+    (item) =>
+      (!query.type || (item.type ?? 'forfait_expertise') === query.type) &&
+      (!query.created_from || (item.created_at ?? '').slice(0, 10) >= query.created_from) &&
+      (!query.created_to || (item.created_at ?? '').slice(0, 10) <= query.created_to) &&
+      [item.dossier_id, item.vehicle.marque, item.vehicle.modele, item.vehicle.matricule]
+        .join(' ')
+        .toLocaleLowerCase('fr')
+        .includes(search),
   );
   const counts: Record<FilterStatus, number> = {
     all: matches.length,
@@ -174,7 +180,22 @@ export function getPreviewDossiers(query: DossierQuery): DossierList {
     failed: 0,
   };
   matches.forEach((item) => counts[item.status]++);
-  const items = matches.filter((item) => query.status === 'all' || item.status === query.status);
+  const items = matches.filter(
+    (item) =>
+      (query.status === 'all' || item.status === query.status) &&
+      (!query.workflow_status || (item.workflow_status ?? item.status) === query.workflow_status),
+  );
+  items.sort((left, right) =>
+    query.sort === 'brand_asc'
+      ? left.vehicle.marque.localeCompare(right.vehicle.marque, 'fr')
+      : query.sort === 'created_at_asc'
+        ? (left.created_at ?? '').localeCompare(right.created_at ?? '')
+        : query.sort === 'updated_at_desc'
+          ? (right.updated_at ?? right.created_at ?? '').localeCompare(
+              left.updated_at ?? left.created_at ?? '',
+            )
+          : (right.created_at ?? '').localeCompare(left.created_at ?? ''),
+  );
   return {
     items: items.slice(query.offset, query.offset + query.limit),
     total: items.length,
@@ -186,13 +207,15 @@ export function getPreviewDossiers(query: DossierQuery): DossierList {
 }
 
 export function getPreviewResult(id: string): DossierResponse {
+  const workflow = workflowExamples().find((item) => item.dossier_id === id);
+  if (workflow) return workflow;
   const dossier = previewDossiers.find((item) => item.dossier_id === id);
   if (!dossier) throw new ApiError('dossier_not_found', 404);
   const status: ScanStatus = dossier.status;
   return {
     dossier_id: id,
     vehicle: dossier.vehicle,
-    photos: previewAnalysis(dossier).photos.map((photo) => ({
+    photos: createPreviewAnalysis(dossier).photos.map((photo) => ({
       photo_id: photo.photo_id,
       original_url: photo.original_url,
       preview_url: photo.original_url,
@@ -216,7 +239,7 @@ export function getPreviewResult(id: string): DossierResponse {
             result_ready: false,
           }
         : null,
-    result: status === 'completed' ? previewAnalysis(dossier) : null,
+    result: status === 'completed' ? createPreviewAnalysis(dossier) : null,
   };
 }
 
