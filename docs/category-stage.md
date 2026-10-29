@@ -1,120 +1,137 @@
-# Cinematic category selection
+# Premium 3D category stage
 
-This document explains the category landing's pre-rendered films, selection
-behavior, visual direction and acceptance checks. It depends on the existing
-HomeFrame/activity island, shared category routes, GSAP and local video assets.
+This guide explains the homepage's continuous 3D introduction, workflow selection
+and camera interaction so the scene can be maintained without changing dossier
+behavior. It depends on HomeFrame/activity island, Three.js, GSAP, local Draco
+mesh decoding and the supplied sedan GLB. Current verification and acceptance
+checks are recorded in [premium-homepage-polish.md](premium-homepage-polish.md).
+The supplied model export and editable studio are documented in
+[studio-tunnel-upgrade.md](studio-tunnel-upgrade.md).
 
-The screen has one large fixed composition and three compact category selectors.
-Selecting a category changes the title, description, destination and animated
-scene. The vehicle and equipment are rendered offline; the browser displays a
-short muted film and ordinary accessible HTML controls.
+## Scene and introduction
 
-## Art direction and scenes
+One persistent WebGL canvas contains the supplied sedan and existing scanning
+bay. Metre-scaled graphite frames, satin aluminium details, partially open roof,
+recessed sensor windows, illuminated diffusers and the external control pedestal
+retain the tunnel's industrial identity. The car preserves its detailed geometry,
+interior and four independently rolling wheel assemblies.
 
-All three scenes share a glossy petrol vehicle, graphite equipment, near-white
-studio ground, clear reflections, soft shadows and lime accents. The camera and
-lighting are composed for the page rather than left to the user to position.
+Bare `/` starts the introduction automatically once the vehicle loads:
 
-- **Forfait / Devis d’expertise:** the vehicle approaches and enters the scan
-  portal. Interior lighting and the tunnel explain the expertise workflow.
-- **Chiffrage rapide:** a closer vehicle composition introduces photographic
-  frames and an unfilled estimate document. The illustration contains no claimed
-  price, detection or completed analysis.
-- **Photos avant / après:** before/after photographic frames assemble around
-  the vehicle. There is no AI scan visualization in this category.
+1. A close perspective view frames the approach car.
+2. The camera retreats upward and backward to reveal the tunnel in three quarters.
+3. The car drives into the stationary tunnel; wheel rotation follows travel distance.
+4. After the car parks, the camera moves closer and composes the equipment to the left.
+5. Three numbered category panels enter vertically on the right with a staggered reveal.
 
-Scene motion introduces a workflow; it is not API activity or analysis progress.
-The primary action opens the actual selected dossier collection immediately.
+The same camera, vehicle and canvas remain throughout. The final elevated
+three-quarter view exposes the vehicle's front, side, wheels and roof. Camera
+position, target, field of view and projection reserve room for the selector;
+model scale remains physical. The near-white studio, thin black application
+border and compact black CABEK AI island remain in place.
 
-## Playback and navigation
+A valid `?parcours=` URL initializes the selected category with the car parked.
+Reduced motion also settles the introduction and panel reveal immediately.
+**Passer l’introduction** reaches the final composition without reloading the scene.
 
-The selected film plays automatically once and holds its final composition.
-The matching WebP poster shows the final pose, so reduced motion and blocked video
-playback retain the complete illustration. Loading a new scene retains the
-outgoing visual until the incoming visual is ready. Superseded media events do
-not select or reveal older categories.
+## Workflow panels and navigation
 
-Selection is retained in the `parcours` query parameter. Three native selectors
-support keyboard navigation and visible focus. The controls sit outside the
-video crop and remain usable if a media request fails. Only the selected and
-briefly outgoing scene need video elements during a transition.
-The collection's Accueil action restores its category on the stage, as does
-browser Back after opening a collection.
+Exactly three separate panels display small indices and the complete labels:
 
-On the initial load the final pose stays hidden until playback starts or a
-fallback is needed, avoiding a final-to-first pose flash. Media readiness has a
-four-second budget that counts only visible, selected time. If both assets fail,
-a restrained category placeholder preserves a deliberate stage surface. Media
-nodes release their source on unmount, while outgoing crossfade frames remain
-available until their layer is removed.
+| Index | Category                    | Physical illumination                  |
+| ----- | --------------------------- | -------------------------------------- |
+| 01    | Forfait / Devis d’expertise | Restrained lime with pale green fill   |
+| 02    | Chiffrage rapide            | Muted lime with more focused lighting  |
+| 03    | Photos avant / après        | Soft white with stronger sensor detail |
 
-## Assets and reproducibility
+The selected panel uses a restrained lime edge and surface. Inactive panels stay
+understated, with readable single-line labels and visible hover/focus feedback.
+**Ouvrir les dossiers ↗** sits beneath the panels and opens the selected collection
+immediately. Category selection updates the URL without adding a history entry.
+Browser Back and the collection's Accueil action retain category context.
 
-The films and posters are local files under `public/cinematic/`. Blender source
-under `scripts/cinematic/` uses the custom CABEK tunnel and the attributed
-Ferrari model. Encoding uses ffmpeg H.264/yuv420p with faststart and no audio.
-Car attribution and derivative-render license information accompany the assets.
+Selecting a category reuses the loaded meshes, changes the light palette and
+emphasis, and can make a small camera adjustment while the view is unmodified.
+A manually explored view remains under the user's control. Selection never
+replays the vehicle entrance or submits a scan, upload or creation request.
 
-Each film renders 24 actual Blender poses at 960 × 600. ffmpeg interpolates the
-selection action to 24 fps; extracted intermediate frames are reviewed before
-delivery. Posters render at 1000 × 625. The retained source models are offline
-inputs; no GLB, Draco decoder or Three.js module is loaded by this screen.
+The tablist supports arrow keys, Home and End with one active tab stop. On phones,
+the same three panels stack below the scene; short landscape viewports use the
+compact right-hand layout. No separate studio caption or redundant selector
+heading competes with the equipment.
 
-All films are two seconds long, with 48 encoded frames at 24 fps and no audio.
-The six runtime assets total **564,271 bytes (551.0 KiB)**.
+## Camera interaction
 
-| Scene            |          Film |       Poster |
-| ---------------- | ------------: | -----------: |
-| Expertise        | 163,040 bytes | 38,804 bytes |
-| Chiffrage rapide | 157,538 bytes | 34,704 bytes |
-| Avant / après    | 138,789 bytes | 31,396 bytes |
+Drag the canvas to orbit; use the wheel or touch pinch to zoom. With the canvas
+focused, arrow keys orbit, `+` / `−` zoom and Home restores the composed view.
+**Réinitialiser la vue** provides the same discreet reset action. Camera movement
+uses damping, bounded distance/elevation and structural clearance checks.
 
-## Verification
+Manual input cancels an active camera transition before taking ownership of the
+same camera. If input occurs during the introduction, the vehicle continues its
+existing drive without teleporting. Reset and category transitions remain
+interruptible; hidden-tab and reduced-motion changes settle or pause their owner.
+The canvas retains an accessible interaction description without visible helper
+copy across the studio.
 
-- `npm test`: **273 tests passed across 32 files**. Coverage includes route
-  selection and restoration, hidden-tab loading budgets, failed playback,
-  decoded-frame readiness, stale callbacks and media resource release.
-- `npm run build`: TypeScript and Vite pass. Vite retains its advisory for the
-  514.81 kB application JavaScript chunk above 500 kB.
-- `git diff --check`: passes. Every new code/source file is below 500 lines.
-- The home and preview routes and all six media URLs return HTTP 200 from the
-  running Vite server, with the expected HTML/video/image content types.
-- ffprobe confirms every film's encoding, size, frame rate, duration and absence
-  of audio. Inspected intermediate and final frames retain complete geometry,
-  show no obvious interpolation ghosting and match the posters' compositions.
-- Visual QA uses the rendered posters and extracted video frames. Browser
-  layout, responsive interactions and device playback remain manual checks.
-  No Playwright or browser automation was used.
+## Rendering and lifecycle
 
-## Manual test checklist
+`CategoryStageVisual` lazily loads the scene and exposes loading, retry, skip and
+reset actions. `bayGeometry` owns tunnel architecture; `bayVehicle` loads and
+prepares the GLB; `bayPresentation` defines camera poses and vehicle travel;
+`bayChoreography` owns the introduction and independent illumination;
+`bayCameraController` handles orbit and camera transitions. `bayRuntime` owns
+loading cancellation, visibility, resize, context loss and on-demand frames.
 
-- [ ] Open `/` and the existing `/preview/expertise` link. Confirm the cinematic
-      selector appears with the shared frame and activity island.
-- [ ] Select all three categories. Confirm each has a distinct, meaningful
-      animation and the matching title, description and dossier destination.
-- [ ] Confirm playback starts from category selection, ends once and holds its
-      final composition without looping or showing playback/orbit controls.
-- [ ] Switch rapidly through categories under a slow connection. Confirm no
-      stale clip appears and the previous visual remains while the next one loads.
-- [ ] Block a video request or autoplay. Confirm the poster and actual category
-      navigation remain usable.
-- [ ] Fail the poster while delaying the video, then fail both media assets.
-      Confirm the outgoing scene or category placeholder prevents an empty stage.
-- [ ] Enable reduced motion before loading and during playback. Confirm the
-      complete poster appears and decorative transitions settle.
-- [ ] Leave the tab, return and navigate away during playback. Confirm hidden or
-      unmounted videos stop consuming playback resources.
-- [ ] Background the page for over four seconds before the first frame, then
-      return. Confirm hidden time does not prematurely expire the load budget.
-- [ ] Use keyboard-only selection and activate the collection link. Confirm
-      focus and the URL selection remain coherent.
-- [ ] Reload a category selection and use Back from a dossier collection.
-- [ ] Check 320px, 390px, tablet, desktop, short landscape and 200% zoom for
-      readable labels, useful image size and no horizontal overflow.
-- [ ] Confirm category previews never send scan, upload or dossier-creation
-      requests and preserve the existing dossier workflows.
+The studio uses a prefiltered reflection environment, clearcoat pearl paint,
+optical glazing, differentiated rubber/alloy materials, ACES tone mapping and
+one soft shadowed key light. Category lights illuminate nearby surfaces alongside
+the emissive scanner strips. Exposure, reflections and contact shadows are
+balanced without bloom or a mirror floor.
 
-Suggested commits:
+Frames are requested during loading, choreography, resize and camera damping,
+then stop when the scene settles. Hidden/offscreen scenes pause their timelines
+and cancel queued frames. Pixel ratio is capped at 1.75 desktop / 1.35 narrow
+screens, with one 2048px desktop / 1024px narrow shadow map. Category changes reuse
+decoded assets and do not drive per-frame React state updates.
 
-- `feat(home): introduce cinematic category selection`
-- `feat(motion): animate category changes with rendered vehicle scenes`
+Leaving aborts network loading, guards late decoding, removes observers/listeners,
+kills timelines and disposes geometry, materials, textures, reflection targets,
+shadows and renderer resources. Reduced motion settles the latest requested
+lighting and camera destination immediately.
+
+If WebGL, model loading or the graphics context fails, the failure releases the
+workflow panels and offers **Réessayer**. Dossier navigation remains available.
+Retry reconstructs the real scene with the selected category parked.
+
+## Assets and provenance
+
+The active local model remains `public/models/studio-v2/cabek-vehicle.glb`, exported
+from the user's supplied sedan. Its original author/license was not supplied;
+see [model provenance](../public/models/LICENSES.md). Export adaptations include
+portable paint/glazing, embedded texture compression, metre scaling and wheel
+pivots. Geometry, smooth normals, interior and authored PBR maps are retained.
+The earlier Ferrari remains only in historical assets and rendered derivatives.
+
+Three.js 0.180.0 and the glTF Draco wrapper/WASM decoder are pinned locally. The
+decoder's Apache 2.0 license accompanies its files. The runtime continues to use
+mesh geometry rather than vehicle images, video or a flat substitute.
+
+## Verification and manual review
+
+See [premium-homepage-polish.md](premium-homepage-polish.md) for the current test,
+production build and composition report. Historical test totals and older camera
+renders do not describe the current homepage. No Playwright or browser automation
+is used; browser GPU appearance, touch behavior and device frame rate require
+manual review.
+
+- [ ] Reload `/`; verify close POV, upward/backward reveal, rolling entry, parked left composition and vertical panel reveal form one continuous sequence.
+- [ ] Inspect front, side, wheels, roof, recessed sensors and external terminal; verify the equipment dominates the desktop composition.
+- [ ] Switch all three categories; verify exact labels, selected lime accent, physical light changes, stable parked car and correct dossier destinations.
+- [ ] Drag, zoom, reset and use canvas arrow keys, `+` / `−` and Home; verify smooth movement, safe clearance and no camera jump on takeover.
+- [ ] Interrupt the introduction with manual camera input; verify the car continues its existing drive. Test the skip action separately.
+- [ ] Open a direct category URL and return from a collection with Accueil/browser Back; verify selected context and parked composition.
+- [ ] Enable reduced motion before and during entry, lighting and camera transitions; verify immediate coherent states without replay.
+- [ ] Hide/restore the tab mid-entry and after orbiting; verify pause/resume and no perpetual idle rendering.
+- [ ] Fail model loading or lose WebGL context; verify retry and usable dossier navigation.
+- [ ] Check 1920×1080, 1440×900, smaller desktops, 320px/390px phones, short landscape and 200% zoom for readable panels and reachable controls.

@@ -1,5 +1,23 @@
 # CABEK scanner model source
 
+This directory exports the active frontend tunnel and its exact camera poses for
+an editable Blender composition and bounded visual review. It depends on the
+Three.js scene builders, Blender 5 and the exported supplied sedan. The older
+scanner-generation scripts below remain available as historical sources.
+
+The active scene builds real bay meshes in `src/components/scanner/bayGeometry.ts`.
+Export these meshes and camera endpoints with `node scripts/scanner/export_runtime_qa.mjs`.
+Run `ALSOFT_DRIVERS=null blender -b -setaudio None -t 4 --python scripts/scanner/render_runtime_qa.py`
+for three bounded desktop/portrait checks. The command saves the packed editable
+scene and previews in `assets/blender/cabek-studio-v2/`; the exporter also saves
+`public/models/studio-v2/cabek-tunnel.glb`. These do not verify browser WebGL lighting.
+See [the current upgrade report](../../docs/studio-tunnel-upgrade.md).
+
+The exporter retains the older full-equipment QA camera poses. Current premium
+homepage framing uses `applyCinematicBayCamera` and is protected by
+`bayComposition.test.ts`; see [the polish report](../../docs/premium-homepage-polish.md).
+Historical Blender stills do not verify the current camera or browser shading.
+
 This directory contains the reproducible Blender source for the category page's
 custom scan tunnel. It keeps the equipment grounded in CABEK's industrial scan
 workflow while matching the app's graphite, white and lime materials. Generation

@@ -1,0 +1,134 @@
+/*
+ * Keeps the full-viewport 3D surface interactive with discreet camera controls and recoverable loading.
+ * Depends on CategoryStageVisual and HomeFrame; toolbar placement leaves the right-side workflows clear.
+ */
+.scanning-bay {
+  background: #f3f4f0;
+}
+.scanning-bay-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+  cursor: grab;
+}
+.scanning-bay-canvas:active {
+  cursor: grabbing;
+}
+.scanning-bay-canvas:focus-visible {
+  outline: 1px solid #7a8c5e;
+  outline-offset: -5px;
+}
+.scanning-bay.is-loading .scanning-bay-canvas {
+  opacity: 0;
+}
+.scanning-bay-loading {
+  position: absolute;
+  left: clamp(22px, 3vw, 48px);
+  bottom: 28px;
+  color: #66705f;
+  font-size: 11px;
+  letter-spacing: 0.015em;
+}
+.scanning-bay-error {
+  position: absolute;
+  inset: 0 30% 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  color: #556050;
+  font-size: 12px;
+  pointer-events: auto;
+}
+.scanning-bay-error button {
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid #a9b8a4;
+  border-radius: 4px;
+  background: #f6f8f2;
+  font-size: 11px;
+}
+.scanning-bay.is-failed .scanning-bay-canvas {
+  opacity: 0.12;
+}
+
+/* ============================================================
+   Camera-only controls stay separate from the physical terminal
+   ============================================================ */
+.bay-camera-toolbar {
+  position: absolute;
+  z-index: 1;
+  left: clamp(22px, 3vw, 48px);
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  max-width: calc(100% - 44px);
+  pointer-events: none;
+}
+.bay-camera-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #cfd5c6;
+  border-radius: 4px;
+  background: #f7f8f2df;
+  color: #59634f;
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: auto;
+  transition:
+    background-color 180ms,
+    border-color 180ms;
+}
+.bay-camera-toolbar button:hover {
+  background: #e8eddf;
+  border-color: #78866b;
+}
+.bay-camera-toolbar button:focus-visible {
+  outline: 2px solid #576a3b;
+  outline-offset: 3px;
+}
+.bay-camera-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .bay-camera-toolbar {
+    top: calc(var(--home-header-height) + 8px);
+    bottom: auto;
+    left: 16px;
+  }
+  .scanning-bay-loading {
+    top: calc(var(--home-header-height) + 16px);
+    bottom: auto;
+    left: 18px;
+  }
+  .scanning-bay-error {
+    inset: 60px 18px 280px;
+  }
+}
+@media (max-height: 560px) and (min-width: 561px) {
+  .bay-camera-toolbar {
+    top: auto;
+    bottom: 20px;
+  }
+  .scanning-bay-error {
+    inset: 60px 320px 20px 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bay-camera-toolbar button {
+    transition: none;
+  }
+}

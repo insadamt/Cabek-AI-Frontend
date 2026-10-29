@@ -1,4 +1,7 @@
-/** Route rendering checks for category-first entry, supported creation and stable dossier links. */
+/**
+ * Verifies automatic cinematic entry, accessible vertical choices and stable dossier destinations.
+ * Depends on server-rendered React markup, the real scene host and mocked navigation/data services.
+ */
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../App';
@@ -40,21 +43,49 @@ describe('category-first application routes', () => {
   it('shows exactly three category choices at home', () => {
     const markup = render('/');
     expect(markup.match(/role="tab"/g)).toHaveLength(3);
+    expect(markup).toContain('aria-orientation="vertical"');
     expect(markup).toContain('id="category-stage-tab-forfait_expertise"');
     expect(markup).toContain('id="category-stage-tab-chiffrage_rapide"');
     expect(markup).toContain('id="category-stage-tab-verification"');
+    expect(markup).toContain('>Forfait / Devis d’expertise</span>');
+    expect(markup).toContain('>Chiffrage rapide</span>');
+    expect(markup).toContain('>Photos avant / après</span>');
+    expect(markup.match(/class="category-stage-tab-index" aria-hidden="true"/g)).toHaveLength(3);
+    expect(markup).toContain('aria-hidden="true">01</span>');
+    expect(markup).toContain('aria-hidden="true">02</span>');
+    expect(markup).toContain('aria-hidden="true">03</span>');
     expect(markup).toContain('href="/categories/forfait-expertise"');
-    expect(markup).toContain('/cinematic/expertise.webp');
-    expect(markup).not.toContain('<canvas');
+    expect(markup).toContain('data-model="/models/studio-v2/cabek-vehicle.glb"');
+    expect(markup).toContain('data-renderer="three-webgl"');
+    expect(markup.match(/<canvas/g)).toHaveLength(1);
+    expect(markup).toContain('data-entrance="playing"');
+    expect(markup).toContain('data-intro-complete="false" inert="" aria-hidden="true"');
+    expect(markup).toContain(
+      'aria-selected="true" aria-controls="category-stage-panel" tabindex="0"',
+    );
+    expect(markup).not.toContain('pearl-sedan.png');
     expect(markup).not.toContain('Voir le passage');
+    expect(markup).not.toContain('<video');
+    expect(markup).not.toContain('L’expertise.');
   });
-  it.each([
-    ['chiffrage-rapide', 'quick'],
-    ['verification', 'verification'],
-  ])('restores selected category %s from the URL and links to its collection', (slug, asset) => {
-    const markup = render('/', `parcours=${slug}`);
-    expect(markup).toContain(`href="/categories/${slug}"`);
-    expect(markup).toContain(`/cinematic/${asset}.webp`);
+  it.each(['forfait-expertise', 'chiffrage-rapide', 'verification'])(
+    'restores selected category %s with the same parked vehicle and matching destination',
+    (slug) => {
+      const markup = render('/', `parcours=${slug}`);
+      expect(markup).toContain(`href="/categories/${slug}"`);
+      expect(markup).toContain('data-model="/models/studio-v2/cabek-vehicle.glb"');
+      expect(markup.match(/<canvas/g)).toHaveLength(1);
+      expect(markup).toContain('data-entrance="settled"');
+      expect(markup).toContain('data-intro-complete="true"');
+      expect(markup).not.toContain('inert=""');
+      expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
+    },
+  );
+  it('ignores an unknown parcours and starts the introduction with expertise selected', () => {
+    const markup = render('/', 'parcours=unknown');
+    expect(markup).toContain('href="/categories/forfait-expertise"');
+    expect(markup).toContain('data-entrance="playing"');
+    expect(markup).toContain('data-intro-complete="false"');
     expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
   });
   it('keeps the existing preview URL available with the new selector', () => {

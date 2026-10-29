@@ -1,5 +1,9 @@
 # CABEK category films
 
+The current category stage uses a live Three.js vehicle and procedural scanning
+bay. See [the current report](../../docs/category-stage.md).
+The Blender workflow below reproduces the retained earlier film experiment.
+
 These scripts render the category selector's fixed-camera films and reduced-motion
 posters. They use Blender 5's Cycles renderer, the scanner/vehicle assets in
 `public/models`, Python 3 with Pillow, and ffmpeg. Pre-rendering controls lighting

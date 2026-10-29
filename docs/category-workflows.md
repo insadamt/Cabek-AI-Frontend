@@ -12,7 +12,7 @@ landing refinement is documented in [category-stage.md](category-stage.md).
 
 | Route                              | Experience                                                            |
 | ---------------------------------- | --------------------------------------------------------------------- |
-| `/`                                | Cinematic stage with exactly three category selectors                 |
+| `/`                                | Live 3D vehicle and scanning bay with three category selectors        |
 | `/categories/forfait-expertise`    | Existing externally created expertise collection; no creation action  |
 | `/categories/chiffrage-rapide`     | Quick-estimation collection and creation action                       |
 | `/categories/verification`         | Before/after collection and creation action                           |
@@ -55,10 +55,16 @@ Frontend action eligibility and the scan lifecycle both reject verification.
 
 ## Motion and accessibility
 
-Category selection changes the rendered scene, copy and collection destination;
-the separate collection link navigates immediately. GSAP crossfades the selected
-scene, and the existing selection indicator follows the active control. New
-vehicle forms and side/phase changes use scoped GSAP reveals. Newly saved photo
+The homepage automatically runs one continuous close POV, elevated tunnel reveal,
+vehicle entry and leftward camera composition. Three numbered workflow panels
+then enter vertically on the right. Category selection changes the live 3D tunnel
+lighting and collection destination; the separate collection link navigates
+immediately. The parked vehicle stays in place while muted lime or soft white
+lighting transitions. Manual orbit/zoom retains camera ownership; direct category
+URLs and reduced motion initialize the parked composition. See
+[category-stage.md](category-stage.md) for camera controls and scene lifecycle,
+and [premium-homepage-polish.md](premium-homepage-polish.md) for current verification.
+New vehicle forms and side/phase changes use scoped GSAP reveals. Newly saved photo
 IDs trigger local confirmation motion; unchanged polling data does not replay it.
 Resize, navigation and reduced motion settle or clean up active animations.
 
@@ -111,8 +117,9 @@ fixtures remain read only.
 
 ## Verification
 
-- `npm test`: **273 tests passed across 32 files**, including the cinematic
-  landing and media lifecycle refinement.
+- The original workflow verification passed its route, integration and motion
+  tests. Current homepage validation is recorded in
+  [premium-homepage-polish.md](premium-homepage-polish.md).
 - `npm run build`: TypeScript and Vite passed. Vite reports a JavaScript chunk
   slightly above its 500 kB advisory threshold.
 - `git diff --check`: passed.

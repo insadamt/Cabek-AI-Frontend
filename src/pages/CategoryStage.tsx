@@ -1,50 +1,27 @@
 /**
- * The category landing is a cinematic selection stage, with one explicit action into each collection.
- * Depends on HomeFrame branding, workflow routes, local footage and the shared selection indicator.
+ * Places three readable workflow panels beside the continuous vehicle scene so the studio stays prominent.
+ * Depends on HomeFrame branding, the scene completion callback, scoped GSAP reveal and workflow routes.
  */
-import { ArrowUpRight, Camera, ScanLine, SplitSquareHorizontal } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
-import gsap from 'gsap';
+import { ArrowUpRight } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { HomeFrame } from '../components/home/HomeFrame';
-import { CategoryStageVisual, useStageReducedMotion } from '../components/home/CategoryStageVisual';
+import { CategoryStageVisual } from '../components/home/CategoryStageVisual';
 import { useNavigation } from '../hooks/useNavigation';
-import { useSelectionIndicator } from '../hooks/useSelectionIndicator';
+import { useCategoryStageReveal } from '../hooks/useCategoryStageReveal';
 import { categories, categoryPath, collectionUrl, type Category } from '../lib/workflows';
 import '../styles/category-stage.css';
-
-const sceneCopy: Record<
-  Category['type'],
-  { title: [string, string]; description: string; label: string; icon: typeof Camera }
-> = {
-  forfait_expertise: {
-    title: ['L’expertise.', 'Sous tous les angles.'],
-    description: 'Du passage dans le tunnel au rapport d’expertise. Tout commence ici.',
-    label: 'Forfait / Devis d’expertise',
-    icon: ScanLine,
-  },
-  chiffrage_rapide: {
-    title: ['Une estimation.', 'Une vision claire.'],
-    description: 'Les photos de votre véhicule. Une estimation pour avancer.',
-    label: 'Chiffrage rapide',
-    icon: Camera,
-  },
-  verification: {
-    title: ['Avant. Après.', 'La différence en images.'],
-    description: 'Retrouvez chaque côté du véhicule, avant et après sa réparation.',
-    label: 'Photos avant / après',
-    icon: SplitSquareHorizontal,
-  },
-};
 
 export function CategoryStage() {
   const { pathname, searchParams, navigate } = useNavigation();
   const selected =
     categories.find((item) => item.slug === searchParams.get('parcours')) ?? categories[0];
-  const reducedMotion = useStageReducedMotion();
-  const copyRef = useRef<HTMLDivElement>(null);
+  const initiallyParked = useRef(
+    categories.some((category) => category.slug === searchParams.get('parcours')),
+  ).current;
+  const [introComplete, setIntroComplete] = useState(initiallyParked);
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
-  const indicatorRef = useSelectionIndicator<HTMLDivElement>(selected.type);
-  const selectedCopy = sceneCopy[selected.type];
+  const dockRef = useCategoryStageReveal(introComplete);
+  const handleIntroComplete = useCallback(() => setIntroComplete(true), []);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -54,35 +31,10 @@ export function CategoryStage() {
     };
   }, []);
 
-  useLayoutEffect(() => {
-    const copy = copyRef.current;
-    if (!copy) return;
-    if (reducedMotion) {
-      gsap.set(copy, { opacity: 1, y: 0 });
-      return;
-    }
-    // Keep the selected label, heading and destination coherent while their surface reveals.
-
-    const animation = gsap.fromTo(
-      copy,
-      { opacity: 0, y: 12 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.32,
-        ease: 'power3.out',
-        clearProps: 'opacity,transform',
-      },
-    );
-    return () => {
-      animation.kill();
-    };
-  }, [selected, reducedMotion]);
-
   function selectCategory(category: Category) {
-    if (category.type === selected.type) return;
+    if (category.type === selected.type && searchParams.get('parcours') === category.slug) return;
 
-    // Selection is a view preference; opening a collection remains the deliberate navigation step.
+    // A category changes the preview without adding a history entry before the collection is opened.
 
     navigate(
       collectionUrl(pathname, searchParams, { parcours: category.slug }),
@@ -97,9 +49,11 @@ export function CategoryStage() {
     let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
+      case 'ArrowDown':
         nextIndex = (selectedIndex + 1) % categories.length;
         break;
       case 'ArrowLeft':
+      case 'ArrowUp':
         nextIndex = (selectedIndex + categories.length - 1) % categories.length;
         break;
       case 'Home':
@@ -119,24 +73,22 @@ export function CategoryStage() {
   return (
     <HomeFrame>
       <section className="category-stage" aria-label="Les parcours CABEK AI">
-        <div className="category-stage-topline" aria-hidden="true">
-          <span>À CHAQUE VÉHICULE, SON PARCOURS.</span>
-          <span>{selected.number} / 03</span>
-        </div>
-
-        <div className="category-stage-selection">
-          <p className="category-stage-selection-label">Choisissez votre parcours</p>
+        <div
+          ref={dockRef}
+          className="category-stage-dock"
+          data-intro-complete={introComplete}
+          inert={!introComplete}
+          aria-hidden={!introComplete || undefined}
+        >
           <div
-            ref={indicatorRef}
-            className="category-stage-tabs segmented-control"
+            className="category-stage-tabs"
             role="tablist"
             aria-label="Choisir un parcours"
+            aria-orientation="vertical"
             onKeyDown={handleCategoryKeys}
           >
-            <span className="selection-indicator" aria-hidden="true" />
             {categories.map((category, index) => {
               const selectedCategory = category.type === selected.type;
-              const Icon = sceneCopy[category.type].icon;
               return (
                 <button
                   key={category.type}
@@ -145,6 +97,7 @@ export function CategoryStage() {
                   }}
                   id={`category-stage-tab-${category.type}`}
                   className={selectedCategory ? 'selected' : ''}
+                  data-category-reveal
                   role="tab"
                   type="button"
                   aria-selected={selectedCategory}
@@ -152,35 +105,17 @@ export function CategoryStage() {
                   tabIndex={selectedCategory ? 0 : -1}
                   onClick={() => selectCategory(category)}
                 >
-                  <span className="category-stage-tab-number">{category.number}</span>
+                  <span className="category-stage-tab-index" aria-hidden="true">
+                    {category.number}
+                  </span>
                   <span className="category-stage-tab-title">{category.title}</span>
-                  <Icon size={20} strokeWidth={1.5} aria-hidden="true" />
                 </button>
               );
             })}
           </div>
-        </div>
-
-        <div
-          id="category-stage-panel"
-          className="category-stage-content"
-          role="tabpanel"
-          aria-labelledby={`category-stage-tab-${selected.type}`}
-        >
-          <CategoryStageVisual category={selected} />
-          <div className="category-stage-copy" ref={copyRef}>
-            <p className="category-stage-eyebrow">
-              <span aria-hidden="true" />
-              {selectedCopy.label}
-            </p>
-            <h1>
-              {selectedCopy.title[0]}
-              <span>{selectedCopy.title[1]}</span>
-            </h1>
-            <p className="category-stage-description">{selectedCopy.description}</p>
-          </div>
           <a
             className="category-stage-open"
+            data-category-action
             href={categoryPath(selected.type)}
             aria-label={`Ouvrir les dossiers — ${selected.title}`}
             onClick={(event) => {
@@ -192,26 +127,22 @@ export function CategoryStage() {
           >
             Ouvrir les dossiers
             <span>
-              <ArrowUpRight size={21} strokeWidth={1.7} aria-hidden="true" />
+              <ArrowUpRight size={19} strokeWidth={1.7} aria-hidden="true" />
             </span>
           </a>
         </div>
-
-        <p className="category-stage-credit">
-          Ferrari 458 Italia ·{' '}
-          <a
-            href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6"
-            target="_blank"
-            rel="noreferrer"
-          >
-            vicent091036
-          </a>{' '}
-          ·{' '}
-          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
-            CC BY 4.0
-          </a>{' '}
-          · Matériaux et mise en scène adaptés
-        </p>
+        <div
+          id="category-stage-panel"
+          className="category-stage-content"
+          role="tabpanel"
+          aria-labelledby={`category-stage-tab-${selected.type}`}
+        >
+          <CategoryStageVisual
+            category={selected}
+            initiallyParked={initiallyParked}
+            onIntroComplete={handleIntroComplete}
+          />
+        </div>
       </section>
     </HomeFrame>
   );

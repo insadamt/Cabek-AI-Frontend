@@ -7,8 +7,8 @@ the retained model provenance in [LICENSES.md](../public/models/LICENSES.md).
 
 The original orbitable WebGL prototype has been replaced by the cinematic
 three-category selector. `/preview/expertise` now opens that selector, with the
-same experience as `/`. Category selection plays the corresponding rendered
-scene; the separate collection action opens its dossiers.
+same experience as `/`. A real Three.js vehicle enters the 3D bay once; subsequent category
+selection changes the tunnel lights. The separate collection action opens its dossiers.
 
 The custom tunnel remains reproducible through
 [`build_scanner.py`](../scripts/scanner/build_scanner.py). The current films and

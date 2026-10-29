@@ -1,0 +1,51 @@
+{
+  "source": "/home/insayd/Desktop/3D/model.blend",
+  "source_meshes": 124,
+  "source_polygons": 112576,
+  "length_metres": 4.8,
+  "wheel_radius_metres": 0.33923090774699133,
+  "wheel_pivots": [
+    "wheel_fl",
+    "wheel_fr",
+    "wheel_rl",
+    "wheel_rr"
+  ],
+  "front": "negative glTF Z",
+  "wheel_alignment": {
+    "wheel_fl": {
+      "source_steering_degrees": -26.413273301669882,
+      "export_axle": [
+        1.0000001192092896,
+        6.507271166356077e-08,
+        -1.0913936421275139e-11
+      ]
+    },
+    "wheel_fr": {
+      "source_steering_degrees": -26.413273301669882,
+      "export_axle": [
+        1.0000001192092896,
+        6.507271166356077e-08,
+        -1.0913936421275139e-11
+      ]
+    },
+    "wheel_rl": {
+      "source_steering_degrees": 0.0,
+      "export_axle": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "wheel_rr": {
+      "source_steering_degrees": 0.0,
+      "export_axle": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "license": "User supplied; original author/license not provided",
+  "changes": "Straightened wheel/brake axles, metre scaling, pearl paint, portable glazing, merged geometry, wheel pivots, Draco compression",
+  "file_bytes": 2376948
+}

@@ -1,5 +1,9 @@
 # CABEK cinematic category assets
 
+The active category screen uses the live Three.js scene documented in
+[`docs/category-stage.md`](../../docs/category-stage.md). The films below are
+retained from the earlier experiment and are not requested by the active screen.
+
 These local films and posters illustrate the three category choices without a
 runtime 3D viewer. They depend on the rendering scripts in `scripts/cinematic`
 and the vehicle/scanner sources documented in `public/models/LICENSES.md`.
