@@ -1,12 +1,14 @@
 /**
- * Hosts the supplied sedan and tunnel on one persistent canvas, exposing only camera interaction and intro controls.
- * Keeps asynchronous loading/failure usable without replaying categories; depends on the lazy bay runtime and motion preferences.
+ * Attaches the application's cached studio canvas so returning routes reuse decoded meshes, shaders and camera state.
+ * Depends on BayRuntimeCacheProvider, the page cue and motion preferences; route cleanup pauses rather than disposes GPU resources.
  */
 import { RotateCcw } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { Category } from '../../lib/workflows';
-import type { createBayRuntime } from '../scanner/bayRuntime';
+import type { BayRuntimeConnection } from '../scanner/bayRuntimeCache';
 import type { BayPalette } from '../scanner/bayChoreography';
+import type { StageSceneStatus } from '../../hooks/useStageEntrance';
+import { useBayRuntimeCache } from './BayRuntimeCacheProvider';
 import '../../styles/scanning-bay.css';
 
 const categoryPalettes: Record<Category['type'], BayPalette> = {
@@ -42,77 +44,90 @@ function subscribeToMotion(listener: () => void) {
 interface CategoryStageVisualProps {
   category: Category;
   initiallyParked: boolean;
-  onIntroComplete: () => void;
+  playIntro: boolean;
+  onStatusChange: (status: StageSceneStatus) => void;
 }
 
 export function CategoryStageVisual({
   category,
   initiallyParked,
-  onIntroComplete,
+  playIntro,
+  onStatusChange,
 }: CategoryStageVisualProps) {
   const reducedMotion = useSyncExternalStore(
     subscribeToMotion,
     () => matchMedia('(prefers-reduced-motion: reduce)').matches,
     () => true,
   );
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const runtimeRef = useRef<ReturnType<typeof createBayRuntime> | null>(null);
+  const cache = useBayRuntimeCache();
+  const canvasHostRef = useRef<HTMLDivElement>(null);
+  const connectionRef = useRef<BayRuntimeConnection | null>(null);
   const initialPose = useRef(initiallyParked);
-  const [introComplete, setIntroComplete] = useState(initiallyParked);
+  const [introComplete, setIntroComplete] = useState(
+    () => initiallyParked || cache.getSnapshot().introComplete,
+  );
   const latest = useRef({
     palette: categoryPalettes[category.type],
     reducedMotion,
-    onIntroComplete,
+    onStatusChange,
   });
-  latest.current = { palette: categoryPalettes[category.type], reducedMotion, onIntroComplete };
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  latest.current = {
+    palette: categoryPalettes[category.type],
+    reducedMotion,
+    onStatusChange,
+  };
+  const [status, setStatus] = useState<StageSceneStatus>(() => cache.getSnapshot().status);
   const [attempt, setAttempt] = useState(0);
+  const cameraInteractive = status === 'ready' && playIntro;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  useLayoutEffect(() => {
+    const host = canvasHostRef.current;
+    if (!host) return;
     let cancelled = false;
-    let runtime: ReturnType<typeof createBayRuntime> | undefined;
-    setStatus('loading');
-    function finishIntro() {
-      if (cancelled) return;
-      setIntroComplete(true);
-      latest.current.onIntroComplete();
-    }
-    function reportFailure() {
-      if (cancelled) return;
-      setStatus('failed');
-      finishIntro();
-    }
-    void import('../scanner/bayRuntime')
-      .then(({ createBayRuntime }) => {
+    const connection = cache.attach({
+      host,
+      initiallyParked: attempt > 0 || initialPose.current,
+      palette: latest.current.palette,
+      reducedMotion: latest.current.reducedMotion,
+      onStatusChange(nextStatus) {
         if (cancelled) return;
-        runtime = createBayRuntime(canvas, {
-          initiallyParked: attempt > 0 || initialPose.current,
-          reducedMotion: latest.current.reducedMotion,
-          palette: latest.current.palette,
-          onReady: () => {
-            if (!cancelled) setStatus('ready');
-          },
-          onIntroComplete: finishIntro,
-          onError: reportFailure,
-        });
-        runtimeRef.current = runtime;
-      })
-      .catch(reportFailure);
+        setStatus(nextStatus);
+        latest.current.onStatusChange(nextStatus);
+        if (nextStatus === 'failed') setIntroComplete(true);
+      },
+      onIntroComplete() {
+        if (!cancelled) setIntroComplete(true);
+      },
+    });
+    connectionRef.current = connection;
     return () => {
       cancelled = true;
-      if (runtimeRef.current === runtime) runtimeRef.current = null;
-      runtime?.dispose();
+      if (connectionRef.current === connection) connectionRef.current = null;
+      connection.release();
     };
-  }, [attempt]);
+  }, [cache, attempt]);
+
+  useLayoutEffect(() => {
+    const canvas = connectionRef.current?.canvas;
+    if (!canvas) return;
+    canvas.setAttribute('aria-disabled', String(!cameraInteractive));
+    canvas.tabIndex = cameraInteractive ? 0 : -1;
+  }, [cameraInteractive, attempt]);
 
   useEffect(() => {
-    runtimeRef.current?.setPalette(categoryPalettes[category.type]);
+    connectionRef.current?.setPalette(categoryPalettes[category.type]);
   }, [category.type]);
   useEffect(() => {
-    runtimeRef.current?.setReducedMotion(reducedMotion);
+    connectionRef.current?.setReducedMotion(reducedMotion);
   }, [reducedMotion]);
+  useEffect(() => {
+    if (playIntro) connectionRef.current?.enter();
+  }, [playIntro, attempt]);
+
+  function retryScene() {
+    cache.dispose();
+    setAttempt((value) => value + 1);
+  }
 
   return (
     <div
@@ -122,30 +137,22 @@ export function CategoryStageVisual({
       data-category={category.type}
       data-entrance={introComplete ? 'settled' : 'playing'}
     >
-      <canvas
-        key={attempt}
-        ref={canvasRef}
-        className="scanning-bay-canvas"
-        aria-label="Véhicule dans le tunnel de numérisation 3D"
-        aria-describedby="bay-camera-help"
-        aria-disabled={status !== 'ready'}
-        tabIndex={status === 'ready' ? 0 : -1}
-      />
+      <div ref={canvasHostRef} className="scanning-bay-canvas-host" />
       <div className="bay-camera-toolbar">
-        {status === 'ready' && !introComplete && (
+        {cameraInteractive && !introComplete && (
           <button
             className="bay-skip-intro"
             type="button"
-            onClick={() => runtimeRef.current?.skipIntro()}
+            onClick={() => connectionRef.current?.skipIntro()}
           >
             Passer l’introduction <span aria-hidden="true">↗</span>
           </button>
         )}
-        {status === 'ready' && introComplete && (
+        {cameraInteractive && introComplete && (
           <button
             className="bay-reset-camera"
             type="button"
-            onClick={() => runtimeRef.current?.resetCamera()}
+            onClick={() => connectionRef.current?.resetCamera()}
           >
             <RotateCcw size={14} strokeWidth={1.6} aria-hidden="true" />
             Réinitialiser la vue
@@ -153,12 +160,12 @@ export function CategoryStageVisual({
         )}
         <p
           id="bay-camera-help"
-          className={status === 'ready' && introComplete ? 'bay-camera-help' : 'visually-hidden'}
+          className={cameraInteractive && introComplete ? 'bay-camera-help' : 'visually-hidden'}
         >
           Glisser pour explorer · Molette pour zoomer · Flèches et + / − au clavier
         </p>
       </div>
-      {status === 'loading' && (
+      {status === 'loading' && !initiallyParked && (
         <p className="scanning-bay-loading" role="status">
           Préparation de la scène 3D…
         </p>
@@ -166,7 +173,7 @@ export function CategoryStageVisual({
       {status === 'failed' && (
         <div className="scanning-bay-error">
           <p role="status">La scène 3D est indisponible.</p>
-          <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+          <button type="button" onClick={retryScene}>
             Réessayer
           </button>
         </div>

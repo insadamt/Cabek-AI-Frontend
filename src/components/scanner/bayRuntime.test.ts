@@ -55,6 +55,7 @@ function createStageAdapter() {
     render: vi.fn(),
     invalidateShadows: vi.fn(),
     setVisualSettings: vi.fn(),
+    prepare: vi.fn(async () => {}),
     dispose: vi.fn(),
   };
 }
@@ -102,6 +103,7 @@ function createChoreographyAdapter(options: ChoreographyOptions) {
       state.introComplete = true;
     }),
     skipIntro: vi.fn(settleIntro),
+    park: vi.fn(settleIntro),
     setReducedMotion: vi.fn((reduced: boolean) => {
       if (reduced) settleIntro();
     }),
@@ -109,7 +111,7 @@ function createChoreographyAdapter(options: ChoreographyOptions) {
 }
 
 const sessions: ReturnType<typeof createBayRuntime>[] = [];
-function createSession({ reducedMotion = false, initiallyParked = false } = {}) {
+function createSession({ reducedMotion = false, initiallyParked = false, autoStart = true } = {}) {
   const page = Object.assign(new EventTarget(), { hidden: false });
   const canvas = new EventTarget();
   const resizeDisconnect = vi.fn();
@@ -167,6 +169,7 @@ function createSession({ reducedMotion = false, initiallyParked = false } = {}) 
   const onIntroComplete = vi.fn();
   const runtime = createBayRuntime(canvas as HTMLCanvasElement, {
     initiallyParked,
+    autoStart,
     reducedMotion,
     palette: { primary: '#b4e86b', secondary: '#d7f5aa' },
     onReady: ready,
@@ -178,8 +181,7 @@ function createSession({ reducedMotion = false, initiallyParked = false } = {}) 
   async function finishLoading(fail = false) {
     if (fail) rejectVehicle(new Error('Model unavailable'));
     else resolveVehicle(vehicle);
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let step = 0; step < 5; step++) await Promise.resolve();
   }
   function flushFrame(elapsed = 1000 / 60) {
     timestamp += elapsed;
@@ -232,7 +234,7 @@ afterEach(() => {
 // ============================================================
 
 describe('3D bay runtime ownership', () => {
-  it('starts the intro automatically only after the real vehicle is attached', async () => {
+  it('starts only after the attached vehicle is prepared and a complete frame has rendered', async () => {
     const session = createSession();
     expect(mocks.cameraOptions.camera).toBe(mocks.stage.camera);
     expect(mocks.cameraOptions.canvas).toBe(session.canvas);
@@ -246,10 +248,13 @@ describe('3D bay runtime ownership', () => {
     await session.finishLoading();
     expect(mocks.stage.scene.children).toEqual([session.vehicle.root]);
     expect(mocks.stage.invalidateShadows).toHaveBeenCalledOnce();
+    expect(mocks.stage.prepare).toHaveBeenCalledWith(mocks.choreography.state);
+    expect(mocks.choreography.enter).not.toHaveBeenCalled();
+    expect(session.ready).not.toHaveBeenCalled();
+    session.flushFrame();
     expect(mocks.choreography.enter).toHaveBeenCalledOnce();
     expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(true);
     expect(session.ready).toHaveBeenCalledOnce();
-    session.flushFrame();
     expect(mocks.camera.applyCinematic).toHaveBeenCalledWith(mocks.choreography.state);
     expect(mocks.camera.update).not.toHaveBeenCalled();
   });
@@ -263,10 +268,10 @@ describe('3D bay runtime ownership', () => {
     session.flushFrame();
     expect(session.onIntroComplete).toHaveBeenCalledOnce();
     expect(session.frames.size).toBe(1);
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(3);
     session.flushFrame(1000);
     expect(mocks.camera.update).toHaveBeenLastCalledWith(0.05);
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(3);
     expect(session.frames.size).toBe(0);
     const palette = { primary: '#51d9db', secondary: '#afedef', cameraPreset: 2 };
     session.runtime.setPalette(palette);
@@ -283,16 +288,16 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.choreography.interruptCamera).toHaveBeenCalledOnce();
     session.flushFrame();
     expect(session.vehicle.root.position.z).toBeCloseTo(7.2 * 0.6);
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledOnce();
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
     session.runtime.setReducedMotion(true);
     session.flushFrame();
     expect(session.vehicle.root.position.z).toBe(0);
     expect(mocks.camera.setReducedMotion).toHaveBeenLastCalledWith(true);
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledOnce();
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
     session.runtime.resetCamera();
     expect(mocks.camera.reset).toHaveBeenCalledWith(true);
     session.flushFrame();
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledOnce();
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
   });
 
   it('settles the full cinematic camera when reduced motion changes during intro or loading', async () => {
@@ -317,7 +322,7 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.choreography.skipIntro).toHaveBeenCalledOnce();
     expect(mocks.camera.reset).toHaveBeenCalledWith(false);
     session.flushFrame();
-    expect(mocks.camera.applyCinematic).toHaveBeenCalledOnce();
+    expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
     session.resize();
     expect(mocks.stage.resize).toHaveBeenCalledTimes(2);
     expect(mocks.camera.resize).toHaveBeenCalledTimes(2);
@@ -343,6 +348,21 @@ describe('3D bay runtime ownership', () => {
     mocks.cameraOptions.onChange();
     mocks.cameraOptions.onChange();
     expect(session.frames.size).toBe(1);
+    session.runtime.setActive(false);
+    const resizeCount = mocks.stage.resize.mock.calls.length;
+    session.resize();
+    session.intersect(true);
+    session.hide(false);
+    expect(session.frames.size).toBe(0);
+    expect(mocks.stage.resize).toHaveBeenCalledTimes(resizeCount);
+    expect(mocks.choreography.park).toHaveBeenCalledOnce();
+    expect(session.vehicle.dispose).not.toHaveBeenCalled();
+    session.runtime.setActive(true);
+    expect(session.frames.size).toBe(1);
+    session.flushFrame();
+    expect(mocks.load).toHaveBeenCalledOnce();
+    expect(mocks.stage.prepare).toHaveBeenCalledOnce();
+    expect(session.ready).toHaveBeenCalledOnce();
   });
 
   it('updates hidden visual settings and renders them only on return', () => {
@@ -385,7 +405,7 @@ describe('3D bay runtime ownership', () => {
     expect(session.frames.size).toBe(0);
   });
 
-  it.each(['context loss', 'model rejection'])(
+  it.each(['context loss', 'model rejection', 'shader preparation', 'first frame'])(
     'stops the camera and scene after %s while ignoring later actions',
     async (failure) => {
       const session = createSession();
@@ -395,10 +415,20 @@ describe('3D bay runtime ownership', () => {
         expect(lost.defaultPrevented).toBe(true);
         await session.finishLoading();
         expect(session.vehicle.dispose).toHaveBeenCalledOnce();
+      } else if (failure === 'shader preparation' || failure === 'first frame') {
+        if (failure === 'shader preparation')
+          mocks.stage.prepare.mockRejectedValueOnce(new Error('Shader failure'));
+        else
+          mocks.stage.render.mockImplementationOnce(() => {
+            throw new Error('Frame failure');
+          });
+        await session.finishLoading();
+        session.flushFrame();
       } else await session.finishLoading(true);
       expect(session.error).toHaveBeenCalledOnce();
       expect(session.ready).not.toHaveBeenCalled();
-      expect(mocks.stage.scene.children).toHaveLength(0);
+      if (failure === 'context loss' || failure === 'model rejection')
+        expect(mocks.stage.scene.children).toHaveLength(0);
       expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(false);
       expect(mocks.camera.setVisible).toHaveBeenLastCalledWith(false);
       session.runtime.resetCamera();
@@ -411,4 +441,47 @@ describe('3D bay runtime ownership', () => {
       expect(session.frames.size).toBe(0);
     },
   );
+
+  it('holds readiness during shader preparation, then waits for the page cue before playback', async () => {
+    const session = createSession({ autoStart: false });
+    let finishPreparation!: () => void;
+    mocks.stage.prepare.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPreparation = resolve;
+      }),
+    );
+    await session.finishLoading();
+    session.flushFrame();
+    session.runtime.enter();
+    expect(session.ready).not.toHaveBeenCalled();
+    expect(mocks.choreography.enter).not.toHaveBeenCalled();
+    finishPreparation();
+    await Promise.resolve();
+    session.flushFrame();
+    expect(session.ready).toHaveBeenCalledOnce();
+    expect(mocks.choreography.enter).not.toHaveBeenCalled();
+    expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(false);
+    session.runtime.enter();
+    expect(mocks.choreography.enter).toHaveBeenCalledOnce();
+    expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(true);
+  });
+
+  it('ignores preparation completion after leaving the scene', async () => {
+    const session = createSession({ autoStart: false });
+    let finishPreparation!: () => void;
+    mocks.stage.prepare.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPreparation = resolve;
+      }),
+    );
+    await session.finishLoading();
+    session.runtime.dispose();
+    finishPreparation();
+    await Promise.resolve();
+    session.flushFrame();
+    expect(session.ready).not.toHaveBeenCalled();
+    expect(mocks.choreography.enter).not.toHaveBeenCalled();
+    expect(session.vehicle.dispose).toHaveBeenCalledOnce();
+    expect(session.frames.size).toBe(0);
+  });
 });

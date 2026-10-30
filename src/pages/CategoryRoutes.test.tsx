@@ -1,12 +1,16 @@
 /**
- * Verifies automatic cinematic entry, accessible vertical choices and stable dossier destinations.
+ * Verifies the preparation screen, hidden unfinished controls and stable workflow destinations.
  * Depends on server-rendered React markup, the real scene host and mocked navigation/data services.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 
-const route = vi.hoisted(() => ({ pathname: '/', search: '' }));
+const route = vi.hoisted(() => ({ pathname: '/', search: '', restoring: false }));
+vi.mock('../lib/stageVisit', () => ({
+  shouldRestoreStageVisit: () => route.restoring,
+  rememberStageVisit: vi.fn(),
+}));
 vi.mock('../hooks/useNavigation', () => ({
   useNavigation: () => ({
     pathname: route.pathname,
@@ -40,6 +44,26 @@ function render(pathname: string, search = '') {
   return renderToStaticMarkup(<App />);
 }
 describe('category-first application routes', () => {
+  beforeEach(() => {
+    route.restoring = false;
+  });
+
+  it.each(['/', '/preview/expertise'])(
+    'restores %s without a progress page or entrance replay',
+    (pathname) => {
+      route.restoring = true;
+      const markup = render(pathname, 'parcours=verification');
+      expect(markup).toContain('data-entrance="settled"');
+      expect(markup).not.toContain('data-entrance="playing"');
+      expect(markup).toContain('href="/categories/verification"');
+      expect(markup).toContain('data-entrance-phase="ready"');
+      expect(markup).toContain('aria-busy="false"');
+      expect(markup).not.toContain('class="stage-loading-screen"');
+      expect(markup).not.toContain('Préparation');
+      expect(markup).toContain('<div class="category-stage-dock">');
+      expect(markup).not.toContain('inert=""');
+    },
+  );
   it('shows exactly three category choices at home', () => {
     const markup = render('/');
     expect(markup.match(/role="tab"/g)).toHaveLength(3);
@@ -57,9 +81,13 @@ describe('category-first application routes', () => {
     expect(markup).toContain('href="/categories/forfait-expertise"');
     expect(markup).toContain('data-model="/models/studio-v2/cabek-vehicle.glb"');
     expect(markup).toContain('data-renderer="three-webgl"');
-    expect(markup.match(/<canvas/g)).toHaveLength(1);
+    expect(markup.match(/class="scanning-bay-canvas-host"/g)).toHaveLength(1);
     expect(markup).toContain('data-entrance="playing"');
-    expect(markup).toContain('data-intro-complete="false" inert="" aria-hidden="true"');
+    expect(markup).toContain('data-entrance-phase="preparing"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('class="stage-loading-screen" role="status"');
+    expect(markup).toContain('Préparation de votre espace…');
+    expect(markup).toContain('<div class="category-stage-dock" inert="" aria-hidden="true">');
     expect(markup).toContain(
       'aria-selected="true" aria-controls="category-stage-panel" tabindex="0"',
     );
@@ -69,15 +97,15 @@ describe('category-first application routes', () => {
     expect(markup).not.toContain('L’expertise.');
   });
   it.each(['forfait-expertise', 'chiffrage-rapide', 'verification'])(
-    'restores selected category %s with the same parked vehicle and matching destination',
+    'plays the introduction for selected category %s while keeping its destination',
     (slug) => {
       const markup = render('/', `parcours=${slug}`);
       expect(markup).toContain(`href="/categories/${slug}"`);
       expect(markup).toContain('data-model="/models/studio-v2/cabek-vehicle.glb"');
-      expect(markup.match(/<canvas/g)).toHaveLength(1);
-      expect(markup).toContain('data-entrance="settled"');
-      expect(markup).toContain('data-intro-complete="true"');
-      expect(markup).not.toContain('inert=""');
+      expect(markup.match(/class="scanning-bay-canvas-host"/g)).toHaveLength(1);
+      expect(markup).toContain('data-entrance="playing"');
+      expect(markup).toContain('class="stage-loading-screen"');
+      expect(markup).toContain('<div class="category-stage-dock" inert="" aria-hidden="true">');
       expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
     },
   );
@@ -85,7 +113,7 @@ describe('category-first application routes', () => {
     const markup = render('/', 'parcours=unknown');
     expect(markup).toContain('href="/categories/forfait-expertise"');
     expect(markup).toContain('data-entrance="playing"');
-    expect(markup).toContain('data-intro-complete="false"');
+    expect(markup).toContain('data-entrance-phase="preparing"');
     expect(markup.match(/aria-selected="true"/g)).toHaveLength(1);
   });
   it('keeps the existing preview URL available with the new selector', () => {

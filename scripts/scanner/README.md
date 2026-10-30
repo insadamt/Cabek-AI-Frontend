@@ -11,7 +11,10 @@ Run `ALSOFT_DRIVERS=null blender -b -setaudio None -t 4 --python scripts/scanner
 for three bounded desktop/portrait checks. The command saves the packed editable
 scene and previews in `assets/blender/cabek-studio-v2/`; the exporter also saves
 `public/models/studio-v2/cabek-tunnel.glb`. These do not verify browser WebGL lighting.
-See [the current upgrade report](../../docs/studio-tunnel-upgrade.md).
+See [the current reference-tunnel report](../../docs/tunnel-reference-enhancement.md).
+Use `CABEK_REVIEW_POSE=desktop-parked` to refresh just one bounded preview.
+Use `CABEK_REVIEW_POSE=reference-study` for the lower reference-image study camera;
+it is saved alongside the three runtime-review endpoints and only renders on request.
 
 The exporter retains the older full-equipment QA camera poses. Current premium
 homepage framing uses `applyCinematicBayCamera` and is protected by

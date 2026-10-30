@@ -1,5 +1,5 @@
 /**
- * Defines the continuous close-up, tunnel reveal and left-composed homepage camera poses.
+ * Keeps the enlarged bay left-aligned with a more frontal car view beside immediately visible categories.
  * Depends on Three.js projection/view offsets and exported wheel radii; legacy QA framing remains available.
  */
 import { PerspectiveCamera, Vector3 } from 'three';
@@ -12,12 +12,12 @@ const arrivalTarget = new Vector3(0, 0.35, 3.0);
 const parkedTarget = new Vector3(0, 0.75, 0);
 const lookTarget = new Vector3();
 const defaultWheelRadiusMetres = 0.33;
-const closeCamera = new Vector3(3.9, 1.65, 1.15);
-const closeTarget = new Vector3(0, 0.85, 6.4);
-const revealedCamera = new Vector3(11.8, 12.4, -17);
-const revealedTarget = new Vector3(0, 0.85, 2.55);
-const homepageCamera = new Vector3(9.2, 8, -11.6);
-const homepageTarget = new Vector3(0, 0.95, 0);
+//
+// Moving closer and toward the car's forward axis makes its front prominent without turning it inside the tunnel.
+// This endpoint is shared by completion, skip, reduced motion and camera reset.
+//
+const homepageCamera = new Vector3(4.3, 3.8, -9.5);
+const homepageTarget = new Vector3(0, 0.6, 0);
 
 export interface BayCameraMotion {
   revealProgress: number;
@@ -30,9 +30,16 @@ export interface BayCameraViewport {
 }
 
 function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
-  const width = viewport?.width ?? aspect * 900;
-  const height = viewport?.height ?? 900;
-  const stackedPanels = viewport ? width <= 760 && (height > 560 || width <= 560) : aspect < 1;
+  //
+  // A cached scene can finish loading after its canvas is detached; zero-size DOM bounds must not corrupt projection.
+  //
+  const measuredViewport =
+    viewport && viewport.width > 0 && viewport.height > 0 ? viewport : undefined;
+  const width = measuredViewport?.width ?? aspect * 900;
+  const height = measuredViewport?.height ?? 900;
+  const stackedPanels = measuredViewport
+    ? width <= 760 && (height > 560 || width <= 560)
+    : aspect < 1;
   //
   // Match the selector's occupied space so short phones and narrow desktops keep clear controls.
   // Dimensions are sampled on resize; animated frames never measure the DOM.
@@ -42,7 +49,7 @@ function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
       stackedPanels,
       distance: Math.max(
         1.18,
-        0.82 / Math.max(aspect, 0.3),
+        0.94 / Math.max(aspect, 0.3),
         0.56 / Math.max(0.2, 1 - 360 / height),
       ),
       horizontalShift: 0,
@@ -54,9 +61,9 @@ function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
   const availableWidth = Math.max(0.25, (width - panelWidth - panelRight - 24) / width);
   return {
     stackedPanels,
-    distance: Math.max(1, (1.46 / aspect) * (0.7 / availableWidth)),
-    horizontalShift: Math.max(0.17, 0.52 - availableWidth / 2),
-    verticalShift: 0,
+    distance: Math.max(1, (1.8 / aspect) * (0.7 / availableWidth)),
+    horizontalShift: Math.max(0.18, 0.52 - availableWidth / 2),
+    verticalShift: 0.025,
   };
 }
 
@@ -67,20 +74,19 @@ function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
 export function applyBayCameraFraming(
   camera: PerspectiveCamera,
   aspect: number,
-  reframeProgress: number,
   viewport?: BayCameraViewport,
 ) {
   const composition = resolveBayComposition(aspect, viewport);
   const width = Math.max(aspect, 0.3) * 1000;
 
   //
-  // An asymmetric frustum reserves UI space without moving the tunnel or orbit centre.
+  // Reserve the menu area from the first frame; animating this offset made the scene slide left after entry.
   //
   camera.setViewOffset(
     width,
     1000,
-    width * composition.horizontalShift * reframeProgress,
-    1000 * composition.verticalShift * reframeProgress,
+    width * composition.horizontalShift,
+    1000 * composition.verticalShift,
     width,
     1000,
   );
@@ -93,23 +99,20 @@ export function applyCinematicBayCamera(
   targetOut: Vector3,
   viewport?: BayCameraViewport,
 ) {
-  const reveal = Math.min(1, Math.max(0, motion.revealProgress));
   const reframe = Math.min(1, Math.max(0, motion.reframeProgress));
-  camera.position.lerpVectors(closeCamera, revealedCamera, reveal).lerp(homepageCamera, reframe);
-  targetOut.lerpVectors(closeTarget, revealedTarget, reveal).lerp(homepageTarget, reframe);
+  targetOut.copy(homepageTarget);
+  camera.position.copy(homepageCamera);
   const composition = resolveBayComposition(aspect, viewport);
-  camera.fov = composition.stackedPanels ? 44 + 10 * reveal * (1 - reframe) : 32;
-  if (composition.stackedPanels) {
-    camera.position.sub(targetOut).multiplyScalar(composition.distance).add(targetOut);
-  } else {
-    //
-    // Near-square desktops need extra horizontal clearance for the same fixed-width workflow panels.
-    // Apply it progressively so the close POV keeps its authored distance.
-    //
-    const desktopDistance = 1 + (composition.distance - 1) * reveal;
-    camera.position.sub(targetOut).multiplyScalar(desktopDistance).add(targetOut);
-  }
-  applyBayCameraFraming(camera, aspect, reframe, viewport);
+  camera.fov = composition.stackedPanels ? 44 : 32;
+  //
+  // Keep the opening near its final size so the scene is prominent throughout the car's entrance.
+  //
+  const entranceDistance = 1 + 0.04 * (1 - reframe);
+  camera.position
+    .sub(targetOut)
+    .multiplyScalar(composition.distance * entranceDistance)
+    .add(targetOut);
+  applyBayCameraFraming(camera, aspect, viewport);
   camera.lookAt(targetOut);
   camera.updateMatrixWorld();
 }

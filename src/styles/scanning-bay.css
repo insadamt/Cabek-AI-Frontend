@@ -1,14 +1,17 @@
 /*
  * Keeps the full-viewport 3D surface interactive with discreet camera controls and recoverable loading.
- * Depends on CategoryStageVisual and HomeFrame; toolbar placement leaves the right-side workflows clear.
+ * Depends on CategoryStageVisual, its cached canvas host and HomeFrame; toolbar placement leaves workflows clear.
  */
 .scanning-bay {
   background: #f3f4f0;
 }
+.scanning-bay-canvas-host,
 .scanning-bay-canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+.scanning-bay-canvas {
   outline: none;
   touch-action: none;
   cursor: grab;

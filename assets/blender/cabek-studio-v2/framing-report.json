@@ -1,0 +1,66 @@
+[
+  {
+    "name": "desktop-arrival",
+    "rendered": false,
+    "equipment_and_vehicle": {
+      "horizontal": [
+        0.33130890130996704,
+        0.7251577377319336
+      ],
+      "vertical": [
+        0.09465416520833969,
+        0.8536364436149597
+      ],
+      "all_geometry_in_front": true,
+      "within_frame": true
+    }
+  },
+  {
+    "name": "desktop-parked",
+    "rendered": false,
+    "equipment_and_vehicle": {
+      "horizontal": [
+        0.23829975724220276,
+        0.7971706390380859
+      ],
+      "vertical": [
+        0.12180221080780029,
+        0.8221436738967896
+      ],
+      "all_geometry_in_front": true,
+      "within_frame": true
+    }
+  },
+  {
+    "name": "portrait-parked",
+    "rendered": false,
+    "equipment_and_vehicle": {
+      "horizontal": [
+        0.11956078559160233,
+        0.9097393155097961
+      ],
+      "vertical": [
+        0.2242138832807541,
+        0.7522938847541809
+      ],
+      "all_geometry_in_front": true,
+      "within_frame": true
+    }
+  },
+  {
+    "name": "reference-study",
+    "rendered": true,
+    "equipment_and_vehicle": {
+      "horizontal": [
+        0.19939087331295013,
+        0.8930373191833496
+      ],
+      "vertical": [
+        0.042702481150627136,
+        0.8343994617462158
+      ],
+      "all_geometry_in_front": true,
+      "within_frame": true
+    }
+  }
+]

@@ -45,6 +45,7 @@ export function createBayIllumination(surfaces: BayIlluminationSurfaces) {
     sensorEmphasis: 0,
   };
   const neutralSensorLight = new Color('#eaf3f4');
+  const diffuserSurface = new Color('#edf2e7');
   const quietSensorGlass = new Color('#112c36');
   const inspectionSensorGlass = new Color('#30434a');
   let illumination = 0.75;
@@ -65,6 +66,10 @@ export function createBayIllumination(surfaces: BayIlluminationSurfaces) {
       const focusedStrength = depth === 0 ? 1.2 : 0.34;
       const atmosphere = MathUtils.lerp(1, focusedStrength, focus);
       material.emissive.copy(state.primary).lerp(state.secondary, index / 4);
+      //
+      // Tint the diffuser itself so neutral softboxes do not wash lime strips back to white.
+      //
+      material.color.copy(material.emissive).lerp(diffuserSurface, 0.35);
       material.emissiveIntensity = illumination * (0.68 * atmosphere + scanResponse * 0.75);
       lights.forEach((light) => {
         light.color.copy(material.emissive);
@@ -72,6 +77,9 @@ export function createBayIllumination(surfaces: BayIlluminationSurfaces) {
       });
     });
     surfaces.ambientMaterial.emissive.copy(state.primary).lerp(state.secondary, 0.4);
+    surfaces.ambientMaterial.color
+      .copy(surfaces.ambientMaterial.emissive)
+      .lerp(diffuserSurface, 0.35);
     surfaces.ambientMaterial.emissiveIntensity = illumination * (0.4 - focus * 0.1);
     surfaces.sensorMaterial.emissive
       .copy(state.primary)

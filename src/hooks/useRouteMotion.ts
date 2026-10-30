@@ -1,3 +1,7 @@
+/**
+ * Animates ordinary route changes while allowing the studio and dossier to own their entrance/restore behavior.
+ * Depends on shared motion helpers and pathname history; stage returns must not receive a second route animation.
+ */
 import { useLayoutEffect, useRef } from 'react';
 import { animateElement, motionTiming } from '../lib/motion';
 
@@ -8,6 +12,10 @@ export function useRouteMotion(pathname: string) {
     const previous = previousPath.current;
     previousPath.current = pathname;
     if (previous === pathname || !viewportRef.current) return;
+    //
+    // The studio owns fresh entry and settled Back restoration; a generic fade would replay motion on return.
+    //
+    if (pathname === '/' || pathname === '/preview/expertise') return;
     // The dossier owns the folder travel and metadata reveal as one ordered sequence.
 
     if (/^\/dossiers\/[^/]+\/?$/.test(pathname)) return;

@@ -1,5 +1,5 @@
 /**
- * Orchestrates a continuous POV, reveal, drive and reframing sequence without moving the tunnel.
+ * Overlaps a short establishing move, vehicle entrance and landing reframe so the menu is ready quickly.
  * Independent category lighting survives camera interruption; depends on GSAP, Three.js colors and runtime visibility.
  */
 import gsap from 'gsap';
@@ -103,18 +103,20 @@ export function createBayChoreography(options: BayChoreographyOptions) {
         onUpdate: notifyChange,
         onComplete: reportCompletion,
       });
-      entrance.addLabel('pov', 0);
-      entrance.addLabel('reveal', 0.4);
-      entrance.to(state, { revealProgress: 1, duration: 2.65, ease: 'power2.inOut' }, 'reveal');
-      entrance.addLabel('vehicle-entry', 3.1);
+      //
+      // Start the car and camera together; separate holds made users wait through an 8.4-second introduction.
+      //
+      entrance.addLabel('reveal', 0);
+      entrance.to(state, { revealProgress: 1, duration: 0.55, ease: 'power1.inOut' }, 'reveal');
+      entrance.addLabel('vehicle-entry', 0);
       entrance.to(
         state,
-        { entryProgress: 1, duration: 3.5, ease: 'power2.inOut' },
+        { entryProgress: 1, duration: 1.8, ease: 'power1.inOut' },
         'vehicle-entry',
       );
-      entrance.addLabel('reframe', 6.75);
-      entrance.to(state, { reframeProgress: 1, duration: 1.65, ease: 'power2.inOut' }, 'reframe');
-      entrance.addLabel('categories', 8.4);
+      entrance.addLabel('reframe', 0.65);
+      entrance.to(state, { reframeProgress: 1, duration: 1.55, ease: 'power2.inOut' }, 'reframe');
+      entrance.addLabel('categories', 2.2);
       if (visible) entrance.play();
     },
     interruptCamera() {
@@ -129,6 +131,18 @@ export function createBayChoreography(options: BayChoreographyOptions) {
     skipIntro() {
       if (disposed || state.introComplete) return;
       entrance?.progress(1);
+      settleEntrance();
+    },
+    park() {
+      if (
+        disposed ||
+        (state.entryProgress === 1 && state.reframeProgress === 1 && state.revealProgress === 1)
+      )
+        return;
+
+      //
+      // Cache suspension must also finish a drive that continued after manual camera takeover.
+      //
       settleEntrance();
     },
     setPalette(palette: BayPalette) {

@@ -5,6 +5,13 @@ manual acceptance checks. It depends on the existing HomeFrame, dossier routes,
 Three.js/GSAP scanner runtime, supplied studio-v2 sedan and local Draco decoder.
 The implementation preserves the supplied car and procedural tunnel architecture.
 
+The subsequent reference-based tunnel, camera pods, materials and Blender lighting
+are documented in [tunnel-reference-enhancement.md](tunnel-reference-enhancement.md).
+The equipment descriptions below record this earlier polish pass.
+The current playback, zoomed left composition and immediate category access are documented
+in [scanner-playback-fix.md](scanner-playback-fix.md); the earlier 65–75% framing
+measurements below describe the previous camera.
+
 ## Delivered behavior
 
 - A closer, lower elevated three-quarter camera makes the car and scanner the

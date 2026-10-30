@@ -1,4 +1,7 @@
-/** Application routes for category-first browsing and stable dossier deep links; uses the existing navigation store. */
+/**
+ * Routes category/dossier screens while retaining one cached studio across navigation.
+ * Depends on navigation, route motion and BayRuntimeCacheProvider; page frames remain route-owned.
+ */
 import { Categories } from './pages/Categories';
 import { CreateDossier } from './pages/CreateDossier';
 import { parseWorkflowRoute } from './lib/workflows';
@@ -10,6 +13,7 @@ import { Home } from './pages/Home';
 import { HomeFrame } from './components/home/HomeFrame';
 import { useRouteMotion } from './hooks/useRouteMotion';
 import { ScannerPreview } from './pages/ScannerPreview';
+import { BayRuntimeCacheProvider } from './components/home/BayRuntimeCacheProvider';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -45,32 +49,34 @@ export default function App() {
   }
   return (
     <ErrorBoundary>
-      <div ref={routeRef} className="route-viewport">
-        {pathname === '/' ? (
-          <Categories />
-        ) : pathname === '/preview/expertise' ? (
-          <ScannerPreview />
-        ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
-          <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
-        ) : workflowRoute ? (
-          <Home key={workflowRoute.category.type} category={workflowRoute.category} />
-        ) : dossierId ? (
-          <HomeFrame variant="dossier">
-            <Dossier key={dossierId} dossierId={dossierId} />
-          </HomeFrame>
-        ) : (
-          <HomeFrame>
-            <div className="home-state">
-              <EmptyState
-                title="Cette page est introuvable"
-                description="Retrouvez vos expertises depuis l’accueil."
-                onRetry={() => navigate('/')}
-                actionLabel="Retour à l’accueil"
-              />
-            </div>
-          </HomeFrame>
-        )}
-      </div>
+      <BayRuntimeCacheProvider>
+        <div ref={routeRef} className="route-viewport">
+          {pathname === '/' ? (
+            <Categories />
+          ) : pathname === '/preview/expertise' ? (
+            <ScannerPreview />
+          ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
+            <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
+          ) : workflowRoute ? (
+            <Home key={workflowRoute.category.type} category={workflowRoute.category} />
+          ) : dossierId ? (
+            <HomeFrame variant="dossier">
+              <Dossier key={dossierId} dossierId={dossierId} />
+            </HomeFrame>
+          ) : (
+            <HomeFrame>
+              <div className="home-state">
+                <EmptyState
+                  title="Cette page est introuvable"
+                  description="Retrouvez vos expertises depuis l’accueil."
+                  onRetry={() => navigate('/')}
+                  actionLabel="Retour à l’accueil"
+                />
+              </div>
+            </HomeFrame>
+          )}
+        </div>
+      </BayRuntimeCacheProvider>
     </ErrorBoundary>
   );
 }

@@ -1,27 +1,30 @@
 /**
- * Places three readable workflow panels beside the continuous vehicle scene so the studio stays prominent.
- * Depends on HomeFrame branding, the scene completion callback, scoped GSAP reveal and workflow routes.
+ * Reveals the prepared studio on fresh visits and restores its parked composition without replay on return.
+ * Depends on HomeFrame, useStageEntrance, the persistent scene host and workflow routes.
  */
 import { ArrowUpRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { HomeFrame } from '../components/home/HomeFrame';
 import { CategoryStageVisual } from '../components/home/CategoryStageVisual';
+import { StageLoadingScreen } from '../components/home/StageLoadingScreen';
+import { useStageEntrance } from '../hooks/useStageEntrance';
 import { useNavigation } from '../hooks/useNavigation';
-import { useCategoryStageReveal } from '../hooks/useCategoryStageReveal';
 import { categories, categoryPath, collectionUrl, type Category } from '../lib/workflows';
 import '../styles/category-stage.css';
+import '../styles/stage-entrance.css';
 
 export function CategoryStage() {
   const { pathname, searchParams, navigate } = useNavigation();
   const selected =
     categories.find((item) => item.slug === searchParams.get('parcours')) ?? categories[0];
-  const initiallyParked = useRef(
-    categories.some((category) => category.slug === searchParams.get('parcours')),
-  ).current;
-  const [introComplete, setIntroComplete] = useState(initiallyParked);
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
-  const dockRef = useCategoryStageReveal(introComplete);
-  const handleIntroComplete = useCallback(() => setIntroComplete(true), []);
+  const entrance = useStageEntrance();
+  const preparing = entrance.phase === 'preparing';
+
+  //
+  // The scene reveal finishes last; hold vehicle motion and camera input until the whole page has settled.
+  //
+  const pageEntranceSettled = entrance.phase === 'ready';
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -71,15 +74,16 @@ export function CategoryStage() {
   }
 
   return (
-    <HomeFrame>
-      <section className="category-stage" aria-label="Les parcours CABEK AI">
-        <div
-          ref={dockRef}
-          className="category-stage-dock"
-          data-intro-complete={introComplete}
-          inert={!introComplete}
-          aria-hidden={!introComplete || undefined}
-        >
+    <HomeFrame entrancePhase={entrance.phase}>
+      <section
+        className="category-stage"
+        data-entrance-phase={entrance.phase}
+        aria-label="Les parcours CABEK AI"
+        aria-busy={preparing}
+        onAnimationEnd={entrance.handleEntranceEnd}
+      >
+        {entrance.phase !== 'ready' && <StageLoadingScreen />}
+        <div className="category-stage-dock" inert={preparing} aria-hidden={preparing || undefined}>
           <div
             className="category-stage-tabs"
             role="tablist"
@@ -97,7 +101,6 @@ export function CategoryStage() {
                   }}
                   id={`category-stage-tab-${category.type}`}
                   className={selectedCategory ? 'selected' : ''}
-                  data-category-reveal
                   role="tab"
                   type="button"
                   aria-selected={selectedCategory}
@@ -115,7 +118,6 @@ export function CategoryStage() {
           </div>
           <a
             className="category-stage-open"
-            data-category-action
             href={categoryPath(selected.type)}
             aria-label={`Ouvrir les dossiers — ${selected.title}`}
             onClick={(event) => {
@@ -136,11 +138,14 @@ export function CategoryStage() {
           className="category-stage-content"
           role="tabpanel"
           aria-labelledby={`category-stage-tab-${selected.type}`}
+          inert={!pageEntranceSettled}
+          aria-hidden={!pageEntranceSettled || undefined}
         >
           <CategoryStageVisual
             category={selected}
-            initiallyParked={initiallyParked}
-            onIntroComplete={handleIntroComplete}
+            initiallyParked={entrance.restoreSettledView}
+            playIntro={pageEntranceSettled}
+            onStatusChange={entrance.setSceneStatus}
           />
         </div>
       </section>

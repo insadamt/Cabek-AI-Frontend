@@ -1,0 +1,154 @@
+/*
+ * Covers real preparation work, then coordinates the island, cards and model without shifting the composition.
+ * Depends on HomeFrame/useStageEntrance phase attributes; reduced motion reveals the complete interface immediately.
+ */
+.category-stage[data-entrance-phase] {
+  background: #f2f4f4;
+}
+.stage-loading-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: #f2f4f4;
+  color: #30372d;
+}
+.stage-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.stage-loading-name {
+  margin-bottom: 14px;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.06em;
+}
+.stage-loading-content p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.stage-loading-detail {
+  color: #7c8478;
+  font-size: 11px;
+}
+.stage-loading-track {
+  width: 144px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #dce2d8;
+}
+.stage-loading-track > span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: #90a874;
+  animation: stage-preparing 1.2s ease-in-out infinite;
+}
+
+/* ============================================================
+   Preparation hides unfinished frames without interrupting GPU work
+   ============================================================ */
+.home-shell[data-stage-entrance='preparing'] .home-header {
+  opacity: 0;
+  transform: translateY(-60px);
+  pointer-events: none;
+}
+.category-stage[data-entrance-phase='preparing'] .category-stage-dock {
+  visibility: hidden;
+}
+.category-stage[data-entrance-phase='preparing'] .category-stage-content {
+  opacity: 0;
+}
+
+/* ============================================================
+   One short overlapping entrance, with the model already on the left
+   ============================================================ */
+.home-shell[data-stage-entrance='entering'] .home-header {
+  transform-origin: 50% 0;
+  animation: stage-island-enter 560ms cubic-bezier(0.2, 1.25, 0.35, 1) 60ms both;
+}
+.category-stage[data-entrance-phase='entering'] .stage-loading-screen {
+  pointer-events: none;
+  animation: stage-loading-exit 180ms ease-out both;
+}
+.category-stage[data-entrance-phase='entering'] .stage-loading-track > span {
+  animation: none;
+}
+.category-stage[data-entrance-phase='entering'] .category-stage-tabs > button {
+  animation: stage-card-enter 480ms cubic-bezier(0.2, 1.2, 0.35, 1) 180ms both;
+}
+.category-stage[data-entrance-phase='entering'] .category-stage-tabs > button:nth-child(2) {
+  animation-delay: 260ms;
+}
+.category-stage[data-entrance-phase='entering'] .category-stage-tabs > button:nth-child(3) {
+  animation-delay: 340ms;
+}
+.category-stage[data-entrance-phase='entering'] .category-stage-open {
+  animation: stage-card-enter 320ms ease-out 440ms both;
+}
+.category-stage[data-entrance-phase='entering'] .category-stage-content {
+  animation: stage-scene-enter 720ms cubic-bezier(0.22, 0.8, 0.2, 1) 180ms both;
+}
+@keyframes stage-preparing {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(330%);
+  }
+}
+@keyframes stage-loading-exit {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes stage-island-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-58px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes stage-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes stage-scene-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-loading-track > span,
+  .home-shell[data-stage-entrance='entering'] .home-header,
+  .category-stage[data-entrance-phase='entering'] .category-stage-tabs > button,
+  .category-stage[data-entrance-phase='entering'] .category-stage-open,
+  .category-stage[data-entrance-phase='entering'] .category-stage-content {
+    animation: none;
+  }
+  .category-stage[data-entrance-phase='entering'] .stage-loading-screen {
+    animation: none;
+    visibility: hidden;
+  }
+}

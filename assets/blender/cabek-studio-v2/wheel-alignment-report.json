@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "maximum_axle_error_degrees": 0.5,
+  "measurements": [
+    {
+      "wheel": "wheel_fl",
+      "poses": [
+        {
+          "travelled_metres": 0,
+          "axle_error_degrees": 0.1206692512389122
+        },
+        {
+          "travelled_metres": 3.6,
+          "axle_error_degrees": 0.1206692512389122
+        },
+        {
+          "travelled_metres": 7.2,
+          "axle_error_degrees": 0.1206692512389122
+        }
+      ]
+    },
+    {
+      "wheel": "wheel_fr",
+      "poses": [
+        {
+          "travelled_metres": 0,
+          "axle_error_degrees": 0.14703981605249164
+        },
+        {
+          "travelled_metres": 3.6,
+          "axle_error_degrees": 0.14703981605249164
+        },
+        {
+          "travelled_metres": 7.2,
+          "axle_error_degrees": 0.14703981605249164
+        }
+      ]
+    },
+    {
+      "wheel": "wheel_rl",
+      "poses": [
+        {
+          "travelled_metres": 0,
+          "axle_error_degrees": 0.12074386937570696
+        },
+        {
+          "travelled_metres": 3.6,
+          "axle_error_degrees": 0.12074386937570696
+        },
+        {
+          "travelled_metres": 7.2,
+          "axle_error_degrees": 0.12074386937570696
+        }
+      ]
+    },
+    {
+      "wheel": "wheel_rr",
+      "poses": [
+        {
+          "travelled_metres": 0,
+          "axle_error_degrees": 0.1470227272852973
+        },
+        {
+          "travelled_metres": 3.6,
+          "axle_error_degrees": 0.1470227272852973
+        },
+        {
+          "travelled_metres": 7.2,
+          "axle_error_degrees": 0.1470227272852973
+        }
+      ]
+    }
+  ]
+}

@@ -1,18 +1,23 @@
-"""Save the actual frontend bay and supplied sedan as an editable Blender studio.
+"""Light the reference-inspired scanner and save its editable Blender studio.
 
 Depends on export_runtime_qa.mjs, the studio-v2 vehicle GLB and Blender 5 glTF/Cycles.
-Preserves authored PBR surfaces and packs textures. Three bounded 12-sample stills
-verify desktop/portrait geometry and camera framing; they are not WebGL screenshots.
+Rectangular automotive softboxes reveal brushed silver and graphite surfaces.
+Preserves authored PBR surfaces and packs textures. Bounded 24-sample checks and
+a 48-sample reference still review geometry; Blender lighting approximates browser shading.
 """
 
 import json
 import os
+import sys
 from math import radians
 from pathlib import Path
 
 import bpy
 from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from studio_surface_finish import apply_studio_surface_finishes
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -73,11 +78,24 @@ def aim_at(obj, target):
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat('-Z', 'Y').to_euler()
 
 
+def assign_enum(owner, property_name, preferred_values):
+    #
+    # Render engines and colour-management identifiers vary across Blender installations.
+    #
+    for value in preferred_values:
+        try:
+            setattr(owner, property_name, value)
+            return
+        except (TypeError, ValueError):
+            continue
+    raise ValueError(f'No supported value for {property_name}: {preferred_values}')
+
+
 def add_softbox(collection, name, position, target, energy, size, color):
     light = bpy.data.lights.new(name, 'AREA')
     light.energy = energy
-    light.shape = 'DISK'
-    light.size = size
+    assign_enum(light, 'shape', ['RECTANGLE'])
+    light.size, light.size_y = size
     light.color = color
     obj = bpy.data.objects.new(name, light)
     collection.objects.link(obj)
@@ -88,27 +106,42 @@ def add_softbox(collection, name, position, target, energy, size, color):
 def configure_studio():
     world = bpy.data.worlds.new('Approximate runtime studio PMREM')
     world.use_nodes = True
-    world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.9, 0.95, 0.92, 1)
-    world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.5
+    background = next(node for node in world.node_tree.nodes if node.type == 'BACKGROUND')
+    background.inputs['Color'].default_value = (0.75, 0.78, 0.8, 1)
+    background.inputs['Strength'].default_value = 0.22
+    studio_hdri = Path(bpy.utils.system_resource('DATAFILES')) / 'studiolights/world/studio.exr'
+    if studio_hdri.exists():
+        environment = world.node_tree.nodes.new('ShaderNodeTexEnvironment')
+        environment.image = bpy.data.images.load(str(studio_hdri), check_existing=True)
+        environment.image.pack()
+        world.node_tree.links.new(environment.outputs['Color'], background.inputs['Color'])
+        world['environment_provenance'] = 'Blender bundled studio HDRI; Greg Zaal / Poly Haven, CC0'
     bpy.context.scene.world = world
     lights = bpy.data.collections.new('Offline softboxes | editable lighting approximation')
     bpy.context.scene.collection.children.link(lights)
-    add_softbox(lights, 'Key reflection', (-5, 11, 8), (0, 0, 2.5), 2200, 8, (1, 0.97, 0.92))
-    add_softbox(lights, 'Cool rim reflection', (7, 6, -5), (0, 0.8, 0), 1500, 6, (0.87, 0.95, 1))
-    add_softbox(lights, 'Long top reflection', (0, 9, 0), (0, 0, 0), 1200, 6, (1, 1, 1))
+    #
+    # Long sources create automotive highlight bands instead of isolated round hot spots.
+    #
+    add_softbox(lights, 'Broad overhead silk', (-2.2, 7, 0), (0, 0, 0), 700, (2.4, 7), (1, 0.98, 0.95))
+    add_softbox(lights, 'Camera-side strip', (6, 4.8, -1), (0, 0.8, 0), 340, (6, 1), (1, 1, 1))
+    add_softbox(lights, 'Far-side strip', (-5, 4, 0), (0, 1, 0), 650, (6, 1.2), (0.95, 0.98, 1))
+    add_softbox(lights, 'Front fascia fill', (1, 4, -7), (0, 0.8, 0), 160, (4, 1.3), (1, 1, 1))
+    add_softbox(lights, 'Rear separation strip', (-1, 5, 7), (0, 1, 0), 280, (4, 1), (1, 1, 1))
     scene = bpy.context.scene
-    scene.render.engine = 'CYCLES'
+    assign_enum(scene.render, 'engine', ['CYCLES'])
     scene.cycles.device = 'CPU'
-    scene.cycles.samples = 12
+    scene.cycles.samples = 24
     scene.cycles.use_denoising = True
-    scene.cycles.max_bounces = 5
-    scene.cycles.glossy_bounces = 3
+    scene.cycles.max_bounces = 8
+    scene.cycles.glossy_bounces = 4
+    scene.cycles.transmission_bounces = 6
     scene.render.threads_mode = 'FIXED'
     scene.render.threads = 4
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = 'PNG'
-    scene.view_settings.view_transform = 'AgX'
-    scene.view_settings.look = 'AgX - Medium High Contrast'
+    assign_enum(scene.view_settings, 'view_transform', ['AgX', 'Standard'])
+    assign_enum(scene.view_settings, 'look', ['AgX - Medium High Contrast', 'Medium High Contrast', 'None'])
+    scene.view_settings.exposure = 0
     scene['review_scope'] = 'Actual runtime geometry/cameras; offline lighting approximates WebGL'
 
 
@@ -127,8 +160,17 @@ def create_endpoint_camera(pose, collection):
     collection.objects.link(obj)
     obj.location = gltf_position(pose['camera'])
     aim_at(obj, gltf_position(pose['target']))
-    obj['frontend_pose'] = json.dumps(pose)
+    obj['reference_pose' if pose['name'] == 'reference-study' else 'frontend_pose'] = json.dumps(pose)
     return obj
+
+
+def create_reference_pose():
+    return {
+        'name': 'reference-study', 'progress': 1,
+        'width': 1280, 'height': 854,
+        'camera': [8.4, 6.7, -10.8], 'target': [0.2, 1, 0],
+        'vehicleZ': 0, 'verticalFov': 28,
+    }
 
 
 def apply_review_pose(pose, camera, vehicle, grounded_position):
@@ -137,6 +179,7 @@ def apply_review_pose(pose, camera, vehicle, grounded_position):
     scene.camera = camera
     scene.render.resolution_x = pose['width']
     scene.render.resolution_y = pose['height']
+    scene.cycles.samples = 48 if pose['name'] == 'reference-study' else 24
     bpy.context.view_layer.update()
 
 
@@ -157,7 +200,7 @@ def framing_report(objects, camera):
 def save_editable_studio(parked_pose, parked_camera, vehicle, grounded_position):
     apply_review_pose(parked_pose, parked_camera, vehicle, grounded_position)
     scene = bpy.context.scene
-    scene.name = 'CABEK v2 | supplied sedan and complete sensor tunnel'
+    scene.name = 'CABEK v2 | reference optical scanner studio'
     scene['runtime_geometry'] = 'src/components/scanner/bayGeometry.ts'
     scene['reusable_tunnel'] = '/models/studio-v2/cabek-tunnel.glb'
     scene['control_panel'] = 'Mesh controls shown in frontend; use browser UI for live operation'
@@ -165,6 +208,13 @@ def save_editable_studio(parked_pose, parked_camera, vehicle, grounded_position)
     vehicle.select_set(True)
     bpy.context.view_layer.objects.active = vehicle
     bpy.ops.file.pack_all()
+    #
+    # Saving the project should not require a write to the user's desktop thumbnail cache.
+    #
+    preview_settings = bpy.context.preferences.filepaths
+    preview_property = preview_settings.bl_rna.properties.get('file_preview_type')
+    if preview_property and 'NONE' in preview_property.enum_items.keys():
+        preview_settings.file_preview_type = 'NONE'
     bpy.ops.wm.save_as_mainfile(filepath=str(STUDIO_DIRECTORY / 'cabek-studio.blend'))
 
 
@@ -175,6 +225,8 @@ def main():
     bay_objects, _ = import_glb(REVIEW_INPUT_DIRECTORY / 'runtime-bay.glb', 'Actual runtime sensor tunnel')
     vehicle, vehicle_objects = load_grounded_vehicle()
     grounded_position = vehicle.location.copy()
+    finished_materials = apply_studio_surface_finishes(bay_objects, vehicle_objects)
+    print(f'MANUFACTURED_SURFACE_FINISHES: {json.dumps(finished_materials)}', flush=True)
     configure_studio()
     cameras = bpy.data.collections.new('Exact frontend camera endpoints')
     bpy.context.scene.collection.children.link(cameras)
@@ -184,19 +236,21 @@ def main():
     reports = []
     parked_pose = None
     parked_camera = None
-    for pose in poses:
+    render_pose = os.environ.get('CABEK_REVIEW_POSE', 'all')
+    for pose in [*poses, create_reference_pose()]:
         camera = create_endpoint_camera(pose, cameras)
         apply_review_pose(pose, camera, vehicle, grounded_position)
-        report = {'name': pose['name'], 'equipment_and_vehicle': framing_report(bay_objects + vehicle_objects, camera)}
+        should_render = render_pose == pose['name'] or (render_pose == 'all' and pose['name'] != 'reference-study')
+        report = {'name': pose['name'], 'rendered': should_render,
+                  'equipment_and_vehicle': framing_report(bay_objects + vehicle_objects, camera)}
         reports.append(report)
         bpy.context.scene.render.filepath = str(STUDIO_DIRECTORY / f"{pose['name']}.png")
         print(f'RENDERING_RUNTIME_POSE: {json.dumps(report)}', flush=True)
         # Corrections can refresh the packed studio without repeating unrelated renders.
 
-        render_pose = os.environ.get('CABEK_REVIEW_POSE', 'all')
-        if render_pose in ('all', pose['name']):
+        if should_render:
             bpy.ops.render.render(write_still=True)
-        if pose['name'] == 'desktop-parked':
+        if pose['name'] == 'desktop-parked' or (render_pose == 'reference-study' and should_render):
             parked_pose, parked_camera = pose, camera
     if parked_pose is None:
         raise ValueError('A desktop-parked camera is required to save the editable studio.')

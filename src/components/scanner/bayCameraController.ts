@@ -68,7 +68,6 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
   let visible = true;
   let disposed = false;
   let cinematic = true;
-  let framingProgress = 0;
   let currentPreset = 0;
   let suppressControlChanges = false;
   let zoomDistance: number | undefined;
@@ -225,7 +224,6 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
     const angleDifference = destinationOrbit.theta - startOrbit.theta;
     const shortestAngle = Math.atan2(Math.sin(angleDifference), Math.cos(angleDifference));
     const transitionOrbit = new Spherical();
-    const startFraming = framingProgress;
     const startFov = camera.fov;
     const tweenState = { progress: 0 };
 
@@ -241,9 +239,8 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
       );
       camera.position.setFromSpherical(transitionOrbit).add(controls.target);
       orbitTarget.copy(controls.target);
-      framingProgress = MathUtils.lerp(startFraming, 1, tweenState.progress);
       camera.fov = MathUtils.lerp(startFov, destinationCamera.fov, tweenState.progress);
-      applyBayCameraFraming(camera, camera.aspect, framingProgress, viewport);
+      applyBayCameraFraming(camera, camera.aspect, viewport);
       enforceClearance();
       notifyChange();
     }
@@ -277,7 +274,6 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
       stopTransition();
       cinematic = true;
       latestMotion = { ...motion };
-      framingProgress = motion.reframeProgress;
       applyCinematicBayCamera(camera, motion, camera.aspect, orbitTarget, viewport);
       controls.target.copy(orbitTarget);
       safePosition.copy(camera.position);
@@ -314,7 +310,7 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
         //
         moveToPreset(currentPreset, !transition || reducedMotion);
       } else {
-        applyBayCameraFraming(camera, camera.aspect, framingProgress, viewport);
+        applyBayCameraFraming(camera, camera.aspect, viewport);
       }
       safePosition.copy(camera.position);
       notifyChange();

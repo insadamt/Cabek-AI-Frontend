@@ -25,6 +25,12 @@ The current tunnel is original CABEK procedural geometry from
 modules. Its exported copy and editable composition live alongside the v2 sedan
 and under `assets/blender/cabek-studio-v2/` respectively.
 
+The editable v2 Blender studio packs `studiolights/world/studio.exr` from Blender
+5.2's bundled studio lights. Its accompanying `license.txt` credits Greg Zaal /
+Poly Haven and licenses all bundled HDRIs under CC0. This environment is used by
+the offline Blender composition and its reference render; the frontend builds
+its own reflection studio from geometry.
+
 ## Ferrari 458 Italia
 
 - Artist: **vicent091036**.

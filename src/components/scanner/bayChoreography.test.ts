@@ -118,7 +118,7 @@ beforeEach(() => {
 // ============================================================
 
 describe('cinematic bay choreography', () => {
-  it('holds the initial POV, then reveals, drives and reframes before exposing categories', () => {
+  it('starts camera and vehicle immediately and overlaps the reframe to finish within 2.4 seconds', () => {
     const { controller, onChange, onIntroComplete } = setup();
     expect(controller.state).toMatchObject({
       entryProgress: 0,
@@ -130,8 +130,8 @@ describe('cinematic bay choreography', () => {
     controller.enter();
     expect(motion.timelines).toHaveLength(1);
     const entrance = motion.timelines[0];
-    expect(entrance.labels.pov).toBe(0);
-    expect(entrance.labels.reveal).toBeGreaterThan(entrance.labels.pov);
+    expect(entrance.labels.reveal).toBe(0);
+    expect(entrance.labels['vehicle-entry']).toBe(0);
     expect(
       entrance.steps.map((step) =>
         Object.keys(step.properties).filter((key) => key.endsWith('Progress')),
@@ -141,15 +141,11 @@ describe('cinematic bay choreography', () => {
     const startOf = (step: TimelineStep) =>
       typeof step.position === 'number' ? step.position : entrance.labels[step.position];
     expect(startOf(reveal)).toBe(entrance.labels.reveal);
-    expect(startOf(entry)).toBeGreaterThanOrEqual(
-      startOf(reveal) + Number(reveal.properties.duration),
-    );
-    expect(startOf(reframe)).toBeGreaterThanOrEqual(
-      startOf(entry) + Number(entry.properties.duration),
-    );
+    expect(startOf(reframe)).toBeLessThan(startOf(entry) + Number(entry.properties.duration));
     expect(entrance.labels.categories).toBeGreaterThanOrEqual(
       startOf(reframe) + Number(reframe.properties.duration),
     );
+    expect(entrance.labels.categories).toBeLessThanOrEqual(2.4);
     expect(entrance.play).toHaveBeenCalledOnce();
     entrance.options.onUpdate();
     expect(onChange).toHaveBeenCalledOnce();
@@ -224,6 +220,26 @@ describe('cinematic bay choreography', () => {
       controller.dispose();
     },
   );
+
+  it('parks a drive after manual takeover for cached return without reporting completion twice', () => {
+    const { controller, onIntroComplete } = setup();
+    controller.enter();
+    controller.state.entryProgress = 0.35;
+    controller.state.revealProgress = 0.7;
+    controller.interruptCamera();
+    controller.park();
+    expect(controller.state).toMatchObject({
+      entryProgress: 1,
+      revealProgress: 1,
+      reframeProgress: 1,
+      introComplete: true,
+    });
+    expect(motion.timelines[0].kill).toHaveBeenCalledOnce();
+    expect(onIntroComplete).toHaveBeenCalledOnce();
+    controller.park();
+    expect(motion.timelines[0].kill).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
 
   it('retargets lighting from live colors while leaving the current entrance intact', () => {
     const { controller } = setup();

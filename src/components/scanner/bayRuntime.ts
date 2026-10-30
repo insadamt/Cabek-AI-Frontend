@@ -1,6 +1,6 @@
 /**
- * Owns one persistent scene, asset loading and the exclusive handoff between cinematic and orbit cameras.
- * On-demand frames continue only for motion or damping; depends on scene, choreography, camera controller and vehicle ownership.
+ * Prepares shaders and a complete first frame before signaling readiness, with optional externally cued playback.
+ * Supports paused cache retention between routes; depends on scene, choreography, camera controller and vehicle ownership.
  */
 import { createBayScene } from './bayScene';
 import { createBayChoreography, type BayPalette } from './bayChoreography';
@@ -14,6 +14,8 @@ interface BayRuntimeOptions {
   reducedMotion: boolean;
   palette: BayPalette;
   visualSettings?: BayVisualSettings;
+  autoStart?: boolean;
+  active?: boolean;
   onReady: () => void;
   onError: () => void;
   onIntroComplete?: () => void;
@@ -26,12 +28,29 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
   let disposed = false;
   let failed = false;
   let onScreen = true;
-  let visible = !document.hidden;
+  let active = options.active ?? true;
+  let visible = !document.hidden && active;
   let frame: number | undefined;
   let lastFrameTime: number | undefined;
   let vehicle: BayVehicle | undefined;
   let cinematicCamera = true;
   let reducedMotion = options.reducedMotion;
+  let prepared = false;
+  let readyReported = false;
+
+  function failScene() {
+    if (disposed || failed) return;
+    failed = true;
+    cameraController.setEnabled(false);
+    synchronizeVisibility();
+    options.onError();
+  }
+
+  function startEntrance() {
+    if (disposed || failed || !readyReported) return;
+    choreography.enter();
+    cameraController.setEnabled(true);
+  }
 
   function requestRender() {
     if (disposed || failed || !visible || frame !== undefined) return;
@@ -47,7 +66,20 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
         if (choreography.state.introComplete) cinematicCamera = false;
       }
       const cameraMoving = !cinematicCamera && cameraController.update(deltaSeconds);
-      stage.render(choreography.state);
+      try {
+        stage.render(choreography.state);
+      } catch {
+        failScene();
+        return;
+      }
+      if (prepared && vehicle && !readyReported) {
+        //
+        // Asset download alone is insufficient: only expose a frame after textures/shaders have actually rendered.
+        //
+        readyReported = true;
+        options.onReady();
+        if (options.autoStart !== false) startEntrance();
+      }
       if (cameraMoving) requestRender();
       else lastFrameTime = undefined;
     });
@@ -79,7 +111,7 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
   cameraController.setReducedMotion(reducedMotion);
 
   function synchronizeVisibility() {
-    visible = !document.hidden && onScreen && !failed;
+    visible = !document.hidden && onScreen && active && !failed;
     choreography.setVisible(visible);
     cameraController.setVisible(visible);
     if (!visible) {
@@ -90,18 +122,14 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
     if (visible) requestRender();
   }
   function resize() {
-    if (disposed || failed) return;
+    if (disposed || failed || !active) return;
     stage.resize();
     cameraController.resize();
     requestRender();
   }
   function handleContextLoss(event: Event) {
     event.preventDefault();
-    if (disposed || failed) return;
-    failed = true;
-    cameraController.setEnabled(false);
-    synchronizeVisibility();
-    options.onError();
+    failScene();
   }
 
   const resizeObserver = new ResizeObserver(resize);
@@ -120,7 +148,7 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
   resize();
 
   void loadBayVehicle(loading.signal)
-    .then((loadedVehicle) => {
+    .then(async (loadedVehicle) => {
       if (disposed || failed) {
         loadedVehicle.dispose();
         return;
@@ -128,30 +156,42 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
       vehicle = loadedVehicle;
       stage.scene.add(vehicle.root);
       stage.invalidateShadows();
-      choreography.enter();
-      cameraController.setEnabled(true);
-      requestRender();
-      options.onReady();
-    })
-    .catch(() => {
+      applyBayVehicle(vehicle, choreography.state.entryProgress);
+      cameraController.applyCinematic(choreography.state);
+      await stage.prepare(choreography.state);
       if (disposed || failed) return;
-      failed = true;
-      cameraController.setEnabled(false);
-      synchronizeVisibility();
-      options.onError();
-    });
+      prepared = true;
+      requestRender();
+    })
+    .catch(failScene);
 
   return {
+    setActive(nextActive: boolean) {
+      if (disposed || failed || active === nextActive) return;
+      active = nextActive;
+      if (!active) {
+        synchronizeVisibility();
+        choreography.park();
+        return;
+      }
+
+      //
+      // A reattached cached canvas must use its real viewport before the first visible frame.
+      //
+      onScreen = true;
+      resize();
+      synchronizeVisibility();
+    },
     enter() {
-      if (!disposed && !failed && vehicle) choreography.enter();
+      startEntrance();
     },
     skipIntro() {
-      if (disposed || failed || !vehicle) return;
+      if (disposed || failed || !readyReported) return;
       choreography.skipIntro();
       requestRender();
     },
     resetCamera() {
-      if (disposed || failed || !vehicle) return;
+      if (disposed || failed || !readyReported) return;
       if (!choreography.state.introComplete) choreography.skipIntro();
       cinematicCamera = false;
       cameraController.reset(reducedMotion);

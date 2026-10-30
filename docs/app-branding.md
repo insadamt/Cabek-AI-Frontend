@@ -24,6 +24,11 @@ change. Interrupted
 transitions reverse from their current position, and reduced motion settles
 immediately. This motion never delays API requests or image loading.
 
+The category stage adds a separate, opt-in entrance on its header wrapper after
+real studio preparation. The Island pops into the top frame while cards and the
+model enter nearby; its internal work/idle logo animation stays independent.
+Other routes keep the settled header behavior. See [stage-entrance.md](stage-entrance.md).
+
 The same island and branding stay mounted during analysis and dossier image
 preparation. The opening activity replaces only the progress content so switching
 back to idle can animate the logo rather than replacing the entire island.

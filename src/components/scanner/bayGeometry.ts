@@ -1,7 +1,7 @@
 /**
- * Builds an open CABEK sensor tunnel with satin structure, recessed sensors and operator console.
- * Slim roof members preserve the elevated vehicle view while independent portal diffusers reveal scanning.
- * Depends on Three.js, visual settings, bay illumination and the vector console; owns its GPU resources.
+ * Builds the reference-inspired CABEK tunnel with graphite portals, silver rails and a brushed metal deck.
+ * An open perimeter roof reveals the vehicle while inset lime strips describe the industrial scanner.
+ * Depends on Three.js, baySensors, visual settings, illumination and the vector console; owns GPU resources.
  */
 import {
   BufferGeometry,
@@ -10,17 +10,19 @@ import {
   InstancedMesh,
   Light,
   Material,
+  Matrix4,
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  Object3D,
   PlaneGeometry,
   PointLight,
-  Quaternion,
   Vector3,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { buildBayConsole } from './bayConsole';
+import { buildBayHardware } from './bayHardware';
+import { applyBaySurfaceFinish } from './baySurfaceFinish';
+import { buildBaySensors, opticalRailLayouts } from './baySensors';
 import { defaultBayVisualSettings, type BayVisualSettings } from './bayControls';
 import {
   createBayIllumination,
@@ -40,11 +42,6 @@ export interface ScanningBay {
 type Dimensions = readonly [number, number, number];
 type Position = readonly [number, number, number];
 
-interface SensorPose {
-  position: Vector3;
-  direction: Vector3;
-}
-
 // ============================================================
 // Shared manufactured surfaces and resource ownership
 // ============================================================
@@ -53,20 +50,15 @@ export function buildScanningBay(): ScanningBay {
   const root = new Group();
   root.name = 'CABEK sensor tunnel';
   const canopy = new Group();
-  canopy.name = 'Complete louvered canopy';
-  const sensorArray = new Group();
-  sensorArray.name = 'Integrated sensor windows';
-  const overheadSensorArray = new Group();
-  overheadSensorArray.name = 'Canopy sensor windows';
-  canopy.add(overheadSensorArray);
-  root.add(canopy, sensorArray);
+  canopy.name = 'Open perimeter canopy';
+  root.add(canopy);
   const console = buildBayConsole();
   root.add(console.root);
   const geometries = new Map<string, BufferGeometry>();
   const materials = new Set<Material>();
   const lights: Light[] = [];
   const portals: PortalIllumination[] = [];
-  const sensorMeshes: InstancedMesh[] = [];
+  const instanceMeshes: InstancedMesh[] = [];
 
   function finishMaterial<T extends Material>(material: T): T {
     materials.add(material);
@@ -79,37 +71,52 @@ export function buildScanningBay(): ScanningBay {
     return material;
   }
 
-  const graphite = metal('Graphite anodised frame', '#303638', 0.44, 0.66);
+  const graphite = metal('Graphite powder coated frame', '#303436', 0.395, 0.04);
   const pearl = finishMaterial(
     new MeshPhysicalMaterial({
-      color: '#c3c9ca',
-      roughness: 0.4,
-      metalness: 0.78,
-      anisotropy: 0.28,
+      color: '#c5cbce',
+      roughness: 0.28,
+      metalness: 0.92,
+      anisotropy: 0.4,
       anisotropyRotation: Math.PI / 2,
     }),
   );
   pearl.name = 'Brushed aluminium shell';
-  const aluminium = metal('Machined edge detail', '#a5afb2', 0.34, 0.86);
-  const deck = metal('Satin drive deck', '#8b9292', 0.68, 0.18);
+  const aluminium = metal('Machined edge detail', '#bcc4c8', 0.245, 0.95);
+  const deck = finishMaterial(
+    new MeshPhysicalMaterial({
+      color: '#aab4b9',
+      roughness: 0.305,
+      metalness: 0.88,
+      anisotropy: 0.5,
+      anisotropyRotation: Math.PI / 2,
+      envMapIntensity: 1,
+    }),
+  );
+  deck.name = 'Brushed stainless drive deck';
+  applyBaySurfaceFinish(graphite, 'powder');
+  applyBaySurfaceFinish(pearl, 'brushed');
+  applyBaySurfaceFinish(aluminium, 'brushed');
+  applyBaySurfaceFinish(deck, 'deck');
   const rubber = metal('Recessed diffuser gasket', '#151c20', 0.72, 0.05);
   const ground = metal('Matte studio floor', '#eef0ed', 0.94, 0);
   const sensorGlass = finishMaterial(
     new MeshPhysicalMaterial({
       color: '#112c36',
-      roughness: 0.19,
+      roughness: 0.09,
       metalness: 0.06,
       clearcoat: 0.55,
       clearcoatRoughness: 0.11,
       envMapIntensity: 0.9,
     }),
   );
-  sensorGlass.name = 'Flush coated sensor glass';
+  sensorGlass.name = 'Coated optical camera glass';
+  const cameraFace = metal('Camera graphite faceplates', '#252b2a', 0.35, 0.42);
   const sensorOptics = metal('Coated optical apertures', '#071317', 0.16, 0.04);
   function diffuserMaterial(name: string) {
     const material = finishMaterial(
       new MeshStandardMaterial({
-        color: '#f0f2e9',
+        color: '#cbea9e',
         emissive: new Color('#b8f36b'),
         roughness: 0.4,
         metalness: 0,
@@ -174,7 +181,7 @@ export function buildScanningBay(): ScanningBay {
   }
 
   // ============================================================
-  // Flush drive deck and bevelled structural portals
+  // Flush stainless deck with service channels and bolted structural portals
   // ============================================================
 
   const floorGeometry = new PlaneGeometry(100, 100);
@@ -189,7 +196,19 @@ export function buildScanningBay(): ScanningBay {
   //
   box('Recessed deck foundation', [4.35, 0.12, 7.15], [0, -0.066, 0], graphite, 0.045);
   box('Flush drive surface', [4.04, 0.024, 6.94], [0, -0.012, 0], deck, 0.01);
-  for (const side of [-1, 1]) {
+  //
+  // Drainage detail shares one draw call so the extra industrial detail stays practical on phones.
+  //
+  const drainageSlots = new InstancedMesh(
+    roundedGeometry([0.145, 0.003, 0.012], 0.001),
+    rubber,
+    88,
+  );
+  drainageSlots.name = 'Recessed drainage grate slots';
+  root.add(drainageSlots);
+  instanceMeshes.push(drainageSlots);
+  let drainageSlotIndex = 0;
+  for (const { side, sections } of opticalRailLayouts) {
     box('Deck perimeter bead', [0.035, 0.012, 6.88], [side * 2.04, 0.002, 0], aluminium, 0.004);
     box('Guidance strip recess', [0.033, 0.006, 6.54], [side * 1.16, 0.001, 0], rubber, 0.003);
     box('Deck inset edge reveal', [0.016, 0.005, 6.86], [side * 2.008, 0.001, 0], rubber, 0.002);
@@ -202,21 +221,46 @@ export function buildScanningBay(): ScanningBay {
     );
     box('Lower equipment trunk', [0.25, 0.31, 5.94], [side * 1.91, 0.22, 0], graphite, 0.03);
     box('Equipment trunk cap', [0.27, 0.025, 5.89], [side * 1.91, 0.39, 0], pearl, 0.009);
-    box('Upper structural spine', [0.11, 0.12, 5.8], [side * 1.82, 2.55, 0], graphite, 0.015);
+    box('Service channel grate', [0.18, 0.008, 6.6], [side * 1.57, 0.003, 0], graphite, 0.002);
+    box('Upper structural spine', [0.11, 0.12, 5.8], [side * 1.82, 2.19, 0], graphite, 0.006);
     for (const height of [0.91, 1.92]) {
-      box('Continuous sensor rail', [0.09, 0.25, 5.7], [side * 1.81, height, 0], pearl, 0.018);
-      box(
-        'Sensor rail reveal',
-        [0.012, 0.014, 5.55],
-        [side * 1.758, height - 0.104, 0],
-        rubber,
-        0.004,
+      for (const { depth, length } of sections) {
+        box(
+          'Silver optical mounting rail',
+          [0.11, 0.3, length],
+          [side * 1.81, height, depth],
+          pearl,
+          0.009,
+        );
+        box(
+          'Sensor rail reveal',
+          [0.012, 0.014, length - 0.1],
+          [side * 1.749, height - 0.133, depth],
+          rubber,
+          0.004,
+        );
+      }
+    }
+    for (let index = 0; index < 44; index += 1) {
+      drainageSlots.setMatrixAt(
+        drainageSlotIndex++,
+        new Matrix4().makeTranslation(side * 1.57, 0.008, -3.2 + index * 0.149),
       );
     }
-    for (const depth of [-3.1, -2.25, -1.4, -0.55, 0.3, 1.15, 2, 2.85]) {
-      box('Deck drainage joint', [0.27, 0.003, 0.012], [side * 1.57, 0.001, depth], rubber, 0.001);
+    for (const depth of [-2.3, 2.3]) {
+      box(
+        'Rail mounting stanchion',
+        [0.065, 1.8, 0.075],
+        [side * 1.875, 1.21, depth],
+        aluminium,
+        0.009,
+      );
+    }
+    for (const depth of [-1.15, 1.15]) {
+      box('Deck panel expansion joint', [2.95, 0.002, 0.008], [0, 0.001, depth], rubber, 0.001);
     }
   }
+  drainageSlots.computeBoundingSphere();
   for (const depth of [-3.41, 3.41]) {
     box('Flush entry threshold', [3.96, 0.008, 0.035], [0, 0.001, depth], aluminium, 0.003);
   }
@@ -226,42 +270,57 @@ export function buildScanningBay(): ScanningBay {
     const portal: PortalIllumination = { depth, material: portalMaterial, lights: [] };
     portals.push(portal);
     for (const side of [-1, 1]) {
-      box('Portal footing', [0.37, 0.13, 0.48], [side * 1.82, 0.065, depth], graphite, 0.025);
+      box('Portal footing', [0.45, 0.08, 0.57], [side * 1.82, 0.04, depth], graphite, 0.012);
+      box('Cast portal plinth', [0.31, 0.23, 0.36], [side * 1.82, 0.19, depth], aluminium, 0.018);
       box(
         'Portal structural upright',
-        [0.23, 2.43, 0.25],
-        [side * 1.82, 1.335, depth],
+        [0.25, 2.07, 0.29],
+        [side * 1.82, 1.155, depth],
         graphite,
-        0.028,
+        0.012,
       );
       box(
-        'Upright satin face',
-        [0.16, 2.17, 0.012],
-        [side * 1.82, 1.34, depth + 0.13],
-        pearl,
-        0.006,
+        'Upright recessed face',
+        [0.15, 1.77, 0.008],
+        [side * 1.82, 1.21, depth - 0.149],
+        rubber,
+        0.003,
       );
       beam(
         'Portal chamfered shoulder',
-        [side * 1.82, 2.51, depth],
-        [side * 1.42, 2.94, depth],
-        0.23,
+        [side * 1.82, 2.15, depth],
+        [side * 1.42, 2.58, depth],
         0.25,
+        0.29,
         graphite,
-        0.028,
+        0.012,
       );
-      box('Inner light gasket', [0.025, 2.0, 0.11], [side * 1.692, 1.36, depth], rubber, 0.006);
+      box('Inner light gasket', [0.025, 1.64, 0.11], [side * 1.692, 1.18, depth], rubber, 0.006);
       box(
         'Vertical scan diffuser',
-        [0.012, 1.94, 0.065],
-        [side * 1.674, 1.36, depth],
+        [0.012, 1.58, 0.065],
+        [side * 1.674, 1.18, depth],
         portalMaterial,
         0.004,
       );
+      box(
+        'Portal front light gasket',
+        [0.068, 1.65, 0.006],
+        [side * 1.82, 1.21, depth - 0.155],
+        rubber,
+        0.004,
+      );
+      box(
+        'Portal front lime inlay',
+        [0.036, 1.59, 0.008],
+        [side * 1.82, 1.21, depth - 0.16],
+        portalMaterial,
+        0.003,
+      );
       beam(
         'Angled scan diffuser',
-        [side * 1.668, 2.48, depth],
-        [side * 1.365, 2.79, depth],
+        [side * 1.668, 2.12, depth],
+        [side * 1.365, 2.43, depth],
         0.016,
         0.06,
         portalMaterial,
@@ -274,20 +333,20 @@ export function buildScanningBay(): ScanningBay {
       lights.push(light);
       portal.lights.push(light);
     }
-    box('Structural canopy crossmember', [2.85, 0.085, 0.125], [0, 2.96, depth], graphite, 0.018);
-    box('Crossmember satin crown', [2.67, 0.008, 0.085], [0, 3.007, depth], pearl, 0.003);
-    box('Downward scan diffuser', [2.63, 0.01, 0.04], [0, 2.913, depth], portalMaterial, 0.003);
+    box('Structural canopy crossmember', [2.85, 0.18, 0.29], [0, 2.58, depth], graphite, 0.007);
+    box('Crossmember satin crown', [2.67, 0.008, 0.25], [0, 2.674, depth], pearl, 0.003);
+    box('Downward scan diffuser', [2.63, 0.01, 0.04], [0, 2.484, depth], portalMaterial, 0.003);
   }
 
   // ============================================================
-  // Narrow edge panels and spaced louvers keep the roof mostly open
+  // Long silver extrusions leave the reference tunnel's crown open
   // ============================================================
 
   for (const side of [-1, 1]) {
     box(
       'Canopy longitudinal edge panel',
       [0.17, 0.042, 5.6],
-      [side * 1.49, 2.99, 0],
+      [side * 1.49, 2.63, 0],
       pearl,
       0.017,
       canopy,
@@ -295,7 +354,7 @@ export function buildScanningBay(): ScanningBay {
     box(
       'Canopy perimeter reveal',
       [0.035, 0.035, 5.61],
-      [side * 1.598, 2.955, 0],
+      [side * 1.598, 2.595, 0],
       graphite,
       0.008,
       canopy,
@@ -303,106 +362,24 @@ export function buildScanningBay(): ScanningBay {
     box(
       'Roof underside diffuser',
       [0.025, 0.008, 5.4],
-      [side * 1.43, 2.96, 0],
+      [side * 1.43, 2.6, 0],
       categoryLight,
       0.003,
       canopy,
     );
   }
-  for (let index = 0; index < 6; index += 1) {
-    const louver = box(
-      'Satin canopy louver',
-      [2.76, 0.022, 0.048],
-      [0, 3.006, -2.3 + index * (4.6 / 5)],
-      pearl,
-      0.01,
-      canopy,
-    );
-    louver.rotation.x = -0.16;
-  }
-
-  // ============================================================
-  // Recessed optical apertures keep the sensor modules within the rail envelope
-  // ============================================================
-
-  const sensorPoses: SensorPose[] = [];
-  for (const side of [-1, 1]) {
-    for (const depth of [-2.13, -0.71, 0.71, 2.13]) {
-      for (const height of [0.91, 1.92]) {
-        sensorPoses.push({
-          position: new Vector3(side * 1.757, height, depth),
-          direction: new Vector3(-side, 0, 0),
-        });
-      }
-    }
-    for (const depth of [-1.4, 1.4]) {
-      sensorPoses.push({
-        position: new Vector3(side * 1.49, 2.96, depth),
-        direction: new Vector3(0, -1, 0),
-      });
-    }
-  }
-
-  function addSensorInstances(
-    name: string,
-    geometry: BufferGeometry,
-    material: Material,
-    normalOffset: number,
-    tangentOffset = 0,
-  ) {
-    geometries.set(name, geometry);
-    for (const overhead of [false, true]) {
-      const poses = sensorPoses.filter(({ position }) => position.y > 2.5 === overhead);
-      const mesh = new InstancedMesh(geometry, material, poses.length);
-      mesh.name = name;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      const transform = new Object3D();
-      const surfaceNormal = new Vector3(0, 1, 0);
-      poses.forEach(({ position, direction }, index) => {
-        transform.quaternion.copy(new Quaternion().setFromUnitVectors(surfaceNormal, direction));
-        transform.position.copy(position).addScaledVector(direction, normalOffset);
-        transform.position.add(
-          new Vector3(tangentOffset, 0, 0).applyQuaternion(transform.quaternion),
-        );
-        transform.updateMatrix();
-        mesh.setMatrixAt(index, transform.matrix);
-      });
-      mesh.computeBoundingSphere();
-      sensorMeshes.push(mesh);
-      (overhead ? overheadSensorArray : sensorArray).add(mesh);
-    }
-  }
-
-  //
-  // Separate overhead instances disappear with their roof instead of floating in space.
-  //
-  addSensorInstances(
-    'Twenty flush sensor seals',
-    new RoundedBoxGeometry(0.208, 0.008, 0.29, 2, 0.004),
-    rubber,
-    0,
-  );
-  addSensorInstances(
-    'Twenty flat sensor windows',
-    new RoundedBoxGeometry(0.181, 0.004, 0.258, 2, 0.002),
-    sensorGlass,
-    0.006,
-  );
-  addSensorInstances(
-    'Twenty integrated sensor status bars',
-    new RoundedBoxGeometry(0.006, 0.004, 0.2, 1, 0.002),
-    sensorStatus,
-    0.008,
-    0.078,
-  );
-  addSensorInstances(
-    'Twenty recessed optical apertures',
-    new RoundedBoxGeometry(0.044, 0.003, 0.058, 2, 0.0015),
-    sensorOptics,
-    0.009,
-    -0.035,
-  );
+  const sensors = buildBaySensors({
+    housing: pearl,
+    gasket: rubber,
+    face: cameraFace,
+    lens: sensorGlass,
+    aperture: sensorOptics,
+    status: sensorStatus,
+  });
+  root.add(sensors.sideArray);
+  canopy.add(sensors.overheadArray);
+  const hardware = buildBayHardware({ metal: aluminium, graphite, recess: rubber });
+  root.add(hardware.root);
 
   const illumination = createBayIllumination({
     portals,
@@ -412,8 +389,8 @@ export function buildScanningBay(): ScanningBay {
   });
   function applySettings(settings: BayVisualSettings) {
     canopy.visible = settings.canopyVisible;
-    sensorArray.visible = settings.sensorsVisible;
-    overheadSensorArray.visible = settings.sensorsVisible;
+    sensors.sideArray.visible = settings.sensorsVisible;
+    sensors.overheadArray.visible = settings.sensorsVisible;
     illumination.applyBrightness(settings.illumination);
     console.applySettings(settings);
   }
@@ -430,7 +407,9 @@ export function buildScanningBay(): ScanningBay {
       if (disposed) return;
       disposed = true;
       console.dispose();
-      sensorMeshes.forEach((mesh) => mesh.dispose());
+      sensors.dispose();
+      hardware.dispose();
+      instanceMeshes.forEach((mesh) => mesh.dispose());
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((material) => material.dispose());
       root.removeFromParent();

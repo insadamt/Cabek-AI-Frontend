@@ -1,6 +1,6 @@
 /*
  * Keeps three workflow panels readable beside the studio without giving the controls more weight than the car.
- * Depends on CategoryStage markup, HomeFrame sizing and the intro-driven GSAP reveal.
+ * Depends on CategoryStage markup and HomeFrame sizing; choices stay available while the car enters.
  */
 .category-stage {
   --stage-lime: #edf2e4;
@@ -35,10 +35,6 @@
   width: clamp(284px, 23vw, 336px);
   max-width: calc(100% - 40px);
   transform: translateY(-50%);
-}
-.category-stage-dock[data-intro-complete='false'] {
-  visibility: hidden;
-  pointer-events: none;
 }
 .category-stage-tabs {
   display: flex;

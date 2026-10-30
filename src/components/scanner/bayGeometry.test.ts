@@ -3,18 +3,27 @@
  * Depends on the real Three.js mesh builder without WebGL, DOM, screenshots or browser automation.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { BufferGeometry, Material, Mesh, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
+import {
+  Box3,
+  BufferGeometry,
+  InstancedMesh,
+  Material,
+  Matrix4,
+  Mesh,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+} from 'three';
 import { buildScanningBay } from './bayGeometry';
 import { defaultBayVisualSettings, normalizeBayVisualSettings } from './bayControls';
 
 describe('manufactured tunnel geometry and controls', () => {
-  it('opens the overhead structure and uses flat sensor windows instead of projecting camera barrels', () => {
+  it('keeps the crown open and the optical cameras clear of the sedan travel envelope', () => {
     const bay = buildScanningBay();
     try {
-      const canopy = bay.root.getObjectByName('Complete louvered canopy');
+      const canopy = bay.root.getObjectByName('Open perimeter canopy');
       expect(canopy).toBeDefined();
       expect(canopy?.children.filter((child) => child.name === 'Satin canopy louver')).toHaveLength(
-        6,
+        0,
       );
       expect(
         canopy?.children.filter((child) => child.name === 'Canopy longitudinal edge panel'),
@@ -31,23 +40,47 @@ describe('manufactured tunnel geometry and controls', () => {
       expect(crossmembers).toHaveLength(3);
       crossmembers.forEach(({ geometry }) => {
         geometry.computeBoundingBox();
-        expect(geometry.boundingBox!.max.z - geometry.boundingBox!.min.z).toBeLessThan(0.13);
+        expect(geometry.boundingBox!.max.z - geometry.boundingBox!.min.z).toBeLessThan(0.3);
       });
       expect(bay.root.getObjectByName('CABEK tunnel operator console')).toBeDefined();
       expect(bay.root.getObjectByName('Console label CABEK')).toBeDefined();
       expect(bay.root.getObjectByName('Console display mounting plate')).toBeDefined();
       expect(bay.root.getObjectByName('Console adjustable tilt hinge')).toBeDefined();
-      const windows: Mesh[] = [];
+      const housings: InstancedMesh[] = [];
       bay.root.traverse((object) => {
-        expect(object.name.toLowerCase()).not.toMatch(/camera|barrel|lens/);
-        if (object.name === 'Twenty flat sensor windows') windows.push(object as Mesh);
+        if (object instanceof InstancedMesh && object.name === 'Machined optical camera housings')
+          housings.push(object);
       });
-      expect(windows).toHaveLength(2);
-      for (const window of windows) {
-        window.geometry.computeBoundingBox();
-        const box = window.geometry.boundingBox!;
-        expect(box.max.y - box.min.y).toBeLessThan(0.005);
+      expect(housings).toHaveLength(2);
+      expect(housings.reduce((count, mesh) => count + mesh.count, 0)).toBe(20);
+      const sideSensors = bay.root.getObjectByName('Side optical camera array')!;
+      bay.root.updateMatrixWorld(true);
+      const portalBounds: Box3[] = [];
+      bay.root.traverse((object) => {
+        if (object.name === 'Portal structural upright')
+          portalBounds.push(new Box3().setFromObject(object));
+      });
+      for (const mesh of sideSensors.children) {
+        const sensor = mesh as InstancedMesh;
+        const bounds = new Box3().setFromObject(sensor);
+        expect(bounds.min.y).toBeGreaterThan(0.75);
+        expect(bounds.max.y).toBeLessThan(2.1);
+        //
+        // The mirrored array spans the lane; each individual camera must remain outside it.
+        //
+        for (let index = 0; index < sensor.count; index += 1) {
+          const transform = new Matrix4();
+          sensor.getMatrixAt(index, transform);
+          sensor.geometry.computeBoundingBox();
+          const instanceBounds = sensor.geometry.boundingBox!.clone().applyMatrix4(transform);
+          expect(instanceBounds.max.x < -1.5 || instanceBounds.min.x > 1.5).toBe(true);
+          expect(portalBounds.some((portal) => portal.intersectsBox(instanceBounds))).toBe(false);
+        }
       }
+      const overheadBounds = new Box3().setFromObject(
+        bay.root.getObjectByName('Overhead optical camera array')!,
+      );
+      expect(overheadBounds.min.y).toBeGreaterThan(2.4);
     } finally {
       bay.dispose();
     }
@@ -56,9 +89,9 @@ describe('manufactured tunnel geometry and controls', () => {
   it('keeps the physical screen synchronized and removes canopy-mounted sensors with the roof', () => {
     const bay = buildScanningBay();
     try {
-      const canopy = bay.root.getObjectByName('Complete louvered canopy')!;
-      const sensors = bay.root.getObjectByName('Integrated sensor windows')!;
-      const overheadSensors = bay.root.getObjectByName('Canopy sensor windows')!;
+      const canopy = bay.root.getObjectByName('Open perimeter canopy')!;
+      const sensors = bay.root.getObjectByName('Side optical camera array')!;
+      const overheadSensors = bay.root.getObjectByName('Overhead optical camera array')!;
       expect(overheadSensors.parent).toBe(canopy);
       bay.applySettings({ illumination: 0.2, sensorsVisible: false, canopyVisible: false });
       expect(canopy.visible).toBe(false);
@@ -108,8 +141,8 @@ describe('manufactured tunnel geometry and controls', () => {
       const shell = bay.root.getObjectByName('Canopy longitudinal edge panel') as Mesh;
       expect(shell.material).toBeInstanceOf(MeshPhysicalMaterial);
       expect((shell.material as MeshPhysicalMaterial).anisotropy).toBeGreaterThan(0);
-      const windows = bay.root.getObjectByName('Twenty flat sensor windows') as Mesh;
-      const optics = bay.root.getObjectByName('Twenty recessed optical apertures') as Mesh;
+      const windows = bay.root.getObjectByName('Coated camera lenses') as Mesh;
+      const optics = bay.root.getObjectByName('Camera iris apertures') as Mesh;
       expect(optics).toBeDefined();
       expect(optics.material).not.toBe(windows.material);
       expect((windows.material as MeshPhysicalMaterial).envMapIntensity).toBeLessThanOrEqual(1);

@@ -1,0 +1,83 @@
+{
+  "repository": "KhronosGroup/glTF-Sample-Assets",
+  "revision": "8f492390ddc7a2ae221a1369ef560589cf8c70fb",
+  "edition": "glTF-JPG",
+  "files": [
+    {
+      "file": "CarConcept.data.bin",
+      "bytes": 8670516,
+      "sha256": "5cd6ceb6a502dc3c79863c2f11c06f6aa7474e53367bb212b3e3c3f1e7611d20"
+    },
+    {
+      "file": "Dash_E.jpg",
+      "bytes": 21350,
+      "sha256": "b4a466494a21efb14059b0f30605cc7331895b6e2abe250b5e091827d2e69e2e"
+    },
+    {
+      "file": "Dot_C.png",
+      "bytes": 321,
+      "sha256": "ac7ca6bf9ee840b78e4a27c82c3c529a1063bba16b9eea120c981a041d922a40"
+    },
+    {
+      "file": "Dot_N.jpg",
+      "bytes": 6477,
+      "sha256": "c4e4824414fa7137d368b911fd41e8f64f413b9dd708da8c5e7640ef16846df2"
+    },
+    {
+      "file": "Hex_N.jpg",
+      "bytes": 2157,
+      "sha256": "e79d5cc6f9bed74d26f95083e02951ccbb01e2b11c86889562689142f7ebab3b"
+    },
+    {
+      "file": "Khronos_C.jpg",
+      "bytes": 5964,
+      "sha256": "47bc84e379b6ace50efd21bd922220de323697764f011bbf08f6a816403a26d6"
+    },
+    {
+      "file": "Mechanical_N.jpg",
+      "bytes": 154482,
+      "sha256": "11f22b0c937f983689646679a8827ae5ddf2727ad228cf6a662578e686a71348"
+    },
+    {
+      "file": "Mechanical_ORM.jpg",
+      "bytes": 18470,
+      "sha256": "1db110620ea68b6c03002cf05856c4bf8d145a64c4cb28f939c0b6e08a97a1ac"
+    },
+    {
+      "file": "Occlusion.jpg",
+      "bytes": 456075,
+      "sha256": "ddc9708f8a84ee900f4b39eec3200b5fda4fd9c4b5dda315d97c7f52e8045f9e"
+    },
+    {
+      "file": "Powdercoat_N.png",
+      "bytes": 41240,
+      "sha256": "3f1bf8d127374684c89b0d1963ca57d36a8ea59de96bef752b62daebc6362eeb"
+    },
+    {
+      "file": "Rib_N.png",
+      "bytes": 143,
+      "sha256": "516aada2d1c574c59352e1221aaf75cc8fa48104aafe05716f02f30b7349c59f"
+    },
+    {
+      "file": "Thickness.jpg",
+      "bytes": 28582,
+      "sha256": "36489ec4520a0a17b91d3c4f86075881d1fe4c5f2a986af9e50b93702d0dfc2e"
+    },
+    {
+      "file": "Tireside_C.png",
+      "bytes": 8094,
+      "sha256": "871509e74cc44ca8fa3b664e59460e62f0edf30007b035bb9f21ad957d6336c1"
+    },
+    {
+      "file": "Tireside_N.jpg",
+      "bytes": 250816,
+      "sha256": "01d5f4ad0f6d0751b050c663d9c08c72109d6f0494cab25719329f41cee297de"
+    },
+    {
+      "file": "Tiretread_N.jpg",
+      "bytes": 27762,
+      "sha256": "ea56b8ec89c96ac02702aa8b74d05ce0886d8238af55f28fb7a4f29d3c7cb635"
+    }
+  ],
+  "source_document_sha256": "76afe91f52c938f1f33025dc73dd7f638be7aa75f074d3e4323dd6c9b521d470"
+}
