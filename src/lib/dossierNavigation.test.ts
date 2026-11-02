@@ -13,11 +13,13 @@ const mocks = vi.hoisted(() => ({
   prepare: vi.fn(),
   flyDocument: vi.fn(),
   flyPhotos: vi.fn(),
+  approach: vi.fn(),
 }));
 vi.mock('../hooks/useNavigation', () => ({ navigate: mocks.navigate }));
 vi.mock('react-dom', () => ({ flushSync: (callback: () => void) => callback() }));
 vi.mock('./dossierImages', () => ({ prepareDossierImages: mocks.prepare }));
 vi.mock('./analysisMotion', () => ({ flyAnalysisDocument: mocks.flyDocument }));
+vi.mock('./capturedFolderMotion', () => ({ approachCapturedFolder: mocks.approach }));
 vi.mock('./dossierPhotoMotion', () => ({ flyDossierPhotos: mocks.flyPhotos }));
 import { openDossierFromFolder } from './dossierNavigation';
 
@@ -84,6 +86,7 @@ beforeEach(() => {
   vi.stubGlobal('document', { querySelector: () => ({}) });
   mocks.flyDocument.mockResolvedValue(undefined);
   mocks.flyPhotos.mockResolvedValue(undefined);
+  mocks.approach.mockResolvedValue(undefined);
   mocks.prepare.mockImplementation(
     ({ signal, onProgress }) =>
       new Promise((resolve, reject) => {
@@ -196,5 +199,45 @@ describe('fast prepared dossier opening', () => {
     expect(getDossierOpening()?.retry).toBeTypeOf('function');
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(source.scope.inert).toBe(false);
+  });
+});
+
+describe('persisted capture assembly', () => {
+  it('releases saved originals before the vehicle sheet, closes, then opens directly with category return navigation', async () => {
+    const source = createFolder();
+    let releasePhotos!: () => void;
+    mocks.flyPhotos.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePhotos = resolve;
+        }),
+    );
+    const task = open({
+      ...source.options,
+      captured: true,
+      returnTo: '/categories/chiffrage-rapide',
+    });
+    await vi.waitFor(() => expect(getDossierOpening()?.phase).toBe('loading'));
+    expect(mocks.flyDocument).not.toHaveBeenCalled();
+    expect(mocks.flyPhotos).not.toHaveBeenCalled();
+    finishPreparation(response);
+    await vi.waitFor(() => expect(mocks.flyPhotos).toHaveBeenCalledOnce());
+    expect(mocks.flyPhotos).toHaveBeenCalledWith(
+      expect.objectContaining({ photos: response.photos, sequential: true }),
+    );
+    expect(mocks.flyDocument).not.toHaveBeenCalled();
+    releasePhotos();
+    await vi.waitFor(() => expect(getDossierOpening()?.phase).toBe('stowing'));
+    expect(mocks.flyDocument).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ returning: true }),
+    );
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    source.finishInsertion();
+    await task;
+    expect(mocks.approach).toHaveBeenCalledOnce();
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/dossiers/test',
+      expect.objectContaining({ returnTo: '/categories/chiffrage-rapide' }),
+    );
   });
 });

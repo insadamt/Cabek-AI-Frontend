@@ -1,0 +1,299 @@
+/* Capture controls and live evidence fit the existing frame/island; depends on shared category tokens and dossier drawer styles. */
+.tunnel-stage {
+  height: 100%;
+}
+.capture-stage-nav {
+  position: absolute;
+  z-index: 3;
+  top: 84px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.capture-stage-nav button,
+.capture-stage-nav a {
+  background: transparent;
+  color: #414a40;
+  padding: 10px 0;
+  font-size: 12px;
+}
+.capture-controls {
+  position: absolute;
+  z-index: 3;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(490px, calc(100% - 36px));
+  text-align: center;
+}
+.capture-controls p {
+  margin: 0;
+  font-size: 11px;
+}
+.capture-controls .eyebrow {
+  color: #586051;
+}
+.capture-controls a {
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.capture-metadata-toggle {
+  padding: 10px;
+  min-height: 44px;
+  border: 0;
+  background: #fafafad9;
+  font-size: 12px;
+}
+.capture-scanner {
+  min-height: 52px;
+  min-width: 190px;
+  padding: 15px 26px;
+  border: 1px solid #151a14;
+  border-radius: 3px;
+  background: #20271d;
+  color: #f5f8ef;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  box-shadow: 0 6px 22px #17201318;
+}
+.capture-scanner:not(:disabled):hover {
+  background: #39472f;
+}
+.capture-scanner:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.capture-phase-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  font-size: 10px;
+}
+.capture-phase-actions button {
+  padding: 12px 4px;
+  background: #fafafade;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: inherit;
+}
+.capture-controls .inline-error {
+  padding: 10px;
+  background: #fff7f1e8;
+  max-height: 90px;
+  overflow-y: auto;
+}
+.tunnel-stage:not([data-entrance-phase='ready']) .capture-controls,
+.tunnel-stage:not([data-entrance-phase='ready']) .capture-stage-nav {
+  visibility: hidden;
+}
+.capture-finale {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  margin-left: calc(min(65vw, 450px) / -2);
+  margin-top: -120px;
+  width: min(65vw, 450px);
+}
+.capture-finale .dossier-folder {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.35;
+}
+.capture-finale-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 30px;
+  text-align: center;
+  font-size: 12px;
+}
+.capture-finale-reference bdi {
+  font-size: 18px;
+}
+.capture-finale .folder-document {
+  visibility: hidden;
+}
+.capture-finale .dossier-folder[data-document-away='true'] .folder-document {
+  visibility: hidden;
+}
+.capture-finale
+  .dossier-folder.folder-mouth-open:not([data-document-away='true'])
+  .folder-document {
+  visibility: visible;
+}
+.capture-finale .folder-front-markings,
+.capture-finale-reference {
+  opacity: 0;
+}
+.capture-finale[data-assembled='true'] .folder-front-markings,
+.capture-finale[data-assembled='true'] .capture-finale-reference {
+  opacity: 1;
+}
+.dossier-page[data-category] .dossier-overview-sidebar {
+  border-top: 2px solid var(--category-accent, transparent);
+}
+.capture-island-activity {
+  gap: 10px;
+  width: calc(100% - var(--island-inline-padding) * 2);
+  min-width: 0;
+  height: 56px;
+  top: 8px;
+  padding: 0;
+  line-height: 1.25;
+}
+.capture-island-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  flex: 1;
+}
+.capture-island-copy strong {
+  font-size: 10px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.capture-island-copy > span {
+  font-size: 8px;
+  color: #ffffffa8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.capture-island-photos {
+  display: flex;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+.capture-island-photos img {
+  width: 24px;
+  height: 28px;
+  object-fit: cover;
+  border: 1px solid #ffffff4d;
+  border-radius: 3px;
+  animation: capture-photo-received 320ms ease-out both;
+}
+.ai-activity-island[data-phase='capture'] {
+  height: 76px;
+  border-bottom: 2px solid var(--category-accent, #9fa9b0);
+  pointer-events: auto;
+}
+.capture-island-resume {
+  align-self: center;
+  color: #e3eccd;
+  font-size: 8px;
+  text-decoration: underline;
+}
+.capture-island-copy .capture-island-error {
+  color: #f4b99a;
+}
+.capture-after-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.capture-after-picker select {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px;
+}
+.capture-after-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  background: #f0f4f6;
+  border: 1px solid #d3dfe6;
+  text-align: left;
+}
+.capture-after-option span {
+  font-size: 11px;
+}
+.capture-picker-pagination {
+  display: flex;
+  justify-content: space-between;
+}
+.capture-picker-pagination button {
+  min-height: 44px;
+  padding: 10px;
+}
+.capture-metadata-form {
+  padding: 0;
+}
+.capture-metadata-form .workflow-fields {
+  grid-template-columns: 1fr;
+}
+@keyframes capture-photo-received {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 650px) {
+  .capture-stage-nav {
+    top: 90px;
+    left: 18px;
+    right: 18px;
+  }
+  .tunnel-stage .bay-camera-toolbar {
+    top: 132px;
+    bottom: auto;
+  }
+  .capture-controls {
+    bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+  .capture-controls .eyebrow {
+    max-width: 260px;
+    line-height: 1.4;
+  }
+  .capture-island-photos img {
+    width: 20px;
+    height: 24px;
+  }
+  .capture-island-photos img:not(:last-child) {
+    display: none;
+  }
+  .capture-island-copy strong {
+    font-size: 9px;
+  }
+}
+@media (max-height: 550px) and (min-width: 651px) {
+  .capture-stage-nav {
+    top: 74px;
+  }
+  .capture-controls {
+    left: auto;
+    right: 20px;
+    bottom: 16px;
+    transform: none;
+    width: 290px;
+  }
+  .capture-finale {
+    width: 260px;
+    margin-left: -130px;
+    margin-top: -85px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture-island-photos img {
+    animation: none;
+  }
+}

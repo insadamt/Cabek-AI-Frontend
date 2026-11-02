@@ -112,7 +112,7 @@ export function Home({ category }: { category: Category }) {
     Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
   return (
     <HomeFrame>
-      <div className="category-collection">
+      <div className="category-collection" data-category={category.type}>
         <CategoryControls category={category} />
         <div className="category-content">
           <div className="home-carousel-view" hidden={searchParams.has('search')}>

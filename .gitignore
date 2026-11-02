@@ -10,3 +10,12 @@ dist/
 test-results/
 playwright-report/
 .DS_Store
+
+# Private agent configuration and working folders.
+.agents/
+.codex/
+.ai/
+.claude/
+.instructions.md
+.instruction.md
+.instrcutions.md

@@ -1,5 +1,7 @@
 /** Shared CABEK Global transport and preview adapters; components never contact AutoEstimate directly. */
 import axios from 'axios';
+import type { CaptureStatus, MetadataPatch } from '../captureTypes';
+import type { CreatableDossierType, PhotoPhase } from '../workflowTypes';
 import type {
   CreateDossierInput,
   UploadDossierPhotosInput,
@@ -57,6 +59,64 @@ const workflowAdapter: WorkflowApiAdapter = {
   },
 };
 export const brandSortAvailable = isPreview;
+
+// A stable key makes a lost creation response recoverable without another persistent dossier.
+
+export function createDraft(
+  type: CreatableDossierType,
+  key: string,
+  signal?: AbortSignal,
+): Promise<DossierResponse> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
+  return request(() =>
+    client.post(
+      '/api/dossiers',
+      { type },
+      {
+        signal,
+        headers: { 'Idempotency-Key': key },
+      },
+    ),
+  );
+}
+
+export function readCapture(
+  id: string,
+  phase?: PhotoPhase,
+  signal?: AbortSignal,
+): Promise<CaptureStatus> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
+  return request(() =>
+    client.get(`/api/dossiers/${encodeURIComponent(id)}/capture`, {
+      signal,
+      params: phase ? { phase } : undefined,
+    }),
+  );
+}
+
+export function startCapture(
+  id: string,
+  phase?: PhotoPhase,
+  signal?: AbortSignal,
+): Promise<CaptureStatus> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
+  return request(() =>
+    client.post(`/api/dossiers/${encodeURIComponent(id)}/capture`, phase ? { phase } : undefined, {
+      signal,
+    }),
+  );
+}
+
+export function patchMetadata(
+  id: string,
+  input: MetadataPatch,
+  signal?: AbortSignal,
+): Promise<DossierResponse> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
+  return request(() =>
+    client.patch(`/api/dossiers/${encodeURIComponent(id)}/metadata`, input, { signal }),
+  );
+}
 
 export async function createDossier(
   input: CreateDossierInput,

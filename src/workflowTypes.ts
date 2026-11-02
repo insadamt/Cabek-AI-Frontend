@@ -8,6 +8,9 @@ export type PhotoPhase = 'before' | 'after';
 export type WorkflowStatus =
   | import('./types').ScanStatus
   | 'draft'
+  | 'capturing'
+  | 'capture_failed'
+  | 'awaiting_metadata'
   | 'awaiting_photos'
   | 'ready_to_scan'
   | 'analyzing'

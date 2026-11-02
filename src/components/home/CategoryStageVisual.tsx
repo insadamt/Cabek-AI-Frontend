@@ -13,8 +13,8 @@ import '../../styles/scanning-bay.css';
 
 const categoryPalettes: Record<Category['type'], BayPalette> = {
   forfait_expertise: {
-    primary: '#b8db80',
-    secondary: '#e5edcf',
+    primary: '#555e66',
+    secondary: '#9ca1a6',
     focus: 0,
     sensorEmphasis: 0,
     cameraPreset: 0,
@@ -27,8 +27,8 @@ const categoryPalettes: Record<Category['type'], BayPalette> = {
     cameraPreset: 1,
   },
   verification: {
-    primary: '#edf0e7',
-    secondary: '#ffffff',
+    primary: '#adbfcd',
+    secondary: '#e2eaf0',
     focus: 0,
     sensorEmphasis: 1,
     cameraPreset: 2,
@@ -46,6 +46,9 @@ interface CategoryStageVisualProps {
   initiallyParked: boolean;
   playIntro: boolean;
   onStatusChange: (status: StageSceneStatus) => void;
+  capturing?: boolean;
+  finishing?: boolean;
+  onParked?: (parked: boolean) => void;
 }
 
 export function CategoryStageVisual({
@@ -53,6 +56,9 @@ export function CategoryStageVisual({
   initiallyParked,
   playIntro,
   onStatusChange,
+  capturing = false,
+  finishing = false,
+  onParked,
 }: CategoryStageVisualProps) {
   const reducedMotion = useSyncExternalStore(
     subscribeToMotion,
@@ -79,6 +85,9 @@ export function CategoryStageVisual({
   const [status, setStatus] = useState<StageSceneStatus>(() => cache.getSnapshot().status);
   const [attempt, setAttempt] = useState(0);
   const cameraInteractive = status === 'ready' && playIntro;
+  useEffect(() => {
+    onParked?.(introComplete || status === 'failed');
+  }, [introComplete, status, onParked]);
 
   useLayoutEffect(() => {
     const host = canvasHostRef.current;
@@ -117,6 +126,25 @@ export function CategoryStageVisual({
   useEffect(() => {
     connectionRef.current?.setPalette(categoryPalettes[category.type]);
   }, [category.type]);
+  useEffect(() => {
+    connectionRef.current?.setCapturing(capturing);
+    return () => connectionRef.current?.setCapturing(false);
+  }, [capturing, attempt]);
+  useEffect(() => {
+    connectionRef.current?.setPalette(
+      finishing
+        ? {
+            ...categoryPalettes[category.type],
+            primary: '#121719',
+            secondary: '#121719',
+            focus: 0,
+            sensorEmphasis: 0,
+          }
+        : capturing
+          ? { ...categoryPalettes[category.type], focus: 1, sensorEmphasis: 1 }
+          : categoryPalettes[category.type],
+    );
+  }, [capturing, finishing, category.type, attempt]);
   useEffect(() => {
     connectionRef.current?.setReducedMotion(reducedMotion);
   }, [reducedMotion]);

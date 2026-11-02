@@ -32,6 +32,7 @@ interface CacheEntry {
   palette: BayPalette;
   reducedMotion: boolean;
   disposed: boolean;
+  capturing: boolean;
 }
 
 export function createBayRuntimeCache(
@@ -54,6 +55,7 @@ export function createBayRuntimeCache(
       palette: options.palette,
       reducedMotion: options.reducedMotion,
       disposed: false,
+      capturing: false,
     };
   }
 
@@ -82,6 +84,7 @@ export function createBayRuntimeCache(
             cached.view?.onIntroComplete();
           },
         });
+        cached.runtime.setCapturing?.(cached.capturing);
       })
       .catch(() => publishStatus(cached, 'failed'));
   }
@@ -136,6 +139,11 @@ export function createBayRuntimeCache(
         setPalette(palette: BayPalette) {
           if (isConnected()) setPalette(cached, palette);
         },
+        setCapturing(capturing: boolean) {
+          if (!isConnected()) return;
+          cached.capturing = capturing;
+          cached.runtime?.setCapturing?.(capturing);
+        },
         setReducedMotion(reducedMotion: boolean) {
           if (isConnected()) setReducedMotion(cached, reducedMotion);
         },
@@ -149,6 +157,8 @@ export function createBayRuntimeCache(
           cached.initiallyParked = true;
           cached.introComplete = true;
           cached.runtime?.setActive(false);
+          cached.capturing = false;
+          cached.runtime?.setCapturing?.(false);
           cached.canvas.remove();
         },
       };

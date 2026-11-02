@@ -397,3 +397,36 @@ describe('bay camera controller', () => {
     expect(session.controller.update(1 / 60)).toBe(false);
   });
 });
+
+describe('capture camera orbit', () => {
+  it('uses the existing controls loop during capture and returns to a preset on completion', () => {
+    const { controller } = setup();
+    controller.setCapturing(true);
+    expect(motion.controls.autoRotate).toBe(true);
+    expect(controller.update(1 / 60)).toBe(true);
+    controller.setCapturing(false);
+    expect(motion.controls.autoRotate).toBe(false);
+    expect(motion.tweens).toHaveLength(1);
+    controller.dispose();
+  });
+  it('hands camera ownership to manual input until the next reset', () => {
+    const { controller, pointer } = setup();
+    controller.setCapturing(true);
+    pointer();
+    expect(motion.controls.autoRotate).toBe(false);
+    controller.setCapturing(false);
+    expect(motion.tweens).toHaveLength(0);
+    controller.dispose();
+  });
+  it('settles when motion is reduced and does no detached-camera work', () => {
+    const { controller } = setup();
+    controller.setCapturing(true);
+    controller.setReducedMotion(true);
+    expect(motion.controls.autoRotate).toBe(false);
+    controller.setReducedMotion(false);
+    expect(motion.controls.autoRotate).toBe(true);
+    controller.setVisible(false);
+    expect(controller.update(1 / 60)).toBe(false);
+    controller.dispose();
+  });
+});

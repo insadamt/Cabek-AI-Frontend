@@ -1,153 +1,121 @@
 /**
- * Reveals the prepared studio on fresh visits and restores its parked composition without replay on return.
- * Depends on HomeFrame, useStageEntrance, the persistent scene host and workflow routes.
+ * Presents three shared glass folders, absorbing the chosen category into the island before entering its workflow.
+ * Depends on DossierFolder, GSAP category motion, persisted tunnel sessions and the existing category collections.
  */
-import { ArrowUpRight } from 'lucide-react';
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HomeFrame } from '../components/home/HomeFrame';
-import { CategoryStageVisual } from '../components/home/CategoryStageVisual';
-import { StageLoadingScreen } from '../components/home/StageLoadingScreen';
-import { useStageEntrance } from '../hooks/useStageEntrance';
+import { DossierFolder } from '../components/home/DossierFolder';
+import { TunnelStage } from '../components/home/TunnelStage';
 import { useNavigation } from '../hooks/useNavigation';
-import { categories, categoryPath, collectionUrl, type Category } from '../lib/workflows';
+import { useTunnelCapture } from '../hooks/useTunnelCapture';
+import { categories, categoryForType, categoryPath, type Category } from '../lib/workflows';
+import { absorbCategoryFolder } from '../lib/categoryFolderMotion';
 import '../styles/category-stage.css';
-import '../styles/stage-entrance.css';
+import '../styles/cinematic-capture.css';
 
 export function CategoryStage() {
-  const { pathname, searchParams, navigate } = useNavigation();
-  const selected =
-    categories.find((item) => item.slug === searchParams.get('parcours')) ?? categories[0];
-  const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
-  const entrance = useStageEntrance();
-  const preparing = entrance.phase === 'preparing';
-
-  //
-  // The scene reveal finishes last; hold vehicle motion and camera input until the whole page has settled.
-  //
-  const pageEntranceSettled = entrance.phase === 'ready';
+  const { navigate, searchParams } = useNavigation();
+  const { session } = useTunnelCapture();
+  const [selected, setSelected] = useState<Category | null>(() =>
+    session
+      ? categoryForType(session.identity.type)
+      : searchParams.get('scene') === '1'
+        ? (categories.find((category) => category.slug === searchParams.get('parcours')) ?? null)
+        : null,
+  );
+  const [absorbing, setAbsorbing] = useState(false);
+  const folders = useRef<HTMLDivElement>(null);
+  const transition = useRef<(() => void) | undefined>(undefined);
+  const locked = useRef(false);
+  const resume = searchParams.get('reprendre');
+  const activeType = session?.identity.type;
 
   useEffect(() => {
-    const previousTitle = document.title;
+    if (activeType && resume === '1') setSelected(categoryForType(activeType));
+  }, [activeType, resume]);
+  useEffect(() => () => transition.current?.(), []);
+  useEffect(() => {
+    const previous = document.title;
     document.title = 'CABEK AI — Choisissez votre parcours';
     return () => {
-      document.title = previousTitle;
+      document.title = previous;
     };
   }, []);
 
   function selectCategory(category: Category) {
-    if (category.type === selected.type && searchParams.get('parcours') === category.slug) return;
-
-    // A category changes the preview without adding a history entry before the collection is opened.
-
-    navigate(
-      collectionUrl(pathname, searchParams, { parcours: category.slug }),
-      window.history.state ?? {},
-      true,
+    if (locked.current) return;
+    const allFolders = Array.from(
+      folders.current?.querySelectorAll<HTMLElement>('.dossier-folder') ?? [],
+    );
+    const folder = allFolders.find((element) => element.dataset.categoryFolder === category.type);
+    const island = document.querySelector<HTMLElement>('.ai-activity-island');
+    if (!folder || !island) return;
+    locked.current = true;
+    setAbsorbing(true);
+    transition.current?.();
+    transition.current = absorbCategoryFolder(
+      folder,
+      allFolders.filter((element) => element !== folder),
+      island,
+      () => {
+        locked.current = false;
+        setAbsorbing(false);
+        if (category.type === 'forfait_expertise') {
+          navigate(categoryPath(category.type), { ejectFolders: true });
+        } else {
+          setSelected(category);
+          navigate(`/?parcours=${category.slug}&scene=1`, {}, true);
+        }
+      },
     );
   }
 
-  function handleCategoryKeys(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const selectedIndex = categories.findIndex((category) => category.type === selected.type);
-    let nextIndex: number;
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        nextIndex = (selectedIndex + 1) % categories.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        nextIndex = (selectedIndex + categories.length - 1) % categories.length;
-        break;
-      case 'Home':
-        nextIndex = 0;
-        break;
-      case 'End':
-        nextIndex = categories.length - 1;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    selectCategory(categories[nextIndex]);
-    buttonsRef.current[nextIndex]?.focus();
-  }
-
   return (
-    <HomeFrame entrancePhase={entrance.phase}>
+    <HomeFrame>
       <section
         className="category-stage"
-        data-entrance-phase={entrance.phase}
         aria-label="Les parcours CABEK AI"
-        aria-busy={preparing}
-        onAnimationEnd={entrance.handleEntranceEnd}
+        data-category={selected?.type}
       >
-        {entrance.phase !== 'ready' && <StageLoadingScreen />}
-        <div className="category-stage-dock" inert={preparing} aria-hidden={preparing || undefined}>
-          <div
-            className="category-stage-tabs"
-            role="tablist"
-            aria-label="Choisir un parcours"
-            aria-orientation="vertical"
-            onKeyDown={handleCategoryKeys}
-          >
-            {categories.map((category, index) => {
-              const selectedCategory = category.type === selected.type;
-              return (
-                <button
-                  key={category.type}
-                  ref={(element) => {
-                    buttonsRef.current[index] = element;
-                  }}
-                  id={`category-stage-tab-${category.type}`}
-                  className={selectedCategory ? 'selected' : ''}
-                  role="tab"
-                  type="button"
-                  aria-selected={selectedCategory}
-                  aria-controls="category-stage-panel"
-                  tabIndex={selectedCategory ? 0 : -1}
-                  onClick={() => selectCategory(category)}
-                >
-                  <span className="category-stage-tab-index" aria-hidden="true">
-                    {category.number}
-                  </span>
-                  <span className="category-stage-tab-title">{category.title}</span>
-                </button>
-              );
-            })}
-          </div>
-          <a
-            className="category-stage-open"
-            href={categoryPath(selected.type)}
-            aria-label={`Ouvrir les dossiers — ${selected.title}`}
-            onClick={(event) => {
-              if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-                return;
-              event.preventDefault();
-              navigate(categoryPath(selected.type));
-            }}
-          >
-            Ouvrir les dossiers
-            <span>
-              <ArrowUpRight size={19} strokeWidth={1.7} aria-hidden="true" />
-            </span>
-          </a>
-        </div>
-        <div
-          id="category-stage-panel"
-          className="category-stage-content"
-          role="tabpanel"
-          aria-labelledby={`category-stage-tab-${selected.type}`}
-          inert={!pageEntranceSettled}
-          aria-hidden={!pageEntranceSettled || undefined}
-        >
-          <CategoryStageVisual
+        {selected && selected.type !== 'forfait_expertise' ? (
+          <TunnelStage
             category={selected}
-            initiallyParked={entrance.restoreSettledView}
-            playIntro={pageEntranceSettled}
-            onStatusChange={entrance.setSceneStatus}
+            onBack={() => {
+              setSelected(null);
+              navigate('/', {}, true);
+            }}
           />
-        </div>
+        ) : (
+          <div ref={folders} className="category-folder-landing" aria-busy={absorbing}>
+            <div className="category-folder-heading">
+              <p className="eyebrow">CABEK AI</p>
+              <h1>Chaque véhicule a son histoire.</h1>
+              <p>Choisissez votre parcours.</p>
+            </div>
+            <div
+              className="category-folder-grid"
+              role="group"
+              aria-label="Choisir un parcours"
+              inert={absorbing}
+            >
+              {categories.map((category) => (
+                <div
+                  key={category.type}
+                  className="category-folder-choice"
+                  data-category={category.type}
+                >
+                  <DossierFolder
+                    category={category}
+                    isActive
+                    isOpen={false}
+                    onSelect={() => selectCategory(category)}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="category-folder-footnote">Expertise · Estimation · Photographies</p>
+          </div>
+        )}
       </section>
     </HomeFrame>
   );

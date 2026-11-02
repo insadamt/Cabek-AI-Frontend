@@ -202,6 +202,11 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
       choreography.setPalette(palette);
       if (!cinematicCamera) cameraController.setCategory(palette.cameraPreset ?? 0, reducedMotion);
     },
+    setCapturing(capturing: boolean) {
+      if (disposed || failed) return;
+      cameraController.setCapturing(capturing);
+      requestRender();
+    },
     setReducedMotion(nextReducedMotion: boolean) {
       if (disposed || failed) return;
       reducedMotion = nextReducedMotion;

@@ -14,6 +14,7 @@ import { HomeFrame } from './components/home/HomeFrame';
 import { useRouteMotion } from './hooks/useRouteMotion';
 import { ScannerPreview } from './pages/ScannerPreview';
 import { BayRuntimeCacheProvider } from './components/home/BayRuntimeCacheProvider';
+import { TunnelCaptureProvider } from './hooks/useTunnelCapture';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -49,34 +50,36 @@ export default function App() {
   }
   return (
     <ErrorBoundary>
-      <BayRuntimeCacheProvider>
-        <div ref={routeRef} className="route-viewport">
-          {pathname === '/' ? (
-            <Categories />
-          ) : pathname === '/preview/expertise' ? (
-            <ScannerPreview />
-          ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
-            <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
-          ) : workflowRoute ? (
-            <Home key={workflowRoute.category.type} category={workflowRoute.category} />
-          ) : dossierId ? (
-            <HomeFrame variant="dossier">
-              <Dossier key={dossierId} dossierId={dossierId} />
-            </HomeFrame>
-          ) : (
-            <HomeFrame>
-              <div className="home-state">
-                <EmptyState
-                  title="Cette page est introuvable"
-                  description="Retrouvez vos expertises depuis l’accueil."
-                  onRetry={() => navigate('/')}
-                  actionLabel="Retour à l’accueil"
-                />
-              </div>
-            </HomeFrame>
-          )}
-        </div>
-      </BayRuntimeCacheProvider>
+      <TunnelCaptureProvider>
+        <BayRuntimeCacheProvider>
+          <div ref={routeRef} className="route-viewport">
+            {pathname === '/' ? (
+              <Categories />
+            ) : pathname === '/preview/expertise' ? (
+              <ScannerPreview />
+            ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
+              <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
+            ) : workflowRoute ? (
+              <Home key={workflowRoute.category.type} category={workflowRoute.category} />
+            ) : dossierId ? (
+              <HomeFrame variant="dossier">
+                <Dossier key={dossierId} dossierId={dossierId} />
+              </HomeFrame>
+            ) : (
+              <HomeFrame>
+                <div className="home-state">
+                  <EmptyState
+                    title="Cette page est introuvable"
+                    description="Retrouvez vos expertises depuis l’accueil."
+                    onRetry={() => navigate('/')}
+                    actionLabel="Retour à l’accueil"
+                  />
+                </div>
+              </HomeFrame>
+            )}
+          </div>
+        </BayRuntimeCacheProvider>
+      </TunnelCaptureProvider>
     </ErrorBoundary>
   );
 }

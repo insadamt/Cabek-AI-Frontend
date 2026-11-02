@@ -63,6 +63,7 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
   const safePosition = camera.position.clone();
   const zoomOffset = new Vector3();
   let manuallyAdjusted = false;
+  let capturing = false;
   let reducedMotion = false;
   let enabled = true;
   let visible = true;
@@ -109,6 +110,7 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
     stopTransition();
     zoomDistance = undefined;
     manuallyAdjusted = true;
+    controls.autoRotate = false;
     cinematic = false;
 
     //
@@ -295,7 +297,7 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
         enforceClearance();
       }
       orbitTarget.copy(controls.target);
-      return changed || zooming;
+      return changed || zooming || controls.autoRotate;
     },
     resize() {
       if (disposed) return;
@@ -329,6 +331,14 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
       if (!disposed && !manuallyAdjusted)
         moveToPreset(preset, categoryReducedMotion || reducedMotion);
     },
+    setCapturing(nextCapturing: boolean) {
+      if (disposed || capturing === nextCapturing) return;
+      capturing = nextCapturing;
+      controls.autoRotateSpeed = 0.45;
+      controls.autoRotate = capturing && !reducedMotion && !manuallyAdjusted;
+      if (!capturing && !manuallyAdjusted) moveToPreset(currentPreset, reducedMotion);
+      notifyChange();
+    },
     reset(resetReducedMotion: boolean) {
       if (disposed) return;
       manuallyAdjusted = false;
@@ -336,6 +346,7 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
     },
     setReducedMotion(nextReducedMotion: boolean) {
       reducedMotion = nextReducedMotion;
+      controls.autoRotate = capturing && !reducedMotion && !manuallyAdjusted;
       controls.enableDamping = !reducedMotion;
       if (reducedMotion && finishTransition) {
         const finish = finishTransition;

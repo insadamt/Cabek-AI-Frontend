@@ -12,11 +12,15 @@ import { useIslandBrandMotion } from '../../hooks/useIslandBrandMotion';
 import { DossierOpeningActivity, getDossierOpeningLabel } from './DossierOpeningActivity';
 import { useReportDownloadNotification } from '../../lib/reportDownload';
 import { ReportDownloadActivity } from './ReportDownloadActivity';
+import { useTunnelCapture } from '../../hooks/useTunnelCapture';
+import { CaptureIslandActivity } from './CaptureIslandActivity';
+import { captureLabel } from '../../lib/tunnelCapture';
 
 const activityLabels = {
   queued: 'En attente',
   preparing: 'Préparation',
   analyzing_photos: 'Analyse des photos',
+  awaiting_metadata: 'Fiche véhicule à compléter',
   finalizing: 'Création du rapport',
   completed: 'Analyse terminée',
   failed: 'Analyse interrompue',
@@ -114,20 +118,26 @@ function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
 
 export function AnalysisIsland() {
   const { session, busy } = useHomeAnalysis();
+  const { session: capture } = useTunnelCapture();
   const opening = useDossierOpening();
   const reportDownload = useReportDownloadNotification();
   const brandRef = useRef<HTMLAnchorElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const expanded = !!reportDownload || !!opening || (!!session && session.phase !== 'idle');
-  const phase = reportDownload?.phase ?? opening?.phase ?? session?.phase ?? 'idle';
+  const showCapture = !!capture && !busy;
+  const expanded =
+    !!reportDownload || !!opening || showCapture || (!!session && session.phase !== 'idle');
+  const phase =
+    reportDownload?.phase ?? opening?.phase ?? (showCapture ? 'capture' : session?.phase) ?? 'idle';
   const label = reportDownload
     ? reportDownload.phase
     : opening
       ? getDossierOpeningLabel(opening)
-      : session
-        ? getActivityLabel(session)
-        : '';
+      : showCapture
+        ? captureLabel(capture)
+        : session
+          ? getActivityLabel(session)
+          : '';
   useIslandBrandMotion(brandRef, expanded);
   const progress = session?.response?.progress;
   const percentage = photoProgress(progress ?? null);
@@ -189,7 +199,7 @@ export function AnalysisIsland() {
       const frameGutter = Number.parseFloat(styles.getPropertyValue('--island-frame-gutter')) || 28;
       const availableWidth = window.innerWidth - frameGutter * 2;
       const width =
-        opening || reportDownload
+        opening || reportDownload || showCapture
           ? Math.min(360, availableWidth)
           : expanded
             ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
@@ -217,13 +227,14 @@ export function AnalysisIsland() {
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
     };
-  }, [expanded, label, !!opening, !!reportDownload]);
+  }, [expanded, label, !!opening, !!reportDownload, showCapture]);
 
   return (
     <div
       ref={islandRef}
       className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
       data-phase={phase}
+      data-category={showCapture ? capture.identity.type : undefined}
     >
       <AttachedIslandSurface />
       <div className="island-content-clip">
@@ -246,6 +257,8 @@ export function AnalysisIsland() {
           <ReportDownloadActivity contentRef={contentRef} />
         ) : opening ? (
           <DossierOpeningActivity session={opening} contentRef={contentRef} />
+        ) : showCapture ? (
+          <CaptureIslandActivity contentRef={contentRef} />
         ) : (
           <div
             ref={contentRef}

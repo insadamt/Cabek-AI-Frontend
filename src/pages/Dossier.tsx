@@ -74,7 +74,11 @@ export function Dossier({ dossierId }: { dossierId: string }) {
   }
 
   return (
-    <div className="page dossier-page dossier-overview" ref={container}>
+    <div
+      className="page dossier-page dossier-overview"
+      data-category={response?.type ?? savedSummary?.type}
+      ref={container}
+    >
       <button
         className="back-link"
         onClick={() => {

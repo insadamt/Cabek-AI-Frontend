@@ -1,8 +1,10 @@
+/** Animated glass folder for saved dossiers and category navigation; depends on shared sheet and GSAP motion. */
 import gsap from 'gsap';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { useDossierOpening } from '../../hooks/useDossierOpening';
 import { vehicleName } from '../../lib/format';
+import type { Category } from '../../lib/workflows';
 import type { DossierSummary } from '../../types';
 import { FolderDocument } from './FolderDocument';
 import { FolderRegistrationPlate } from './FolderRegistrationPlate';
@@ -12,16 +14,18 @@ const closedPocketOutline =
 const openPocketOutline =
   'M.06 .28H.46C.52 .28 .53 .46 .62 .46H.94Q1 .46 .99 .55L.95 .91Q.94 .99 .87 .99H.11Q.035 .99 .03 .91L.005 .38Q0 .28 .06 .28Z';
 
-interface DossierFolderProps {
-  dossier: DossierSummary;
+type DossierFolderProps = (
+  { dossier: DossierSummary; category?: never } | { category: Category; dossier?: never }
+) & {
   isActive: boolean;
   isOpen: boolean;
   onSelect: () => void;
   onDocumentMotionChange?: (moving: boolean) => void;
-}
+};
 
 export function DossierFolder({
   dossier,
+  category,
   isActive,
   isOpen,
   onSelect,
@@ -30,11 +34,13 @@ export function DossierFolder({
   const analysis = useHomeAnalysis();
   const opening = useDossierOpening();
   const openingSession =
-    isActive && opening?.dossier.dossier_id === dossier.dossier_id ? opening : null;
+    dossier && isActive && opening?.dossier.dossier_id === dossier.dossier_id ? opening : null;
   const openingBusy = !!openingSession && openingSession.phase !== 'error';
   const [navigationClosing, setNavigationClosing] = useState(false);
   const analysisSession =
-    analysis.session?.dossier.dossier_id === dossier.dossier_id ? analysis.session : null;
+    dossier && analysis.session?.dossier.dossier_id === dossier.dossier_id
+      ? analysis.session
+      : null;
   const requestedDocumentOpen = openingBusy
     ? openingSession.phase !== 'stowing'
     : analysisSession
@@ -94,7 +100,9 @@ export function DossierFolder({
     <div
       ref={folderElement}
       className={`dossier-folder ${mouthOpen ? 'folder-mouth-open' : ''}`}
-      data-dossier-id={dossier.dossier_id}
+      data-dossier-id={dossier?.dossier_id}
+      data-category={category?.type ?? dossier?.type}
+      data-category-folder={category?.type}
       data-active={isActive}
       data-document-away={documentAway || undefined}
       data-analysis-active={openingBusy || (!!analysisSession && analysis.busy) || undefined}
@@ -116,29 +124,36 @@ export function DossierFolder({
       </svg>
       <div className="folder-back" style={{ clipPath: `url(#${folderId}-back)` }} />
       {/* The sheet moves within the pocket so both folder faces keep their shared bottom edge. */}
-      <FolderDocument
-        dossier={{ ...dossier, status: analysis.resolveStatus(dossier) }}
-        documentId={`${folderId}-document`}
-        isOpen={documentOpen}
-        onMotionChange={(moving) => {
-          setDocumentMoving(moving);
-          onDocumentMotionChange?.(moving);
-        }}
-      />
+      {dossier && (
+        <FolderDocument
+          dossier={{ ...dossier, status: analysis.resolveStatus(dossier) }}
+          documentId={`${folderId}-document`}
+          isOpen={documentOpen}
+          onMotionChange={(moving) => {
+            setDocumentMoving(moving);
+            onDocumentMotionChange?.(moving);
+          }}
+        />
+      )}
       <button
         className="folder-cover"
         type="button"
         style={{ clipPath: `url(#${folderId}-shape)` }}
-        aria-label={`Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.vehicle.matricule?.trim() || 'Immatriculation non renseignée'}, ${dossier.dossier_id}`}
-        aria-pressed={isActive}
+        aria-label={
+          category?.title ??
+          (dossier
+            ? `Sélectionner ${vehicleName(dossier.vehicle)}, ${dossier.vehicle.matricule?.trim() || 'Immatriculation non renseignée'}, ${dossier.dossier_id}`
+            : '')
+        }
+        aria-pressed={category ? undefined : isActive}
         aria-disabled={!isActive}
-        aria-expanded={documentOpen && !documentAway}
-        aria-controls={`${folderId}-document`}
+        aria-expanded={category ? undefined : documentOpen && !documentAway}
+        aria-controls={category ? undefined : `${folderId}-document`}
         tabIndex={isActive ? 0 : -1}
         onClick={() => {
           if (isActive && !analysis.busy && !openingBusy) {
             if (openingSession?.phase === 'error') openingSession.cancel();
-            analysis.revealDocument(dossier.dossier_id);
+            if (dossier) analysis.revealDocument(dossier.dossier_id);
             onSelect();
           }
         }}
@@ -158,9 +173,9 @@ export function DossierFolder({
               y2="1"
               gradientUnits="objectBoundingBox"
             >
-              <stop stopColor="#e2e2e2" stopOpacity=".3" />
-              <stop offset=".4" stopColor="#707070" stopOpacity=".28" />
-              <stop offset="1" stopColor="#171717" stopOpacity=".86" />
+              <stop stopColor="var(--folder-glass-light, #e2e2e2)" stopOpacity=".3" />
+              <stop offset=".4" stopColor="var(--folder-glass-mid, #707070)" stopOpacity=".28" />
+              <stop offset="1" stopColor="var(--folder-glass-dark, #171717)" stopOpacity=".86" />
             </linearGradient>
             <linearGradient
               id={`${folderId}-edge`}
@@ -184,8 +199,20 @@ export function DossierFolder({
           />
         </svg>
         <span className="folder-front-markings">
-          <FolderRegistrationPlate matricule={dossier.vehicle.matricule || ''} />
-          <span className="folder-label">{dossier.dossier_id}</span>
+          {category ? (
+            <>
+              <span className="category-folder-number">{category.number}</span>
+              <span className="category-folder-title">{category.title}</span>
+              <span className="folder-label">{category.description}</span>
+            </>
+          ) : (
+            dossier && (
+              <>
+                <FolderRegistrationPlate matricule={dossier.vehicle.matricule || ''} />
+                <span className="folder-label">{dossier.dossier_id}</span>
+              </>
+            )
+          )}
         </span>
       </button>
     </div>

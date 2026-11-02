@@ -1,4 +1,6 @@
 /** Coordinates real image loading and physical folder opening; preserves the originating collection URL. */
+import { approachCapturedFolder } from './capturedFolderMotion';
+import type { PhotoPhase } from '../workflowTypes';
 import { flushSync } from 'react-dom';
 import { navigate } from '../hooks/useNavigation';
 import type { DossierResponse, DossierSummary } from '../types';
@@ -19,6 +21,9 @@ interface OpenDossierOptions {
   dossier: DossierSummary;
   folder: HTMLElement;
   path: string;
+  captured?: boolean;
+  returnTo?: string;
+  capturePhase?: PhotoPhase;
 }
 
 let pendingNavigation: AbortController | null = null;
@@ -71,12 +76,13 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
   );
 
   try {
-    const extraction = paper ? waitForDocumentMotion(paper, true, signal) : Promise.resolve();
+    const extraction =
+      paper && !options.captured ? waitForDocumentMotion(paper, true, signal) : Promise.resolve();
     flushSync(() => {
       folder.dispatchEvent(new Event('dossier-navigation-cancel'));
       publishDossierOpening({
         dossier,
-        phase: 'extracting',
+        phase: options.captured ? 'loading' : 'extracting',
         loaded: 0,
         total: 0,
         error: '',
@@ -91,33 +97,42 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     await extraction;
     signal.throwIfAborted();
     flushSync(() => updateDossierOpening({ phase: 'ingesting' }));
-    if (paper && island)
+    if (paper && island && !options.captured)
       await flyAnalysisDocument({ paper, island, returning: false, signal, playbackRate: 2 });
-    paperInIsland = !!paper && !!island;
+    paperInIsland = !!paper && !!island && !options.captured;
     updateDossierOpening({ phase: 'loading' });
     const result = await prepared;
     signal.throwIfAborted();
     if (result.error !== undefined) throw result.error;
     const response = result.response!;
 
-    flushSync(() => updateDossierOpening({ phase: 'returning' }));
-    // Return document and photos together rather than adding a second serial animation.
+    // Captures assemble evidence first; ordinary carousel opening retains its overlapping return.
 
-    await Promise.all([
-      paper && island
-        ? flyAnalysisDocument({ paper, island, returning: true, signal, playbackRate: 2 })
-        : Promise.resolve(),
+    const releasePhotos = () =>
       island
         ? flyDossierPhotos({
             folder,
             island,
-            photos: response.result?.photos ?? response.photos ?? [],
+            photos: options.captured
+              ? response.photos.filter(
+                  (photo) => !options.capturePhase || photo.phase === options.capturePhase,
+                )
+              : (response.result?.photos ?? response.photos ?? []),
             signal,
+            sequential: options.captured,
           })
+        : Promise.resolve();
+    if (options.captured) await releasePhotos();
+    flushSync(() => updateDossierOpening({ phase: 'returning' }));
+    await Promise.all([
+      paper && island
+        ? flyAnalysisDocument({ paper, island, returning: true, signal, playbackRate: 2 })
         : Promise.resolve(),
+      options.captured ? Promise.resolve() : releasePhotos(),
     ]);
     paperInIsland = false;
     await stowDocument(folder, paper, signal);
+    if (options.captured) await approachCapturedFolder(folder, signal);
     signal.throwIfAborted();
     if (!folder.isConnected) {
       cancel();
@@ -133,7 +148,7 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     publishDossierOpening(null);
     navigate(path, {
       dossierEntrance: entrance,
-      returnTo: window.location.pathname + window.location.search,
+      returnTo: options.returnTo ?? window.location.pathname + window.location.search,
     });
   } catch (error) {
     imageLoading.abort();

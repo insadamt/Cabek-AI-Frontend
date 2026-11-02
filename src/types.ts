@@ -3,7 +3,13 @@ import type { DossierType, WorkflowStatus, PhotoSide, PhotoPhase } from './workf
 export type ScanStatus = 'not_analyzed' | 'queued' | 'processing' | 'completed' | 'failed';
 export type FilterStatus = ScanStatus | 'all';
 export type Stage =
-  'queued' | 'preparing' | 'analyzing_photos' | 'finalizing' | 'completed' | 'failed';
+  | 'queued'
+  | 'preparing'
+  | 'analyzing_photos'
+  | 'awaiting_metadata'
+  | 'finalizing'
+  | 'completed'
+  | 'failed';
 
 export interface Vehicle {
   marque: string;

@@ -1,5 +1,19 @@
 /** French API feedback shared by requests, capture forms and the activity island. */
 const errorMessages: Record<string, string> = {
+  tunnel_unavailable: 'Le tunnel est indisponible. Activez le mode de capture sur le serveur.',
+  tunnel_busy: 'Le tunnel est occupé par un autre véhicule. Réessayez dans un instant.',
+  capture_in_progress: 'Une capture est déjà active pour ce dossier.',
+  capture_incomplete:
+    'Certaines photographies sont manquantes. Reprenez la capture du même dossier.',
+  capture_interrupted: 'La capture a été interrompue. Les photos enregistrées sont conservées.',
+  mock_photos_unavailable: 'Les photographies du tunnel ne sont pas disponibles sur le serveur.',
+  no_sample_photos: 'Aucune photographie n’est disponible dans le tunnel.',
+  invalid_sample_side: 'La position d’une photographie du tunnel est invalide.',
+  invalid_sample_layout: 'L’organisation des photographies du tunnel est invalide.',
+  unsafe_sample_path: 'Une photographie du tunnel est inaccessible.',
+  pricing_in_progress: 'Le chiffrage est en cours. La fiche véhicule est maintenant verrouillée.',
+  idempotency_conflict:
+    'La création ne correspond pas à la session conservée. Reprenez le dossier existant.',
   workflow_contract_unavailable:
     'Ce parcours sera disponible après connexion de l’API des nouveaux dossiers. Vous pouvez le découvrir dans l’aperçu.',
   analysis_not_supported: 'L’analyse IA est indisponible pour les photos avant / après.',

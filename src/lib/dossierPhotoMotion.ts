@@ -10,9 +10,16 @@ interface PhotoFlightOptions {
   island: HTMLElement;
   photos: OriginalPhoto[];
   signal: AbortSignal;
+  sequential?: boolean;
 }
 
-export function flyDossierPhotos({ folder, island, photos, signal }: PhotoFlightOptions) {
+export function flyDossierPhotos({
+  folder,
+  island,
+  photos,
+  signal,
+  sequential = false,
+}: PhotoFlightOptions) {
   signal.throwIfAborted();
   if (!photos.length || prefersReducedMotion()) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
@@ -23,20 +30,20 @@ export function flyDossierPhotos({ folder, island, photos, signal }: PhotoFlight
     flight.setAttribute('aria-hidden', 'true');
     flight.inert = true;
     const timeline = gsap.timeline({ paused: true });
-    photos.slice(0, 4).forEach((photo, index) => {
+    (sequential ? photos : photos.slice(0, 4)).forEach((photo, index) => {
       const card = document.createElement('div');
       card.className = 'dossier-photo-flight-card';
       const source = resolveMediaUrl(getOriginalPhotoDisplayUrl(photo));
 
       // Decorative cards reuse prepared previews to avoid adding image work during navigation.
 
-      if (getPreparedImage(source)) {
+      if (sequential || getPreparedImage(source)) {
         const image = document.createElement('img');
         image.src = source;
         image.alt = '';
         card.append(image);
       }
-      if (index === 3 && photos.length > 4) {
+      if (!sequential && index === 3 && photos.length > 4) {
         const count = document.createElement('span');
         count.textContent = `+${photos.length - 4}`;
         card.append(count);
@@ -62,7 +69,7 @@ export function flyDossierPhotos({ folder, island, photos, signal }: PhotoFlight
             duration: 0.25,
             ease: 'power2.out',
           },
-          index * 0.035,
+          index * (sequential ? 0.18 : 0.035),
         )
         .to(
           card,
@@ -73,7 +80,7 @@ export function flyDossierPhotos({ folder, island, photos, signal }: PhotoFlight
             duration: 0.15,
             ease: 'power2.in',
           },
-          index * 0.035 + 0.25,
+          index * (sequential ? 0.18 : 0.035) + 0.25,
         );
     });
     document.body.append(flight);

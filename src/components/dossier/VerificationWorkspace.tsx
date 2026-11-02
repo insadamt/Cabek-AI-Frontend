@@ -7,6 +7,10 @@ import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
 import { useWorkflowReveal } from '../../hooks/useWorkflowReveal';
 import { OriginalPhotoPreview } from './OriginalPhotoPreview';
 import { WorkflowPhotoCapture } from './WorkflowPhotoCapture';
+import { useTunnelCapture } from '../../hooks/useTunnelCapture';
+import { captureReady } from '../../lib/tunnelCapture';
+import { describeError } from '../../lib/api';
+import { navigate } from '../../hooks/useNavigation';
 
 interface VerificationProps {
   response: DossierResponse;
@@ -14,12 +18,39 @@ interface VerificationProps {
   onRefresh: () => void;
 }
 export function VerificationWorkspace(props: VerificationProps) {
+  const { store, session } = useTunnelCapture();
+  const [captureError, setCaptureError] = useState('');
   const ready =
     savedPhaseSideCount(props.response, 'before') === 4 &&
     savedPhaseSideCount(props.response, 'after') === 4;
   const [compare, setCompare] = useState(ready);
   return (
     <div className="workflow-workspace verification-workspace">
+      {savedPhaseSideCount(props.response, 'before') === 4 &&
+        !props.response.comparison?.finalized && (
+          <div>
+            <button
+              className="text-link"
+              type="button"
+              onClick={() => {
+                try {
+                  if (
+                    captureReady(session) &&
+                    session?.identity.dossierId === props.response.dossier_id
+                  )
+                    store?.clear();
+                  store?.restoreExisting('verification', 'after', props.response.dossier_id);
+                  navigate('/?reprendre=1');
+                } catch (error) {
+                  setCaptureError(describeError(error));
+                }
+              }}
+            >
+              Compléter la capture APRÈS au tunnel ↗
+            </button>
+            {captureError && <p role="alert">{captureError}</p>}
+          </div>
+        )}
       {ready && (
         <div className="workflow-view-switch">
           <button className="text-link" onClick={() => setCompare(!compare)}>

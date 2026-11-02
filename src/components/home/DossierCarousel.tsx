@@ -1,4 +1,5 @@
 /** Shared physical dossier carousel; current category and filters survive search transitions. */
+import { useCollectionEjection } from '../../hooks/useCollectionEjection';
 import { currentCollectionUrl } from '../../lib/workflows';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
@@ -37,6 +38,7 @@ export function DossierCarousel({
   onStep,
 }: DossierCarouselProps) {
   const analysis = useHomeAnalysis();
+  const collectionRef = useCollectionEjection(dossiers.length);
   const {
     gestureHandlers,
     progress,
@@ -101,6 +103,7 @@ export function DossierCarousel({
 
   return (
     <section
+      ref={collectionRef}
       className={`dossier-carousel ${dragging ? 'carousel-dragging' : ''} ${animating || progress !== 0 ? 'carousel-tracking' : ''}`}
       aria-label="Parcourir les dossiers"
       aria-roledescription="carrousel"

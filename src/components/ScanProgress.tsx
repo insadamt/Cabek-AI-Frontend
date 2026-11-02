@@ -1,3 +1,4 @@
+/** Backend AI progress, including metadata waiting; depends on saved scan responses, never capture timing. */
 import { Check, Clock3, FileCheck2, Images, LoaderCircle, ScanLine } from 'lucide-react';
 import { formatDuration, photoProgress } from '../lib/format';
 import type { DossierResponse } from '../types';
@@ -6,6 +7,7 @@ const stages = [
   { stage: 'queued', title: 'En attente', icon: Clock3 },
   { stage: 'preparing', title: 'Préparation', icon: ScanLine },
   { stage: 'analyzing_photos', title: 'Analyse des photos', icon: Images },
+  { stage: 'awaiting_metadata', title: 'Fiche véhicule', icon: FileCheck2 },
   { stage: 'finalizing', title: 'Finalisation', icon: FileCheck2 },
 ] as const;
 
@@ -19,9 +21,11 @@ export function ScanProgressPanel({ response }: { response: DossierResponse }) {
       ? 'Votre dossier est dans la file d’attente.'
       : stage === 'preparing'
         ? 'L’analyse démarre. Les premières photos sont en cours de préparation.'
-        : stage === 'finalizing'
-          ? 'Finalisation de l’expertise, du chiffrage et du rapport.'
-          : 'Chaque photo est examinée pour identifier les pièces et les dommages.';
+        : stage === 'awaiting_metadata'
+          ? 'Complétez la fiche véhicule pour permettre le chiffrage.'
+          : stage === 'finalizing'
+            ? 'Finalisation de l’expertise, du chiffrage et du rapport.'
+            : 'Chaque photo est examinée pour identifier les pièces et les dommages.';
 
   return (
     <section className="surface scan-panel">
@@ -33,9 +37,11 @@ export function ScanProgressPanel({ response }: { response: DossierResponse }) {
         <h2>
           {stage === 'queued'
             ? 'Votre analyse va commencer.'
-            : stage === 'finalizing'
-              ? 'Les derniers détails comptent.'
-              : 'Nous regardons de plus près.'}
+            : stage === 'awaiting_metadata'
+              ? 'Votre fiche véhicule est nécessaire.'
+              : stage === 'finalizing'
+                ? 'Les derniers détails comptent.'
+                : 'Nous regardons de plus près.'}
         </h2>
         <p>{label}</p>
       </div>
