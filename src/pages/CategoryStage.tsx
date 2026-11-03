@@ -10,29 +10,21 @@ import { useNavigation } from '../hooks/useNavigation';
 import { useTunnelCapture } from '../hooks/useTunnelCapture';
 import { categories, categoryForType, categoryPath, type Category } from '../lib/workflows';
 import { absorbCategoryFolder } from '../lib/categoryFolderMotion';
-import '../styles/category-stage.css';
-import '../styles/cinematic-capture.css';
 
 export function CategoryStage() {
   const { navigate, searchParams } = useNavigation();
   const { session } = useTunnelCapture();
-  const [selected, setSelected] = useState<Category | null>(() =>
-    session
+  const selected =
+    session && searchParams.get('reprendre') === '1'
       ? categoryForType(session.identity.type)
       : searchParams.get('scene') === '1'
         ? (categories.find((category) => category.slug === searchParams.get('parcours')) ?? null)
-        : null,
-  );
+        : null;
   const [absorbing, setAbsorbing] = useState(false);
   const folders = useRef<HTMLDivElement>(null);
   const transition = useRef<(() => void) | undefined>(undefined);
   const locked = useRef(false);
-  const resume = searchParams.get('reprendre');
-  const activeType = session?.identity.type;
 
-  useEffect(() => {
-    if (activeType && resume === '1') setSelected(categoryForType(activeType));
-  }, [activeType, resume]);
   useEffect(() => () => transition.current?.(), []);
   useEffect(() => {
     const previous = document.title;
@@ -63,9 +55,12 @@ export function CategoryStage() {
         if (category.type === 'forfait_expertise') {
           navigate(categoryPath(category.type), { ejectFolders: true });
         } else {
-          setSelected(category);
-          navigate(`/?parcours=${category.slug}&scene=1`, {}, true);
+          navigate(`/?parcours=${category.slug}&scene=1`);
         }
+      },
+      () => {
+        locked.current = false;
+        setAbsorbing(false);
       },
     );
   }
@@ -81,8 +76,7 @@ export function CategoryStage() {
           <TunnelStage
             category={selected}
             onBack={() => {
-              setSelected(null);
-              navigate('/', {}, true);
+              navigate('/');
             }}
           />
         ) : (

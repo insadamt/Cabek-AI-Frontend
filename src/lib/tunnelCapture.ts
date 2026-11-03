@@ -49,9 +49,9 @@ export function captureLabel(session: CaptureSession) {
   if (session.capture?.status === 'failed') return 'Capture interrompue';
   if (session.capture?.status === 'capturing') return 'Réception des photographies';
   if (session.capture?.status !== 'completed') return 'Prêt à scanner';
-  if (!hasVehicleMetadata(session.response)) return 'Compléter la fiche véhicule';
   if (session.capture.analysis_error || session.response?.status === 'failed')
     return 'Analyse à relancer';
+  if (!hasVehicleMetadata(session.response)) return 'Compléter la fiche véhicule';
   if (captureReady(session)) return 'Dossier enregistré';
   if (session.response?.progress?.stage === 'awaiting_metadata')
     return 'Estimation en attente de la fiche';
@@ -229,10 +229,8 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
         throw new api.ApiError('incomplete_vehicle_metadata', 422);
       if (capture.status === 'capturing') return;
       if (capture.status === 'completed') {
-        if (type === 'chiffrage_rapide' && detail.status === 'failed')
+        if (type === 'chiffrage_rapide' && ['failed', 'not_analyzed'].includes(detail.status))
           publish({ response: await service.startScan(id, controller.signal) });
-        else if (type === 'chiffrage_rapide' && detail.status === 'not_analyzed')
-          publish({ capture: await service.startCapture(id, phase, controller.signal) });
         return;
       }
       publish({

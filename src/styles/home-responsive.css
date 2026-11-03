@@ -1,3 +1,4 @@
+/* Responsive home folder and control sizing; depends on shared home and folder styles. */
 @media (max-width: 650px) {
   .home-shell {
     --home-folder-width: clamp(250px, 82vw, 370px);
@@ -38,7 +39,7 @@
     bottom: 13px;
     left: 15px;
     max-width: calc(100% - 30px);
-    font-size: 7px;
+    font-size: 10px;
     letter-spacing: 0.5px;
   }
   .home-open-dossier {

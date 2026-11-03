@@ -4,7 +4,7 @@
   height: 100%;
   min-height: 0;
   isolation: isolate;
-  background: #f5f6f3;
+  background: #f7f8f5;
   overflow: hidden;
 }
 .category-stage-content,
@@ -78,7 +78,7 @@
   bottom: 12%;
   font-size: clamp(9px, 0.8vw, 12px);
   color: var(--folder-category-ink, #ddd);
-  opacity: 0.7;
+  opacity: 0.85;
 }
 .category-folder-footnote {
   margin: clamp(28px, 7vh, 85px) 0 0;
@@ -135,8 +135,9 @@
     min-height: 125px;
   }
   .category-folder-title {
-    top: 46%;
-    font-size: 20px;
+    top: 42%;
+    font-size: 18px;
+    line-height: 1.15;
   }
   .category-folder-choice .folder-label {
     bottom: 9%;

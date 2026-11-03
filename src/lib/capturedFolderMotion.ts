@@ -6,6 +6,7 @@ export function approachCapturedFolder(folder: HTMLElement, signal: AbortSignal)
   signal.throwIfAborted();
   if (prefersReducedMotion()) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
+    const originalTransform = folder.style.transform;
     const timeline = gsap.timeline({ paused: true });
     timeline
       .to(folder, { scale: 0.985, duration: 0.1 })
@@ -20,6 +21,7 @@ export function approachCapturedFolder(folder: HTMLElement, signal: AbortSignal)
     }
     function cancel() {
       cleanup();
+      folder.style.transform = originalTransform;
       reject(new DOMException('Aborted', 'AbortError'));
     }
     const stop = observeReducedMotion(settle);

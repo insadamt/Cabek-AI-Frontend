@@ -1,8 +1,10 @@
+/** Coordinates island activity priority and stable responsive sizing; depends on route-aware capture presentation and existing operation stores. */
 import gsap from 'gsap';
 import { ArrowUpRight, Check, FileText, TriangleAlert } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useHomeAnalysis, type HomeAnalysisSession } from '../../hooks/useHomeAnalysis';
-import { navigate } from '../../hooks/useNavigation';
+import { navigate, useNavigation } from '../../hooks/useNavigation';
+import { getCapturePresentation } from '../../lib/capturePresentation';
 import { photoProgress } from '../../lib/format';
 import { AttachedIslandSurface } from './AttachedIslandSurface';
 import { observeReducedMotion, prefersReducedMotion } from '../../lib/motion';
@@ -124,7 +126,9 @@ export function AnalysisIsland() {
   const brandRef = useRef<HTMLAnchorElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const showCapture = !!capture && !busy;
+  const { location } = useNavigation();
+  const capturePresentation = getCapturePresentation(capture, location);
+  const showCapture = !!capture && !!capturePresentation && !busy && !opening && !reportDownload;
   const expanded =
     !!reportDownload || !!opening || showCapture || (!!session && session.phase !== 'idle');
   const phase =
@@ -145,7 +149,9 @@ export function AnalysisIsland() {
     ? reportDownload.phase === 'done'
     : opening
       ? !opening.error && ['returning', 'stowing'].includes(opening.phase)
-      : phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
+      : showCapture
+        ? capturePresentation === 'complete'
+        : phase === 'done' || (['returning', 'stowing'].includes(phase) && !session?.error);
   const [detailStep, setDetailStep] = useState(0);
   const [compact, setCompact] = useState(false);
   const hasEstimate = phase === 'working' && progress?.eta_seconds != null && !session?.error;
@@ -187,27 +193,21 @@ export function AnalysisIsland() {
     const island = islandRef.current;
     const content = contentRef.current;
     if (!island || !content) return;
-    // CSS owns the fixed height, including after refreshing an older animated island in development.
-
-    island.style.removeProperty('height');
-    island.parentElement?.style.removeProperty('--activity-island-height');
-    let targetWidth = -1;
+    // Use presentation widths, never a child width constrained by the tween being measured.
+    let targetWidth = 300;
     const resizeIsland = () => {
       const styles = getComputedStyle(island);
-      const inlinePadding =
-        Number.parseFloat(styles.getPropertyValue('--island-inline-padding')) || 28;
       const frameGutter = Number.parseFloat(styles.getPropertyValue('--island-frame-gutter')) || 28;
-      const availableWidth = window.innerWidth - frameGutter * 2;
-      const width =
-        opening || reportDownload || showCapture
-          ? Math.min(360, availableWidth)
+      const preferredWidth = showCapture
+        ? 520
+        : opening || reportDownload
+          ? 400
           : expanded
-            ? Math.min(content.scrollWidth + inlinePadding * 2, availableWidth)
-            : Math.min(300, availableWidth);
-      if (Math.abs(width - targetWidth) < 0.5) return;
-      targetWidth = width;
+            ? 620
+            : 300;
+      targetWidth = Math.min(preferredWidth, window.innerWidth - frameGutter * 2);
       gsap.to(island, {
-        width,
+        width: targetWidth,
         duration: prefersReducedMotion() ? 0 : 0.36,
         ease: 'power3.inOut',
         overwrite: 'auto',
@@ -218,22 +218,20 @@ export function AnalysisIsland() {
       gsap.killTweensOf(island);
       island.style.width = `${targetWidth}px`;
     });
-    const observer = new ResizeObserver(resizeIsland);
-    observer.observe(content);
     window.addEventListener('resize', resizeIsland);
     return () => {
       stopObserving();
-      observer.disconnect();
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
     };
-  }, [expanded, label, !!opening, !!reportDownload, showCapture]);
+  }, [expanded, !!opening, !!reportDownload, showCapture]);
 
   return (
     <div
       ref={islandRef}
       className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
       data-phase={phase}
+      data-capture-presentation={showCapture ? capturePresentation : undefined}
       data-category={showCapture ? capture.identity.type : undefined}
     >
       <AttachedIslandSurface />

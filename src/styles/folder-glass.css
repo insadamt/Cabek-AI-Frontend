@@ -1,6 +1,7 @@
+/* Physical folder faces, markings and plate proportions; depends on DossierFolder and category color tokens. */
 .dossier-folder {
   perspective: 950px;
-  filter: drop-shadow(2px 30px 22px #00000030);
+  filter: drop-shadow(2px 18px 16px #00000024);
 }
 /* Let drags over side previews reach the stage without activating a folder. */
 
@@ -33,8 +34,8 @@
   border: 0;
   border-radius: 0;
   background: linear-gradient(105deg, #d6d6d61a, #dedede0a 38%, #1e1e1e40);
-  backdrop-filter: blur(14px) saturate(0.7);
-  -webkit-backdrop-filter: blur(14px) saturate(0.7);
+  backdrop-filter: blur(6px) saturate(0.9);
+  -webkit-backdrop-filter: blur(6px) saturate(0.9);
   box-shadow: none;
 
   /* Moving the cover independently exposes a second bottom edge against the rear face. */
@@ -98,7 +99,7 @@
   border-left: 1px solid #454748;
 }
 .folder-registration-country {
-  flex: 0 0 19%;
+  flex: 0 0 13%;
   font-size: 0.72em;
   letter-spacing: -0.04em;
 }
@@ -108,7 +109,10 @@
 }
 .folder-registration-letter,
 .folder-registration-region {
-  flex: 0 0 18%;
+  flex: 0 0 16%;
+}
+.folder-registration-region {
+  flex: 1;
 }
 .folder-registration-letter {
   text-transform: uppercase;
@@ -162,8 +166,8 @@
   overflow-wrap: anywhere;
   color: #ffffffb8;
   text-shadow: 0 1px 2px #00000040;
-  font-size: 9px;
-  letter-spacing: 0.7px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
 }
 @media (max-width: 650px) {
   .folder-back {

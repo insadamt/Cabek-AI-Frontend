@@ -1,15 +1,16 @@
 /**
- * Releases saved dossiers from the island into their native carousel poses, retaining each folder's complete shape.
- * Depends on GSAP and carousel CSS; slot-level translation avoids tilted child coordinates and temporary overflow allows the full path.
+ * Ejects frozen dossier copies into untouched carousel slots, then reveals controls in order.
+ * Depends on viewport perspective layers and journey ownership; native gestures and CSS transforms resume after landing.
  */
-import gsap from 'gsap';
-import { observeReducedMotion, prefersReducedMotion } from './motion';
+import { cancelJourneyMotion, runJourneyMotion } from './journeyMotion';
+import { createFolderFlight } from './folderFlight';
 
 export function ejectCollectionFolders(
   scope: HTMLElement,
   island: HTMLElement,
   onComplete: () => void,
 ) {
+  cancelJourneyMotion();
   const slots = Array.from(scope.querySelectorAll<HTMLElement>('.carousel-folder-slot'))
     .sort(
       (left, right) =>
@@ -17,92 +18,80 @@ export function ejectCollectionFolders(
         Number(left.classList.contains('is-active')),
     )
     .slice(0, 3);
-  if (!slots.length) return;
-  if (prefersReducedMotion()) {
+  if (!slots.length) {
     onComplete();
     return;
   }
-
-  const collection = scope.closest<HTMLElement>('.category-collection');
-  const overflowOwners = [scope, ...(collection ? [collection] : [])];
-  const previousOverflow = overflowOwners.map((element) => element.style.overflow);
-  const previousInert = collection?.inert ?? scope.inert;
-  const interactionOwner = collection ?? scope;
-  const previousTransitions = slots.map((element) => element.style.transition);
-  const controls = Array.from(
-    (collection ?? scope).querySelectorAll<HTMLElement>(
-      '.category-controls, .carousel-backdrop-word, .carousel-edge, .home-bottom-bar, .carousel-counter',
-    ),
+  const collection = scope.closest<HTMLElement>('.category-collection') ?? scope;
+  const stage = scope.querySelector<HTMLElement>('.carousel-stage')!;
+  const controls = collection.querySelectorAll<HTMLElement>('.category-controls, .carousel-edge');
+  const actions = collection.querySelectorAll<HTMLElement>('.home-bottom-bar');
+  const details = collection.querySelectorAll<HTMLElement>(
+    '.carousel-counter, .carousel-backdrop-word',
   );
   const origin = island.getBoundingClientRect();
-  let disposed = false;
-  let completed = false;
-  interactionOwner.inert = true;
-  overflowOwners.forEach((element) => {
-    element.style.overflow = 'visible';
-  });
-  scope.dataset.ejecting = 'true';
-
-  const timeline = gsap.timeline({ paused: true });
-  timeline
-    .to(island, { scale: 1.06, duration: 0.18, ease: 'power2.out' }, 0)
-    .to(island, { scale: 1, duration: 0.3, ease: 'power2.inOut' }, 0.65);
-
-  slots.forEach((slot, index) => {
+  const stageBounds = stage.getBoundingClientRect();
+  const previousInert = collection.inert;
+  const flights = slots.map((slot) => {
     const bounds = slot.getBoundingClientRect();
-    const x = Number(gsap.getProperty(slot, 'x'));
-    const y = Number(gsap.getProperty(slot, 'y'));
-    const scale = Number(gsap.getProperty(slot, 'scaleX'));
-    slot.style.transition = 'none';
-    timeline.fromTo(
-      slot,
-      {
-        opacity: 0,
-        scale: 0.12,
-        x: x + origin.left + origin.width / 2 - bounds.left - bounds.width / 2,
-        y: y + origin.bottom - 10 - bounds.top - bounds.height / 2,
-      },
-      {
-        opacity: 1,
-        scale,
-        x,
-        y,
-        duration: 0.85,
-        ease: 'power3.out',
-      },
-      0.12 + index * 0.18,
-    );
+    const flight = createFolderFlight(slot, stage);
+    flight.style.transformOrigin = `${bounds.left + bounds.width / 2 - stageBounds.left}px ${bounds.top + bounds.height / 2 - stageBounds.top}px`;
+    const visibility = slot.style.visibility;
+    slot.style.visibility = 'hidden';
+    return { slot, flight, bounds, visibility };
   });
-  timeline.fromTo(controls, { opacity: 0 }, { opacity: 1, duration: 0.28 }, 0.85);
-
-  const settle = () => timeline.progress(1);
-  const stopObserving = observeReducedMotion(settle);
-  function restore() {
-    stopObserving();
-    window.removeEventListener('resize', settle);
-    gsap.set(slots, { clearProps: 'transform,opacity' });
-    gsap.set(controls, { clearProps: 'opacity' });
-    gsap.set(island, { clearProps: 'scale' });
-    slots.forEach((slot, index) => {
-      slot.style.transition = previousTransitions[index];
-    });
-    overflowOwners.forEach((element, index) => {
-      element.style.overflow = previousOverflow[index];
-    });
-    interactionOwner.inert = previousInert;
-    delete scope.dataset.ejecting;
-  }
-  timeline.eventCallback('onComplete', () => {
-    if (disposed || completed) return;
-    completed = true;
-    restore();
-    onComplete();
+  collection.inert = true;
+  scope.dataset.ejecting = 'true';
+  collection.dataset.handoff = 'pending';
+  return runJourneyMotion({
+    build: (timeline) => {
+      timeline
+        .to(island, { scale: 1.035, duration: 0.18 }, 0)
+        .to(island, { scale: 1, duration: 0.25 }, 0.45);
+      flights.forEach(({ slot, flight, bounds, visibility }, index) => {
+        const start = 0.1 + index * 0.14;
+        timeline
+          .fromTo(
+            flight,
+            {
+              opacity: 0,
+              scale: 0.12,
+              x: origin.left + origin.width / 2 - bounds.left - bounds.width / 2,
+              y: origin.bottom - bounds.top - bounds.height / 2,
+            },
+            { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.7, ease: 'power3.out' },
+            start,
+          )
+          .call(
+            () => {
+              slot.style.visibility = visibility;
+              flight.remove();
+            },
+            [],
+            start + 0.7,
+          );
+      });
+      timeline
+        .call(
+          () => {
+            delete collection.dataset.handoff;
+          },
+          [],
+          1.08,
+        )
+        .fromTo(controls, { opacity: 0 }, { opacity: 1, duration: 0.2 }, 1.08)
+        .fromTo(actions, { opacity: 0 }, { opacity: 1, duration: 0.2 }, 1.2)
+        .fromTo(details, { opacity: 0 }, { opacity: 1, duration: 0.2 }, 1.3);
+    },
+    restore: () => {
+      flights.forEach(({ slot, flight, visibility }) => {
+        slot.style.visibility = visibility;
+        flight.remove();
+      });
+      collection.inert = previousInert;
+      delete collection.dataset.handoff;
+      delete scope.dataset.ejecting;
+    },
+    onComplete,
   });
-  window.addEventListener('resize', settle);
-  timeline.play();
-  return () => {
-    disposed = true;
-    timeline.kill();
-    if (!completed) restore();
-  };
 }

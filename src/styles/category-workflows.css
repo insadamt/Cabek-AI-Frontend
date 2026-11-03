@@ -9,7 +9,15 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: 76px;
+  padding-top: calc(var(--activity-island-height, 44px) + 32px);
+}
+/* Keep slow collection handoffs readable without exposing controls before the folders land. */
+.category-collection[data-handoff='pending'] .category-controls {
+  visibility: hidden;
+}
+.category-collection[data-handoff='pending']:has(.home-state):not(:has(.home-loading-indicator))
+  .category-controls {
+  visibility: visible;
 }
 .category-controls {
   flex-shrink: 0;
@@ -138,7 +146,7 @@
     padding-inline: 12px;
   }
   .category-collection {
-    padding-top: 62px;
+    padding-top: calc(var(--activity-island-height, 44px) + 18px);
   }
   .category-filter-fields {
     grid-template-columns: 1fr;

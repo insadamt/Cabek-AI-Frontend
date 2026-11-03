@@ -124,9 +124,6 @@ export function CategoryStageVisual({
   }, [cameraInteractive, attempt]);
 
   useEffect(() => {
-    connectionRef.current?.setPalette(categoryPalettes[category.type]);
-  }, [category.type]);
-  useEffect(() => {
     connectionRef.current?.setCapturing(capturing);
     return () => connectionRef.current?.setCapturing(false);
   }, [capturing, attempt]);

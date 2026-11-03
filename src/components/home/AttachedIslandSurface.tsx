@@ -1,3 +1,4 @@
+/** Draws the attached island contour from its layout dimensions; depends on ResizeObserver without feeding sizing back into animation. */
 import { useLayoutEffect, useRef } from 'react';
 
 interface SurfaceDimensions {
@@ -37,7 +38,7 @@ export function AttachedIslandSurface() {
     const island = shape.closest<HTMLElement>('.ai-activity-island')!;
     function updateOutline() {
       const styles = getComputedStyle(island);
-      const width = island.getBoundingClientRect().width;
+      const width = island.offsetWidth;
       const height = island.offsetHeight;
       const shoulderRadius =
         Number.parseFloat(styles.getPropertyValue('--island-shoulder-radius')) || 14;

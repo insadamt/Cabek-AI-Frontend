@@ -33,6 +33,9 @@ import './styles/dossier-parts.css';
 import './styles/dossier-drawer.css';
 import './styles/category-workflows.css';
 import './styles/workflow-capture.css';
+// Workflow extensions follow the shared island/folder rules so their dimensions stay authoritative.
+import './styles/category-stage.css';
+import './styles/cinematic-capture.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

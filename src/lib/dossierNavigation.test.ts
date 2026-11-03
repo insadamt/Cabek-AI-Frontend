@@ -187,6 +187,28 @@ describe('fast prepared dossier opening', () => {
     expect(source.styles.has('--document-playback-rate')).toBe(false);
   });
 
+  it('aborts image preparation when the owning finale unmounts without a route event', async () => {
+    const source = createFolder();
+    const owner = new AbortController();
+    const task = open({ ...source.options, captured: true, signal: owner.signal });
+    await vi.waitFor(() => expect(getDossierOpening()?.phase).toBe('loading'));
+    owner.abort();
+    await task;
+    expect(mocks.prepare.mock.calls[0][0].signal.aborted).toBe(true);
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(source.scope.inert).toBe(false);
+    expect(getDossierOpening()).toBeNull();
+  });
+
+  it('ignores a finale that was cancelled before it could open', async () => {
+    const source = createFolder();
+    const owner = new AbortController();
+    owner.abort();
+    await open({ ...source.options, captured: true, signal: owner.signal });
+    expect(mocks.prepare).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
   it('returns the document and exposes retry if an image fails', async () => {
     const source = createFolder();
     const task = open(source.options);

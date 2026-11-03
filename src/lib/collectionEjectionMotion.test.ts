@@ -1,25 +1,8 @@
-/** Guards visible island ejection, native carousel transforms and safe interruption without browser rendering. */
+/** Exercises real GSAP ejection frames while native carousel transforms remain untouched; depends on frozen layer stubs and journey lifecycle. */
+import gsap from 'gsap';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const motion = vi.hoisted(() => ({
-  callback: undefined as (() => void) | undefined,
-  timeline: {
-    to: vi.fn(),
-    fromTo: vi.fn(),
-    eventCallback: vi.fn(),
-    progress: vi.fn(),
-    play: vi.fn(),
-    kill: vi.fn(),
-  },
-  set: vi.fn(),
-  getProperty: vi.fn(),
-}));
-vi.mock('gsap', () => ({
-  default: {
-    timeline: () => motion.timeline,
-    set: motion.set,
-    getProperty: motion.getProperty,
-  },
-}));
+const flights = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock('./folderFlight', () => ({ createFolderFlight: flights.create }));
 import { ejectCollectionFolders } from './collectionEjectionMotion';
 
 function fixture(count = 3, reduced = false) {
@@ -28,23 +11,43 @@ function fixture(count = 3, reduced = false) {
   vi.stubGlobal('window', new EventTarget());
   const slots = Array.from({ length: count }, (_, index) => ({
     classList: { contains: () => index === 1 },
-    style: { transition: 'transform .6s' },
+    style: { visibility: '', transform: 'native perspective pose', transition: 'transform .6s' },
     getBoundingClientRect: () => ({ left: index * 400, top: 300, width: 300, height: 220 }),
   }));
-  const controls = [{}, {}];
+  const controls = [{ opacity: 1 }];
+  const actions = [{ opacity: 1 }];
+  const details = [{ opacity: 1 }];
   const collection = {
     inert: false,
-    style: { overflow: 'auto' },
-    querySelectorAll: () => controls,
+    dataset: {} as Record<string, string>,
+    querySelectorAll: (selector: string) =>
+      selector.includes('home-bottom')
+        ? actions
+        : selector.includes('counter')
+          ? details
+          : controls,
   };
+  const stage = { getBoundingClientRect: () => ({ left: 0, top: 100 }) };
   const scope = {
-    inert: false,
-    style: { overflow: 'hidden' },
     dataset: {} as Record<string, string>,
     querySelectorAll: () => slots,
+    querySelector: () => stage,
     closest: () => collection,
   };
-  const island = { getBoundingClientRect: () => ({ left: 450, bottom: 48, width: 300 }) };
+  const layers: Array<{
+    style: Record<string, string>;
+    scale: number;
+    opacity: number;
+    x: number;
+    y: number;
+    remove: ReturnType<typeof vi.fn>;
+  }> = [];
+  flights.create.mockImplementation(() => {
+    const layer = { style: {}, scale: 1, opacity: 1, x: 0, y: 0, remove: vi.fn() };
+    layers.push(layer);
+    return layer;
+  });
+  const island = { scale: 1, getBoundingClientRect: () => ({ left: 450, bottom: 48, width: 300 }) };
   const finish = vi.fn();
   const start = () =>
     ejectCollectionFolders(
@@ -52,106 +55,86 @@ function fixture(count = 3, reduced = false) {
       island as unknown as HTMLElement,
       finish,
     );
-  return { scope, collection, slots, island, controls, media, finish, start };
+  return { scope, collection, slots, controls, actions, details, layers, media, finish, start };
 }
-beforeEach(() => {
-  vi.clearAllMocks();
-  motion.callback = undefined;
-  motion.timeline.to.mockReturnValue(motion.timeline);
-  motion.timeline.fromTo.mockReturnValue(motion.timeline);
-  motion.timeline.eventCallback.mockImplementation((_name, callback) => {
-    motion.callback = callback;
-    return motion.timeline;
-  });
-  motion.timeline.progress.mockImplementation(() => {
-    motion.callback?.();
-    return motion.timeline;
-  });
-  motion.getProperty.mockImplementation((_target, property) =>
-    property === 'scaleX' ? 0.72 : property === 'x' ? -150 : -110,
-  );
+function activeTimeline() {
+  return gsap.globalTimeline
+    .getChildren()
+    .find((child) => child instanceof gsap.core.Timeline) as gsap.core.Timeline;
+}
+beforeEach(() => vi.clearAllMocks());
+afterEach(() => {
+  gsap.globalTimeline.clear();
+  vi.unstubAllGlobals();
 });
-afterEach(() => vi.unstubAllGlobals());
 
 describe('collection folder ejection', () => {
-  it('ejects the three real visible slots from the island with a stagger, retaining native landing poses', () => {
+  it('keeps native poses intact through intermediate flight frames and reveals each destination only on landing', () => {
     const view = fixture();
     const stop = view.start();
-    const flights = motion.timeline.fromTo.mock.calls.filter(([target]) =>
-      view.slots.includes(target),
-    );
-    expect(flights).toHaveLength(3);
-    expect(flights[0][0]).toBe(view.slots[1]);
-    expect(flights.map((call) => call[3])).toEqual([0.12, 0.3, 0.48]);
-    const center = flights[0];
-    expect(center[1]).toMatchObject({ opacity: 0, scale: 0.12, x: -100, y: -482 });
-    expect(center[2]).toMatchObject({ opacity: 1, scale: 0.72, x: -150, y: -110 });
-    expect(view.finish).not.toHaveBeenCalled();
-    motion.callback?.();
-    expect(view.finish).toHaveBeenCalledOnce();
-    stop?.();
-  });
-  it('opens ancestor clipping and blocks browsing only until the flight completes', () => {
-    const view = fixture();
-    const stop = view.start();
-    expect(view.scope.style.overflow).toBe('visible');
-    expect(view.collection.style.overflow).toBe('visible');
+    const timeline = activeTimeline();
     expect(view.collection.inert).toBe(true);
-    expect(view.scope.dataset.ejecting).toBe('true');
-    expect(view.slots.every((slot) => slot.style.transition === 'none')).toBe(true);
-    motion.callback?.();
-    expect(view.scope.style.overflow).toBe('hidden');
-    expect(view.collection.style.overflow).toBe('auto');
+    expect(view.slots.every((slot) => slot.style.visibility === 'hidden')).toBe(true);
+    timeline.time(0.45, false);
+    expect(view.layers[0].scale).toBeGreaterThan(0.12);
+    expect(view.layers[0].scale).toBeLessThan(1);
+    expect(view.slots.every((slot) => slot.style.transform === 'native perspective pose')).toBe(
+      true,
+    );
+    expect(view.slots.every((slot) => slot.style.transition === 'transform .6s')).toBe(true);
+    timeline.time(0.81, false);
+    expect(view.slots[1].style.visibility).toBe('');
+    expect(view.slots[0].style.visibility).toBe('hidden');
+    expect(view.controls[0].opacity).toBe(0);
+    timeline.progress(1);
+    expect(view.finish).toHaveBeenCalledOnce();
     expect(view.collection.inert).toBe(false);
     expect(view.scope.dataset.ejecting).toBeUndefined();
-    expect(view.slots.every((slot) => slot.style.transition === 'transform .6s')).toBe(true);
-    expect(motion.set).toHaveBeenCalledWith(expect.arrayContaining(view.slots), {
-      clearProps: 'transform,opacity',
-    });
+    expect(view.slots.every((slot) => slot.style.visibility === '')).toBe(true);
     stop?.();
   });
-  it('cancels without consuming the handoff and ignores late completion', () => {
+  it('reveals navigation, actions and details after every folder lands', () => {
+    const view = fixture();
+    view.start();
+    const timeline = activeTimeline();
+    timeline.time(1.1, false);
+    expect(view.slots.every((slot) => slot.style.visibility === '')).toBe(true);
+    expect(view.controls[0].opacity).toBeGreaterThan(0);
+    expect(view.actions[0].opacity).toBe(0);
+    expect(view.details[0].opacity).toBe(0);
+    timeline.progress(1);
+  });
+  it('cancels without consuming history, removes layers, and restores interaction', () => {
     const view = fixture();
     const stop = view.start();
     stop?.();
-    motion.callback?.();
     expect(view.finish).not.toHaveBeenCalled();
-    expect(motion.timeline.kill).toHaveBeenCalledOnce();
+    expect(view.layers.every((layer) => layer.remove.mock.calls.length === 1)).toBe(true);
     expect(view.collection.inert).toBe(false);
-    expect(view.scope.style.overflow).toBe('hidden');
+    expect(view.slots.every((slot) => slot.style.visibility === '')).toBe(true);
   });
-  it('settles once when resized and removes its listener', () => {
-    const view = fixture();
-    const remove = vi.spyOn(window, 'removeEventListener');
-    const stop = view.start();
-    window.dispatchEvent(new Event('resize'));
-    motion.callback?.();
-    expect(view.finish).toHaveBeenCalledOnce();
-    expect(remove).toHaveBeenCalledWith('resize', expect.any(Function));
-    stop?.();
-  });
-  it('settles when reduced motion is enabled during a flight', () => {
+  it.each(['resize', 'reduced motion'])('settles once on %s', (event) => {
     const view = fixture();
     const stop = view.start();
-    view.media.matches = true;
-    view.media.dispatchEvent(new Event('change'));
+    if (event === 'resize') window.dispatchEvent(new Event('resize'));
+    else {
+      view.media.matches = true;
+      view.media.dispatchEvent(new Event('change'));
+    }
     expect(view.finish).toHaveBeenCalledOnce();
-    expect(view.collection.inert).toBe(false);
     stop?.();
+    expect(view.collection.inert).toBe(false);
   });
-  it('shows the saved end state immediately when reduced motion is already enabled', () => {
+  it('settles reduced motion without leaving hidden folders', () => {
     const view = fixture(3, true);
     view.start();
     expect(view.finish).toHaveBeenCalledOnce();
-    expect(motion.timeline.fromTo).not.toHaveBeenCalled();
-    expect(view.scope.style.overflow).toBe('hidden');
+    expect(view.slots.every((slot) => slot.style.visibility === '')).toBe(true);
   });
-  it('uses only available dossiers and does not invent missing folders', () => {
-    const view = fixture(1);
-    const stop = view.start();
-    expect(
-      motion.timeline.fromTo.mock.calls.filter(([target]) => view.slots.includes(target)),
-    ).toHaveLength(1);
-    stop?.();
+  it.each([0, 1, 2])('completes a collection with %i actual dossiers', (count) => {
+    const view = fixture(count, true);
+    view.start();
+    expect(view.layers).toHaveLength(count);
+    expect(view.finish).toHaveBeenCalledOnce();
   });
 });

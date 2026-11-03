@@ -1,3 +1,4 @@
+/** Renders backend-compatible Moroccan plate segments with isolated Arabic lettering and a legacy fallback; depends on Unicode registration parsing. */
 interface FolderRegistrationPlateProps {
   matricule: string;
 }
@@ -41,7 +42,7 @@ export function FolderRegistrationPlate({ matricule }: FolderRegistrationPlatePr
   // Keep unfamiliar registrations intact rather than guessing missing plate segments.
 
   const segments = registration.match(
-    /^(\d{1,5})\s*[-·|]\s*(\p{L}[\p{M}ـ]*)\s*[-·|]\s*(\d{1,2})$/u,
+    /^(\d{1,6})\s*[-·|]\s*(\p{L}[\p{M}ـ]*)\s*[-·|]\s*(\d{1,6})$/u,
   );
   const letters = segments ? resolveRegistrationLetters(segments[2]) : null;
 

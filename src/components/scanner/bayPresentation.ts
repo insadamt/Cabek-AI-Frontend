@@ -1,5 +1,5 @@
 /**
- * Keeps the enlarged bay left-aligned with a more frontal car view beside immediately visible categories.
+ * Centers the complete bay inside the scanner scene area above its operational controls.
  * Depends on Three.js projection/view offsets and exported wheel radii; legacy QA framing remains available.
  */
 import { PerspectiveCamera, Vector3 } from 'three';
@@ -37,33 +37,13 @@ function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
     viewport && viewport.width > 0 && viewport.height > 0 ? viewport : undefined;
   const width = measuredViewport?.width ?? aspect * 900;
   const height = measuredViewport?.height ?? 900;
-  const stackedPanels = measuredViewport
-    ? width <= 760 && (height > 560 || width <= 560)
-    : aspect < 1;
-  //
-  // Match the selector's occupied space so short phones and narrow desktops keep clear controls.
-  // Dimensions are sampled on resize; animated frames never measure the DOM.
-  //
-  if (stackedPanels) {
-    return {
-      stackedPanels,
-      distance: Math.max(
-        1.18,
-        0.94 / Math.max(aspect, 0.3),
-        0.56 / Math.max(0.2, 1 - 360 / height),
-      ),
-      horizontalShift: 0,
-      verticalShift: 100 / height,
-    };
-  }
-  const panelWidth = Math.min(336, Math.max(284, width * 0.23));
-  const panelRight = height <= 560 ? 20 : Math.min(64, Math.max(28, width * 0.034));
-  const availableWidth = Math.max(0.25, (width - panelWidth - panelRight - 24) / width);
+  // The scene host now reserves navigation and controls in layout; projection no longer reserves a removed selector.
+  const stackedPanels = width < height;
   return {
     stackedPanels,
-    distance: Math.max(1, (1.8 / aspect) * (0.7 / availableWidth)),
-    horizontalShift: Math.max(0.18, 0.52 - availableWidth / 2),
-    verticalShift: 0.025,
+    distance: Math.max(1.12, 1.45 / Math.max(aspect, 0.3)),
+    horizontalShift: 0,
+    verticalShift: 0,
   };
 }
 
@@ -79,9 +59,7 @@ export function applyBayCameraFraming(
   const composition = resolveBayComposition(aspect, viewport);
   const width = Math.max(aspect, 0.3) * 1000;
 
-  //
-  // Reserve the menu area from the first frame; animating this offset made the scene slide left after entry.
-  //
+  // Keep manual orbit and cinematic playback on the same centered projection.
   camera.setViewOffset(
     width,
     1000,

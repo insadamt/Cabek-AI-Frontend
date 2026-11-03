@@ -65,7 +65,9 @@ describe('actual bay playback', () => {
     expect(playback.state.reframeProgress).toBeLessThan(1);
     entrance.time(entrance.duration(), false);
     expect(onIntroComplete).toHaveBeenCalledOnce();
-    expect(camera.position.toArray()).toEqual([4.3, 3.8, -9.5]);
+    expect(camera.position.x).toBeCloseTo(4.3 * 1.12);
+    expect(camera.position.y).toBeCloseTo(0.6 + 3.2 * 1.12);
+    expect(camera.position.z).toBeCloseTo(-9.5 * 1.12);
     expect(target.toArray()).toEqual([0, 0.6, 0]);
     expect(camera.projectionMatrix.equals(openingProjection)).toBe(true);
     expect(onChange).toHaveBeenCalled();

@@ -1,11 +1,29 @@
 /* Capture controls and live evidence fit the existing frame/island; depends on shared category tokens and dossier drawer styles. */
 .tunnel-stage {
   height: 100%;
+  display: grid;
+  grid-template-rows: minmax(180px, 1fr) auto;
+  gap: 12px;
+  padding: 164px 24px 20px;
+  overflow-y: auto;
+}
+.tunnel-stage .category-stage-content {
+  position: relative;
+  inset: auto;
+  min-height: 180px;
+}
+.tunnel-stage .bay-camera-toolbar {
+  top: auto;
+  bottom: 8px;
+  left: 8px;
+}
+.tunnel-stage .scanning-bay-error {
+  inset: 0;
 }
 .capture-stage-nav {
   position: absolute;
   z-index: 3;
-  top: 84px;
+  top: 118px;
   left: 28px;
   right: 28px;
   display: flex;
@@ -20,21 +38,32 @@
   font-size: 12px;
 }
 .capture-controls {
-  position: absolute;
+  position: relative;
   z-index: 3;
-  bottom: max(24px, env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(490px, calc(100% - 36px));
+  width: min(560px, 100%);
+  margin-inline: auto;
+  padding: 16px 20px;
+  border: 1px solid #d9ded3;
+  border-radius: 12px;
+  background: #fafbf8;
+  box-shadow: 0 5px 18px #17201308;
   text-align: center;
+}
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 .capture-controls p {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .capture-controls .eyebrow {
   color: #586051;
@@ -95,6 +124,13 @@
 .tunnel-stage:not([data-entrance-phase='ready']) .capture-stage-nav {
   visibility: hidden;
 }
+.tunnel-stage:has(.capture-finale) .capture-controls,
+.tunnel-stage:has(.capture-finale) .capture-stage-nav {
+  visibility: hidden;
+}
+.tunnel-stage:has(.capture-finale[data-released='true']) .category-stage-content {
+  visibility: hidden;
+}
 .capture-finale {
   position: absolute;
   z-index: 4;
@@ -143,13 +179,15 @@
   border-top: 2px solid var(--category-accent, transparent);
 }
 .capture-island-activity {
-  gap: 10px;
+  gap: 12px;
   width: calc(100% - var(--island-inline-padding) * 2);
   min-width: 0;
-  height: 56px;
-  top: 8px;
-  padding: 0;
-  line-height: 1.25;
+  max-width: none;
+  height: calc(100% - 24px);
+  top: 10px;
+  padding: 0 0 8px;
+  line-height: 1.4;
+  white-space: normal;
 }
 .capture-island-copy {
   min-width: 0;
@@ -160,45 +198,62 @@
   flex: 1;
 }
 .capture-island-copy strong {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 550;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
 }
 .capture-island-copy > span {
-  font-size: 8px;
-  color: #ffffffa8;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
+  color: #c3c9ce;
+  overflow-wrap: anywhere;
 }
 .capture-island-photos {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   flex: 0 0 auto;
 }
 .capture-island-photos img {
-  width: 24px;
-  height: 28px;
+  width: 30px;
+  height: 36px;
   object-fit: cover;
   border: 1px solid #ffffff4d;
   border-radius: 3px;
   animation: capture-photo-received 320ms ease-out both;
 }
 .ai-activity-island[data-phase='capture'] {
-  height: 76px;
-  border-bottom: 2px solid var(--category-accent, #9fa9b0);
+  height: 108px;
   pointer-events: auto;
 }
+.ai-activity-island[data-capture-presentation='recovery'] {
+  height: 148px;
+}
 .capture-island-resume {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
   align-self: center;
   color: #e3eccd;
-  font-size: 8px;
+  font-size: 11px;
   text-decoration: underline;
 }
 .capture-island-copy .capture-island-error {
   color: #f4b99a;
+  max-height: 4.2em;
+  overflow-y: auto;
+}
+.capture-island-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #ffffff26;
+}
+.capture-island-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--category-accent, #d5e9b2);
+  transition: width 240ms ease-out;
 }
 .capture-after-picker {
   display: flex;
@@ -247,44 +302,52 @@
   }
 }
 @media (max-width: 650px) {
+  .tunnel-stage {
+    padding: 190px 12px max(12px, env(safe-area-inset-bottom));
+    grid-template-rows: minmax(160px, 1fr) auto;
+  }
   .capture-stage-nav {
-    top: 90px;
+    top: 148px;
     left: 18px;
     right: 18px;
-  }
-  .tunnel-stage .bay-camera-toolbar {
-    top: 132px;
-    bottom: auto;
+    gap: 8px;
   }
   .capture-controls {
-    bottom: max(16px, env(safe-area-inset-bottom));
+    padding: 12px;
     gap: 6px;
   }
   .capture-controls .eyebrow {
-    max-width: 260px;
+    max-width: 290px;
     line-height: 1.4;
-  }
-  .capture-island-photos img {
-    width: 20px;
-    height: 24px;
   }
   .capture-island-photos img:not(:last-child) {
     display: none;
   }
+  .capture-island-photos img {
+    width: 24px;
+    height: 30px;
+  }
+  .capture-island-activity {
+    gap: 8px;
+  }
   .capture-island-copy strong {
-    font-size: 9px;
+    font-size: 12px;
+  }
+  .ai-activity-island[data-phase='capture'] {
+    height: 136px;
+  }
+  .ai-activity-island[data-capture-presentation='recovery'] {
+    height: 148px;
   }
 }
 @media (max-height: 550px) and (min-width: 651px) {
-  .capture-stage-nav {
-    top: 74px;
+  .tunnel-stage {
+    padding: 164px 18px 12px;
+    grid-template-columns: minmax(180px, 1fr) 310px;
+    grid-template-rows: minmax(180px, 1fr);
   }
   .capture-controls {
-    left: auto;
-    right: 20px;
-    bottom: 16px;
-    transform: none;
-    width: 290px;
+    align-self: center;
   }
   .capture-finale {
     width: 260px;
@@ -293,6 +356,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .capture-island-progress > span {
+    transition: none;
+  }
   .capture-island-photos img {
     animation: none;
   }

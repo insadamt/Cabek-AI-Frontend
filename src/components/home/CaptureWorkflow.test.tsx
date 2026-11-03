@@ -121,7 +121,8 @@ describe('capture presentation', () => {
     const markup = renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />);
     expect(markup).toContain('src="/real.webp"');
     expect(markup).toContain('1 / 5 photos enregistrées');
-    expect(markup).not.toContain('%');
+    expect(markup).toContain('aria-label="Photographies enregistrées"');
+    expect(markup).toContain('aria-valuenow="20"');
     expect(markup).not.toContain('analysées');
   });
   it('does not show a planned or unsaved image as received', () => {
@@ -144,6 +145,8 @@ describe('capture presentation', () => {
     const markup = renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />);
     expect(markup).toContain('1 / 5 photos enregistrées');
     expect(markup).toContain('2 / 5 photos analysées');
+    expect(markup).toContain('aria-label="Photos analysées par l’IA"');
+    expect(markup).toContain('aria-valuenow="40"');
   });
   it('retains Arabic registration and enabled metadata inputs during active capture', () => {
     state.session!.response!.vehicle.matricule = '84654-ب-454';
@@ -169,5 +172,31 @@ describe('capture presentation', () => {
     const markup = renderToStaticMarkup(<TunnelStage category={categories[2]} onBack={() => {}} />);
     expect(markup).toContain('Nouvelle capture AVANT');
     expect(markup).toContain('Compléter une capture APRÈS');
+  });
+});
+
+describe('contextual capture recovery', () => {
+  it('keeps the failure explanation in the island instead of duplicating it over the scene', () => {
+    state.session!.error = 'Connexion au tunnel perdue';
+    expect(stage()).not.toContain('Connexion au tunnel perdue');
+    expect(
+      renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />),
+    ).toContain('Connexion au tunnel perdue');
+  });
+  it('does not offer capture restart while completed verification evidence synchronizes', () => {
+    state.session!.identity.type = 'verification';
+    state.session!.identity.phase = 'before';
+    state.session!.capture!.status = 'completed';
+    state.session!.response!.vehicle = {
+      marque: 'Dacia',
+      modele: 'Sandero',
+      marque_id: 1,
+      model_id: 2,
+      matricule: '84654-ب-454',
+      date_mise_en_circulation: '2020-05-17',
+    };
+    const markup = renderToStaticMarkup(<TunnelStage category={categories[2]} onBack={() => {}} />);
+    expect(markup).toContain('disabled="">SYNCHRONISATION…');
+    expect(markup).not.toContain('RELANCER L’ANALYSE');
   });
 });

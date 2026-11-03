@@ -254,8 +254,8 @@ describe('persistent tunnel lifecycle', () => {
       capture({ status: 'completed', analysis_error: 'worker_unavailable' }),
     );
     await store.start('chiffrage_rapide');
-    expect(service.startCapture).toHaveBeenCalledOnce();
-    expect(service.startScan).not.toHaveBeenCalled();
+    expect(service.startCapture).not.toHaveBeenCalled();
+    expect(service.startScan).toHaveBeenCalledOnce();
   });
   it('selects AFTER on a persisted eligible dossier without any creation or AI', async () => {
     const { service, store } = setup();

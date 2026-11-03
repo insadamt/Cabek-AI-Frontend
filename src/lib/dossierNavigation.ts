@@ -24,6 +24,7 @@ interface OpenDossierOptions {
   captured?: boolean;
   returnTo?: string;
   capturePhase?: PhotoPhase;
+  signal?: AbortSignal;
 }
 
 let pendingNavigation: AbortController | null = null;
@@ -38,7 +39,7 @@ async function stowDocument(folder: HTMLElement, paper: HTMLElement | null, sign
 }
 
 export async function openDossierFromFolder(options: OpenDossierOptions) {
-  if (pendingNavigation) return;
+  if (pendingNavigation || options.signal?.aborted) return;
   const { dossier, folder, path } = options;
   const controller = new AbortController();
   pendingNavigation = controller;
@@ -58,6 +59,7 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     publishDossierOpening(null);
     folder.dispatchEvent(new Event('dossier-navigation-cancel'));
   };
+  options.signal?.addEventListener('abort', cancel, { once: true });
   window.addEventListener('popstate', cancel);
   window.addEventListener('pagehide', cancel);
   if (scope) scope.inert = true;
@@ -167,6 +169,7 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     window.removeEventListener('popstate', cancel);
     window.removeEventListener('pagehide', cancel);
     signal.removeEventListener('abort', cancelImageLoading);
+    options.signal?.removeEventListener('abort', cancel);
     imageLoading.abort();
     if (scope) scope.inert = previousInert;
     if (previousPlaybackRate)

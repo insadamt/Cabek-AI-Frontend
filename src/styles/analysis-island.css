@@ -7,6 +7,12 @@
   --activity-island-height: 44px;
   --home-header-height: calc(var(--activity-island-top) + var(--activity-island-height) + 16px);
 }
+.home-frame:has(.ai-activity-island[data-phase='capture']) {
+  --activity-island-height: 108px;
+}
+.home-frame:has(.ai-activity-island[data-capture-presentation='recovery']) {
+  --activity-island-height: 148px;
+}
 .home-header {
   height: var(--home-header-height);
 }
@@ -27,9 +33,15 @@
   z-index: 12;
   width: min(300px, calc(100vw - var(--island-frame-gutter) * 2));
   height: var(--activity-island-height);
+  transition: height 240ms ease;
   border-radius: 0 0 18px 18px;
   color: #f8f8f8;
   pointer-events: auto;
+}
+
+.ai-activity-island.dossier-opening-island {
+  /* Document flights measure this edge immediately when ownership passes to dossier opening. */
+  transition: none;
 }
 
 /* One filled contour joins the frame, shoulders and body without separate edges or box shadows. */
@@ -86,11 +98,8 @@
   flex-wrap: nowrap;
   align-items: center;
   gap: 12px;
-  width: max-content;
-  min-width: min(
-    320px,
-    calc(100vw - var(--island-frame-gutter) * 2 - var(--island-inline-padding) * 2)
-  );
+  width: calc(100% - var(--island-inline-padding) * 2);
+  min-width: 0;
   max-width: calc(100vw - var(--island-frame-gutter) * 2 - var(--island-inline-padding) * 2);
   height: 24px;
   font-size: 13px;
@@ -273,6 +282,12 @@
   }
 }
 @media (max-width: 650px) {
+  .home-frame:has(.ai-activity-island[data-phase='capture']) {
+    --activity-island-height: 136px;
+  }
+  .home-frame:has(.ai-activity-island[data-capture-presentation='recovery']) {
+    --activity-island-height: 148px;
+  }
   /* Reserve navigation space in every state so expanding the island never shifts the workspace. */
 
   .home-frame {
@@ -315,6 +330,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .ai-activity-island {
+    transition: none;
+  }
   .ai-activity-island * {
     animation: none !important;
     transition: none;

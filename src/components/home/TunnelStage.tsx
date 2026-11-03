@@ -13,8 +13,8 @@ import { useStageEntrance } from '../../hooks/useStageEntrance';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { useNavigation } from '../../hooks/useNavigation';
 import { categoryPath, type Category } from '../../lib/workflows';
-import { captureLabel, captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
-import { describeError, failureMessage, isPreview } from '../../lib/api';
+import { captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
+import { describeError, isPreview } from '../../lib/api';
 import type { CreatableDossierType } from '../../workflowTypes';
 
 type LocalCategory = Category & { type: CreatableDossierType };
@@ -37,14 +37,16 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
   const processing =
     current?.response?.status === 'processing' || current?.response?.status === 'queued';
   const finale = captureReady(current) && !drawer && !afterPicker;
-  const failureCode =
-    capture?.error_code ?? capture?.analysis_error ?? current?.response?.error?.code;
   const blocked = !!session && !current;
   const disabled =
     current?.pending ||
     capture?.status === 'capturing' ||
     (processing && !metadataMissing) ||
-    !parked;
+    !parked ||
+    (capture?.status === 'completed' && category.type === 'verification' && !metadataMissing) ||
+    (capture?.status === 'completed' &&
+      current?.response?.status === 'completed' &&
+      !metadataMissing);
   const ready = entrance.phase === 'ready';
   const scannerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -87,44 +89,46 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
           finishing={finale}
         />
       </div>
-      {!finale && (
-        <>
-          <nav className="capture-stage-nav" aria-label="Navigation du parcours" inert={!ready}>
-            <button type="button" onClick={onBack}>
-              Tous les parcours
-            </button>
-            <a
-              href={categoryPath(category.type)}
-              onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                navigate(categoryPath(category.type));
-              }}
-            >
-              Voir les dossiers ↗
-            </a>
-          </nav>
-          <div className="capture-controls" inert={!ready} aria-hidden={!ready || undefined}>
-            <p className="eyebrow">
-              {category.title}
-              {phase ? ` · ${phase === 'before' ? 'AVANT' : 'APRÈS'}` : ''}
+      <>
+        <nav
+          className="capture-stage-nav"
+          aria-label="Navigation du parcours"
+          inert={!ready || finale}
+          aria-hidden={finale || undefined}
+        >
+          <button type="button" onClick={onBack}>
+            Tous les parcours
+          </button>
+          <a
+            href={categoryPath(category.type)}
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              navigate(categoryPath(category.type));
+            }}
+          >
+            Voir les dossiers ↗
+          </a>
+        </nav>
+        <div
+          className="capture-controls"
+          inert={!ready || finale}
+          aria-hidden={!ready || finale || undefined}
+        >
+          <p className="eyebrow">
+            {category.title}
+            {phase ? ` · ${phase === 'before' ? 'AVANT' : 'APRÈS'}` : ''}
+          </p>
+          {blocked ? (
+            <p role="status">
+              Un dossier est actif.{' '}
+              <button type="button" onClick={() => navigate('/?reprendre=1')}>
+                Reprendre sa capture
+              </button>
             </p>
-            {blocked ? (
-              <p role="status">
-                Un dossier est actif.{' '}
-                <button type="button" onClick={() => navigate('/?reprendre=1')}>
-                  Reprendre sa capture
-                </button>
-              </p>
-            ) : (
-              <>
-                <button
-                  className="capture-metadata-toggle"
-                  type="button"
-                  onClick={() => setDrawer(true)}
-                >
-                  Fiche véhicule ↗
-                </button>
+          ) : (
+            <>
+              <div className="capture-actions">
                 <button
                   ref={scannerRef}
                   className="capture-scanner"
@@ -145,45 +149,50 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                           : capture?.status === 'failed'
                             ? 'RÉESSAYER LA CAPTURE'
                             : capture?.status === 'completed'
-                              ? 'RELANCER L’ANALYSE'
+                              ? category.type === 'verification'
+                                ? 'SYNCHRONISATION…'
+                                : 'RELANCER L’ANALYSE'
                               : 'SCANNER'}
                 </button>
-                {category.type === 'verification' && !current && (
-                  <div className="capture-phase-actions">
-                    <span>Nouvelle capture AVANT</span>
-                    <button type="button" onClick={() => setAfterPicker(true)}>
-                      Compléter une capture APRÈS
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-            <p role="status">
-              {current ? captureLabel(current) : 'Prêt à accueillir votre véhicule.'}
+                <button
+                  className="capture-metadata-toggle"
+                  type="button"
+                  onClick={() => setDrawer(true)}
+                >
+                  Fiche véhicule ↗
+                </button>
+              </div>
+              {category.type === 'verification' && !current && (
+                <div className="capture-phase-actions">
+                  <span>Nouvelle capture AVANT</span>
+                  <button type="button" onClick={() => setAfterPicker(true)}>
+                    Compléter une capture APRÈS
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {!current && <p role="status">Prêt à accueillir votre véhicule.</p>}
+          {error && !current && (
+            <p role="alert" className="inline-error">
+              {error}
             </p>
-            {(error || current?.error || failureCode) && (
-              <p role="alert" className="inline-error">
-                {error || current?.error || failureMessage(failureCode!)}
-              </p>
-            )}
-            {isPreview && (
-              <p>Connectez l’API CABEK pour scanner et enregistrer des photographies.</p>
-            )}
-            {current?.identity.dossierId && (
-              <a
-                href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}
-                onClick={(event) => {
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  event.preventDefault();
-                  navigate(event.currentTarget.getAttribute('href')!);
-                }}
-              >
-                Ouvrir le dossier enregistré
-              </a>
-            )}
-          </div>
-        </>
-      )}
+          )}
+          {isPreview && <p>Connectez l’API CABEK pour scanner et enregistrer des photographies.</p>}
+          {current?.identity.dossierId && (
+            <a
+              href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                navigate(event.currentTarget.getAttribute('href')!);
+              }}
+            >
+              Ouvrir le dossier enregistré
+            </a>
+          )}
+        </div>
+      </>
       {drawer && (
         <CaptureMetadataDrawer
           type={category.type}

@@ -1,74 +1,102 @@
-/** Verifies uniform category absorption, one transition completion and interruption cleanup without rendering. */
-import { afterEach, describe, expect, it, vi } from 'vitest';
-const animation = vi.hoisted(() => ({
-  steps: [] as Array<{ target: unknown; options: Record<string, unknown> }>,
-  complete: () => {},
-  timeline: { to: vi.fn(), progress: vi.fn(), play: vi.fn(), kill: vi.fn() },
-  set: vi.fn(),
-}));
-vi.mock('gsap', () => ({
-  default: {
-    timeline: (options: { onComplete: () => void }) => {
-      animation.complete = options.onComplete;
-      return animation.timeline;
-    },
-    set: animation.set,
-  },
-}));
+/** Exercises real GSAP absorption and cancellation without browser rendering; depends on frozen-flight stubs and journey ownership. */
+import gsap from 'gsap';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const flights = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock('./folderFlight', () => ({ createFolderFlight: flights.create }));
 import { absorbCategoryFolder } from './categoryFolderMotion';
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.clearAllMocks();
-  animation.steps = [];
-});
-function setup(reduced: boolean) {
+
+function fixture(reduced = false) {
   const media = Object.assign(new EventTarget(), { matches: reduced });
   vi.stubGlobal('matchMedia', () => media);
   vi.stubGlobal('window', new EventTarget());
-  animation.timeline.to.mockImplementation((target, options) => {
-    animation.steps.push({ target, options });
-    return animation.timeline;
-  });
-  animation.timeline.progress.mockImplementation(() => {
-    animation.complete();
-    return animation.timeline;
-  });
   const folder = {
+    style: { visibility: '' },
     getBoundingClientRect: () => ({ left: 300, top: 200, width: 400, height: 300 }),
-  } as HTMLElement;
+  };
   const island = {
+    scale: 1,
     getBoundingClientRect: () => ({ left: 350, top: 0, width: 300, height: 44 }),
-  } as HTMLElement;
-  return { folder, island, media };
+  };
+  const flight = { scale: 1, opacity: 1, x: 0, y: 0, remove: vi.fn() };
+  flights.create.mockReturnValue(flight);
+  const complete = vi.fn();
+  const cancelled = vi.fn();
+  const start = () =>
+    absorbCategoryFolder(
+      folder as unknown as HTMLElement,
+      [],
+      island as unknown as HTMLElement,
+      complete,
+      cancelled,
+    );
+  return { folder, island, flight, media, complete, cancelled, start };
 }
+function activeTimeline() {
+  return gsap.globalTimeline
+    .getChildren()
+    .find((child) => child instanceof gsap.core.Timeline) as gsap.core.Timeline;
+}
+beforeEach(() => vi.clearAllMocks());
+afterEach(() => {
+  gsap.globalTimeline.clear();
+  vi.unstubAllGlobals();
+});
 describe('category to island motion', () => {
-  it('recedes other folders and keeps the chosen folder uniformly scaled', () => {
-    const { folder, island } = setup(false);
-    const peers = [{} as HTMLElement];
-    const complete = vi.fn();
-    const cancel = absorbCategoryFolder(folder, peers, island, complete);
-    expect(animation.steps[0]).toMatchObject({
-      target: peers,
-      options: { opacity: 0, scale: 0.88 },
-    });
-    expect(
-      animation.steps.some((step) => step.target === folder && step.options.scale === 0.2),
-    ).toBe(true);
-    expect(animation.steps.every((step) => !('scaleY' in step.options))).toBe(true);
-    expect(complete).not.toHaveBeenCalled();
-    animation.complete();
-    expect(complete).toHaveBeenCalledOnce();
+  it('uses the frozen copy, keeps the source in layout, and reaches the island before disappearing', () => {
+    const view = fixture();
+    const cancel = view.start();
+    expect(view.folder.style.visibility).toBe('hidden');
+    const timeline = activeTimeline();
+    timeline.time(0.8, false);
+    expect(view.flight.scale).toBeGreaterThan(0.1);
+    expect(view.flight.scale).toBeLessThan(0.2);
+    expect(view.flight.opacity).toBe(1);
+    expect(view.flight.y).toBeLessThan(-300);
+    timeline.progress(1);
+    expect(view.complete).toHaveBeenCalledOnce();
+    expect(view.folder.style.visibility).toBe('');
+    expect(view.flight.remove).toHaveBeenCalledOnce();
     cancel();
-    expect(animation.timeline.kill).toHaveBeenCalledOnce();
+    expect(view.cancelled).not.toHaveBeenCalled();
   });
-  it('settles reduced motion immediately and cleans resize listeners', () => {
-    const { folder, island } = setup(true);
-    const complete = vi.fn();
-    const remove = vi.spyOn(window, 'removeEventListener');
-    const cancel = absorbCategoryFolder(folder, [], island, complete);
-    expect(complete).toHaveBeenCalledOnce();
-    expect(animation.timeline.play).not.toHaveBeenCalled();
+  it.each(['popstate', 'pagehide'])(
+    'cancels on %s without navigating and restores the source',
+    (event) => {
+      const view = fixture();
+      view.start();
+      window.dispatchEvent(new Event(event));
+      expect(view.complete).not.toHaveBeenCalled();
+      expect(view.cancelled).toHaveBeenCalledOnce();
+      expect(view.folder.style.visibility).toBe('');
+      expect(view.flight.remove).toHaveBeenCalledOnce();
+    },
+  );
+  it.each(['resize', 'reduced motion'])('settles once on %s', (event) => {
+    const view = fixture();
+    const cancel = view.start();
+    if (event === 'resize') window.dispatchEvent(new Event('resize'));
+    else {
+      view.media.matches = true;
+      view.media.dispatchEvent(new Event('change'));
+    }
+    expect(view.complete).toHaveBeenCalledOnce();
     cancel();
-    expect(remove).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(view.flight.remove).toHaveBeenCalledOnce();
+  });
+  it('skips travel for reduced motion and leaves no active journey', () => {
+    const view = fixture(true);
+    view.start();
+    expect(view.complete).toHaveBeenCalledOnce();
+    expect(view.folder.style.visibility).toBe('');
+  });
+  it('cancels a superseded journey and permits only the newest completion', () => {
+    const first = fixture();
+    first.start();
+    const second = fixture();
+    second.start();
+    expect(first.cancelled).toHaveBeenCalledOnce();
+    expect(first.complete).not.toHaveBeenCalled();
+    activeTimeline().progress(1);
+    expect(second.complete).toHaveBeenCalledOnce();
   });
 });
