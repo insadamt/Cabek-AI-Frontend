@@ -1,5 +1,7 @@
+/** Presents operation status with the shared island row, text motion and progress styling; depends on its existing operation store. */
 import { Check, Download, LoaderCircle, TriangleAlert } from 'lucide-react';
 import type { RefObject } from 'react';
+import { IslandActivityText } from './IslandActivityText';
 import { useReportDownloadNotification } from '../../lib/reportDownload';
 
 export function ReportDownloadActivity({
@@ -28,11 +30,15 @@ export function ReportDownloadActivity({
         aria-atomic="true"
         title={error}
       >
-        {phase === 'downloading'
-          ? 'Téléchargement du PDF…'
-          : phase === 'done'
-            ? 'Téléchargement lancé'
-            : 'PDF indisponible'}
+        <IslandActivityText
+          text={
+            phase === 'downloading'
+              ? 'Téléchargement du PDF…'
+              : phase === 'done'
+                ? 'Téléchargement lancé'
+                : 'PDF indisponible'
+          }
+        />
       </span>
       <Download size={15} aria-hidden="true" />
     </div>

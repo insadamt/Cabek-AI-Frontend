@@ -10,6 +10,10 @@ const state = vi.hoisted(() => ({
   opening: null as DossierOpeningSession | null,
   capture: null as CaptureSession | null,
   location: '/',
+  errorDismissed: false,
+}));
+vi.mock('../../hooks/useIslandErrorTimeout', () => ({
+  useIslandErrorTimeout: () => state.errorDismissed,
 }));
 vi.mock('../../hooks/useNavigation', () => ({
   useNavigation: () => ({ location: state.location }),
@@ -27,6 +31,7 @@ beforeEach(() => {
   state.opening = null;
   state.capture = null;
   state.location = '/';
+  state.errorDismissed = false;
 });
 
 describe('persistent island branding', () => {
@@ -109,5 +114,44 @@ describe('capture island visibility', () => {
     expect(renderToStaticMarkup(<AnalysisIsland />)).toContain('capture-island-activity');
     state.capture!.pending = false;
     expect(renderToStaticMarkup(<AnalysisIsland />)).toContain('data-phase="idle"');
+  });
+});
+
+describe('expired island error presentation', () => {
+  it('restores the brand after a capture error expires while retaining its recoverable session', () => {
+    state.capture = {
+      identity: { type: 'chiffrage_rapide', creationKey: 'same', dossierId: 'SAVED' },
+      pending: false,
+      synchronized: false,
+      error: 'Connexion indisponible',
+    };
+    state.location = '/?reprendre=1';
+    expect(renderToStaticMarkup(<AnalysisIsland />)).toContain('data-phase="error"');
+    state.errorDismissed = true;
+    const markup = renderToStaticMarkup(<AnalysisIsland />);
+    expect(markup).toContain('data-phase="idle"');
+    expect(markup).toContain('tabindex="0" aria-hidden="false"');
+    expect(markup).not.toContain('Connexion indisponible');
+    expect(markup).not.toContain('capture-island-activity');
+    expect(state.capture.identity.dossierId).toBe('SAVED');
+  });
+  it('collapses a failed opening without cancelling its retryable workflow', () => {
+    const cancel = vi.fn();
+    const retry = vi.fn();
+    state.opening = {
+      dossier: previewDossiers[0],
+      phase: 'error',
+      error: 'Image indisponible',
+      loaded: 0,
+      total: 6,
+      retry,
+      cancel,
+    };
+    state.errorDismissed = true;
+    const markup = renderToStaticMarkup(<AnalysisIsland />);
+    expect(markup).toContain('data-phase="idle"');
+    expect(markup).not.toContain('Chargement interrompu');
+    expect(cancel).not.toHaveBeenCalled();
+    expect(state.opening.retry).toBe(retry);
   });
 });

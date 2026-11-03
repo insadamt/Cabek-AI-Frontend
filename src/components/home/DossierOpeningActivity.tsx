@@ -1,5 +1,7 @@
+/** Presents operation status with the shared island row, text motion and progress styling; depends on its existing operation store. */
 import { Check, LoaderCircle, RotateCcw, TriangleAlert, X } from 'lucide-react';
 import type { RefObject } from 'react';
+import { IslandActivityText } from './IslandActivityText';
 import type { DossierOpeningPhase, DossierOpeningSession } from '../../lib/dossierOpeningState';
 
 const phaseLabels: Record<DossierOpeningPhase, string> = {
@@ -45,7 +47,7 @@ export function DossierOpeningActivity({
         aria-live="polite"
         title={session.error || label}
       >
-        {label}
+        <IslandActivityText text={label} />
       </span>
       {!failed && (
         <span

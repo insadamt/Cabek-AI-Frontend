@@ -17,6 +17,8 @@ import { ReportDownloadActivity } from './ReportDownloadActivity';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { CaptureIslandActivity } from './CaptureIslandActivity';
 import { captureLabel } from '../../lib/tunnelCapture';
+import { IslandActivityText } from './IslandActivityText';
+import { useIslandErrorTimeout } from '../../hooks/useIslandErrorTimeout';
 
 const activityLabels = {
   queued: 'En attente',
@@ -51,30 +53,6 @@ function getActivityLabel(session: HomeAnalysisSession) {
               (session.response?.status === 'queued' ? 'queued' : 'preparing')
           ];
   }
-}
-
-function AnimatedActivityText({ text }: { text: string }) {
-  const previousText = useRef(text);
-  const [outgoingText, setOutgoingText] = useState<string | null>(null);
-  useLayoutEffect(() => {
-    if (previousText.current === text) return;
-    setOutgoingText(previousText.current);
-    previousText.current = text;
-    const timer = window.setTimeout(() => setOutgoingText(null), 340);
-    return () => window.clearTimeout(timer);
-  }, [text]);
-  return (
-    <span className="island-text-transition">
-      {outgoingText && (
-        <span className="island-text-outgoing" aria-hidden="true">
-          {outgoingText}
-        </span>
-      )}
-      <span key={text} className="island-text-incoming">
-        {text}
-      </span>
-    </span>
-  );
 }
 
 function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
@@ -119,16 +97,41 @@ function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
 }
 
 export function AnalysisIsland() {
-  const { session, busy } = useHomeAnalysis();
+  const { session: analysisSession, busy } = useHomeAnalysis();
   const { session: capture } = useTunnelCapture();
-  const opening = useDossierOpening();
-  const reportDownload = useReportDownloadNotification();
+  const openingSession = useDossierOpening();
+  const reportNotification = useReportDownloadNotification();
   const brandRef = useRef<HTMLAnchorElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { location } = useNavigation();
   const capturePresentation = getCapturePresentation(capture, location);
-  const showCapture = !!capture && !!capturePresentation && !busy && !opening && !reportDownload;
+  const captureEligible =
+    !!capture && !!capturePresentation && !busy && !openingSession && !reportNotification;
+  const errorKey = reportNotification
+    ? reportNotification.phase === 'error'
+      ? `report:${reportNotification.dossierId}`
+      : null
+    : openingSession
+      ? openingSession.error || openingSession.phase === 'error'
+        ? `opening:${openingSession.dossier.dossier_id}`
+        : null
+      : captureEligible
+        ? capture.error ||
+          capture.capture?.error_code ||
+          capture.capture?.analysis_error ||
+          capture.capture?.status === 'failed' ||
+          capture.response?.status === 'failed'
+          ? `capture:${capture.identity.creationKey}`
+          : null
+        : analysisSession?.error || analysisSession?.phase === 'error'
+          ? `analysis:${analysisSession.dossier.dossier_id}:${analysisSession.startedAt}`
+          : null;
+  const errorDismissed = useIslandErrorTimeout(errorKey);
+  const session = errorDismissed ? null : analysisSession;
+  const opening = errorDismissed ? null : openingSession;
+  const reportDownload = errorDismissed ? null : reportNotification;
+  const showCapture = captureEligible && !errorDismissed;
   const expanded =
     !!reportDownload || !!opening || showCapture || (!!session && session.phase !== 'idle');
   const phase =
@@ -198,13 +201,9 @@ export function AnalysisIsland() {
     const resizeIsland = () => {
       const styles = getComputedStyle(island);
       const frameGutter = Number.parseFloat(styles.getPropertyValue('--island-frame-gutter')) || 28;
-      const preferredWidth = showCapture
-        ? 520
-        : opening || reportDownload
-          ? 400
-          : expanded
-            ? 620
-            : 300;
+      const activeWidth =
+        Number.parseFloat(styles.getPropertyValue('--island-active-width')) || 400;
+      const preferredWidth = expanded ? activeWidth : 300;
       targetWidth = Math.min(preferredWidth, window.innerWidth - frameGutter * 2);
       gsap.to(island, {
         width: targetWidth,
@@ -224,13 +223,13 @@ export function AnalysisIsland() {
       window.removeEventListener('resize', resizeIsland);
       gsap.killTweensOf(island);
     };
-  }, [expanded, !!opening, !!reportDownload, showCapture]);
+  }, [expanded]);
 
   return (
     <div
       ref={islandRef}
       className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
-      data-phase={phase}
+      data-phase={errorKey && !errorDismissed ? 'error' : phase}
       data-capture-presentation={showCapture ? capturePresentation : undefined}
       data-category={showCapture ? capture.identity.type : undefined}
     >
@@ -289,7 +288,7 @@ export function AnalysisIsland() {
               aria-atomic="true"
               title={session?.error || label}
             >
-              <AnimatedActivityText text={displayedLabel} />
+              <IslandActivityText text={displayedLabel} />
             </span>
             <span
               className="island-detail"
@@ -299,7 +298,7 @@ export function AnalysisIsland() {
               }
             >
               <FileText size={11} aria-hidden="true" />
-              <AnimatedActivityText text={detail} />
+              <IslandActivityText text={detail} />
             </span>
             {session?.response?.progress ? (
               <AnalysisTimer

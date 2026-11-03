@@ -7,12 +7,6 @@
   --activity-island-height: 44px;
   --home-header-height: calc(var(--activity-island-top) + var(--activity-island-height) + 16px);
 }
-.home-frame:has(.ai-activity-island[data-phase='capture']) {
-  --activity-island-height: 108px;
-}
-.home-frame:has(.ai-activity-island[data-capture-presentation='recovery']) {
-  --activity-island-height: 148px;
-}
 .home-header {
   height: var(--home-header-height);
 }
@@ -23,6 +17,7 @@
   top: var(--home-header-height);
 }
 .ai-activity-island {
+  --island-active-width: 400px;
   --island-inline-padding: 28px;
   --island-frame-gutter: 28px;
   --island-shoulder-radius: 14px;
@@ -33,15 +28,9 @@
   z-index: 12;
   width: min(300px, calc(100vw - var(--island-frame-gutter) * 2));
   height: var(--activity-island-height);
-  transition: height 240ms ease;
   border-radius: 0 0 18px 18px;
   color: #f8f8f8;
   pointer-events: auto;
-}
-
-.ai-activity-island.dossier-opening-island {
-  /* Document flights measure this edge immediately when ownership passes to dossier opening. */
-  transition: none;
 }
 
 /* One filled contour joins the frame, shoulders and body without separate edges or box shadows. */
@@ -124,6 +113,8 @@
   min-width: 0;
   font-weight: 550;
   letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .report-download-activity .island-status {
   overflow: hidden;
@@ -138,7 +129,7 @@
   gap: 6px;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 140px;
+  max-width: 80px;
   padding: 1px 7px;
   border-radius: 5px;
   background: #ffffff09;
@@ -282,12 +273,6 @@
   }
 }
 @media (max-width: 650px) {
-  .home-frame:has(.ai-activity-island[data-phase='capture']) {
-    --activity-island-height: 136px;
-  }
-  .home-frame:has(.ai-activity-island[data-capture-presentation='recovery']) {
-    --activity-island-height: 148px;
-  }
   /* Reserve navigation space in every state so expanding the island never shifts the workspace. */
 
   .home-frame {

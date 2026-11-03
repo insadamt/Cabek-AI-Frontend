@@ -1,5 +1,7 @@
+/** Publishes guarded PDF download feedback with bounded dismissal; depends on the API transport and shared island notice duration. */
 import { useSyncExternalStore } from 'react';
 import { describeError, downloadReport } from './api';
+import { islandErrorDuration } from '../hooks/useIslandErrorTimeout';
 
 interface ReportDownloadNotification {
   dossierId: string;
@@ -43,7 +45,7 @@ function settleNotification(
     () => {
       if (notification === settled) publishNotification(null);
     },
-    settled.phase === 'error' ? 6000 : 3500,
+    settled.phase === 'error' ? islandErrorDuration : 3500,
   );
 }
 

@@ -125,6 +125,21 @@ describe('capture presentation', () => {
     expect(markup).toContain('aria-valuenow="20"');
     expect(markup).not.toContain('analysées');
   });
+  it('uses the same compact row, status transition and progress track as folder opening', () => {
+    const markup = renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />);
+    expect(markup).toContain('class="island-activity capture-island-activity"');
+    expect(markup).toContain('class="island-text-transition"');
+    expect(markup).toContain('class="island-timer"');
+    expect(markup).toContain('class="island-progress"');
+    expect(markup).not.toContain('capture-island-progress');
+    expect(markup).not.toContain('capture-island-copy');
+  });
+  it('uses the shared indeterminate bar until the backend reports a total', () => {
+    state.session!.capture!.expected_count = 0;
+    const markup = renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />);
+    expect(markup).toContain('is-indeterminate');
+    expect(markup).not.toContain('aria-valuenow');
+  });
   it('does not show a planned or unsaved image as received', () => {
     state.session!.capture!.photos.push({
       photo_id: 'planned',
