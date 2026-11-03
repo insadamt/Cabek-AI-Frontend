@@ -16,6 +16,8 @@ export function useRouteMotion(pathname: string) {
     // The studio owns fresh entry and settled Back restoration; a generic fade would replay motion on return.
     //
     if (pathname === '/' || pathname === '/preview/expertise') return;
+    // The category handoff owns the island-to-folder flight; moving main would shift its measured origin.
+    if (window.history.state?.ejectFolders) return;
     // The dossier owns the folder travel and metadata reveal as one ordered sequence.
 
     if (/^\/dossiers\/[^/]+\/?$/.test(pathname)) return;
