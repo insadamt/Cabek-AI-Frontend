@@ -188,7 +188,9 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
       active = nextActive;
       if (!active) {
         synchronizeVisibility();
-        choreography.park();
+        // Keep the waiting pose aligned with waitingOutside so reattachment cannot show a parked car.
+
+        if (!waitingOutside) choreography.park();
         return;
       }
 

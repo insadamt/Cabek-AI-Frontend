@@ -1,4 +1,4 @@
-/** Verifies capture frame scheduling, visibility and reduced motion without WebGL; depends on runtime adapters. */
+/** Verifies capture scheduling and cached waiting poses without WebGL; depends on runtime adapters. */
 import { afterEach, expect, it, vi } from 'vitest';
 import { Group, PerspectiveCamera } from 'three';
 import { createBayRuntime } from './bayRuntime';
@@ -14,6 +14,7 @@ vi.mock('./bayCameraController', () => ({
     setReducedMotion() {},
     setVisible() {},
     applyCinematic() {},
+    reset() {},
     update: () => false,
     resize() {},
     dispose() {},
@@ -26,7 +27,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('runs frames only for active visible capture and settles when reduced motion is enabled', async () => {
+async function prepareRuntime() {
   const page = Object.assign(new EventTarget(), { hidden: false });
   vi.stubGlobal('document', page);
   vi.stubGlobal(
@@ -59,7 +60,12 @@ it('runs frames only for active visible capture and settles when reduced motion 
     enter() {},
     setVisible() {},
     setReducedMotion() {},
-    park() {},
+    park: vi.fn(() => {
+      adapters.choreography.state.entryProgress = 1;
+    }),
+    waitOutside() {
+      adapters.choreography.state.entryProgress = 0;
+    },
     dispose() {},
   };
   runtime = createBayRuntime(new EventTarget() as HTMLCanvasElement, {
@@ -76,6 +82,28 @@ it('runs frames only for active visible capture and settles when reduced motion 
     pending.forEach((callback) => callback(time));
   }
   flush(0);
+  return { page, frames, flush };
+}
+
+it('retains the waiting vehicle outside across repeated cached route returns', async () => {
+  const { frames, flush } = await prepareRuntime();
+  runtime.setWaitingOutside(true);
+  flush(16);
+
+  for (let visit = 0; visit < 3; visit++) {
+    runtime.setActive(false);
+    expect(frames.size).toBe(0);
+    runtime.setWaitingOutside(true);
+    runtime.setActive(true);
+    flush(32 + visit * 16);
+    expect(adapters.choreography.state.entryProgress).toBe(0);
+  }
+
+  expect(adapters.choreography.park).not.toHaveBeenCalled();
+});
+
+it('runs frames only for active visible capture and settles when reduced motion is enabled', async () => {
+  const { page, frames, flush } = await prepareRuntime();
   expect(frames.size).toBe(0);
   runtime.setCapturing(true);
   flush(16);
