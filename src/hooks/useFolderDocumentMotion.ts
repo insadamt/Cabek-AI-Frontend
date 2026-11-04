@@ -1,3 +1,4 @@
+/** Centers the folded vehicle sheet within its folder and drives reversible extraction using GSAP and measured layout dimensions. */
 import gsap from 'gsap';
 import { useLayoutEffect, useRef } from 'react';
 import { observeReducedMotion } from '../lib/motion';
@@ -7,21 +8,38 @@ interface FolderDocumentMotionOptions {
   onMotionChange: (moving: boolean) => void;
 }
 
-function measurePocketScale(paper: HTMLElement, folder: HTMLElement) {
+function measurePocketTransform(paper: HTMLElement, folder: HTMLElement) {
   const rotationRadians = (3 * Math.PI) / 180;
-  const rotatedBottom =
-    paper.offsetHeight * Math.cos(rotationRadians) +
-    (paper.offsetWidth / 2) * Math.sin(rotationRadians);
-  const availableHeight = Math.max(0, folder.offsetHeight * 0.94 - paper.offsetTop);
+  const sine = Math.sin(rotationRadians);
+  const cosine = Math.cos(rotationRadians);
+  const rotatedWidth = paper.offsetWidth * cosine + paper.offsetHeight * sine;
+  const rotatedHeight = paper.offsetHeight * cosine + paper.offsetWidth * sine;
+  const scale = Math.min(
+    1,
+    (folder.offsetWidth * 0.88) / rotatedWidth,
+    (folder.offsetHeight * 0.88) / rotatedHeight,
+  );
 
-  // Fit the rotated bottom edge without changing the paper's layout during extraction.
+  // Use the actual layout offset: responsive positioning can leave the sheet off-center.
+  // Compensate for its top-center rotation origin after aligning the layout box.
 
-  return rotatedBottom > 0 ? Math.min(1, availableHeight / rotatedBottom) : 1;
+  return {
+    x:
+      folder.offsetWidth / 2 -
+      paper.offsetLeft -
+      paper.offsetWidth / 2 -
+      (paper.offsetHeight * sine * scale) / 2,
+    y: (folder.offsetHeight - paper.offsetHeight * cosine * scale) / 2 - paper.offsetTop,
+    yPercent: 0,
+    rotation: -3,
+    scale,
+  };
 }
 
 export function createDocumentTimeline(paper: HTMLElement) {
   const folder = paper.parentElement!;
-  const pocketScale = measurePocketScale(paper, folder);
+  const pocketTransform = measurePocketTransform(paper, folder);
+  const centeredOffsetX = folder.offsetWidth / 2 - paper.offsetLeft - paper.offsetWidth / 2;
   const styles = getComputedStyle(paper);
   const headerBottom =
     folder.closest('.home-frame')?.querySelector('.home-header')?.getBoundingClientRect().bottom ??
@@ -39,10 +57,7 @@ export function createDocumentTimeline(paper: HTMLElement) {
 
   gsap.set(paper, {
     zIndex: 2,
-    y: 0,
-    yPercent: 0,
-    rotation: -3,
-    scale: pocketScale,
+    ...pocketTransform,
   });
 
   // Reversing this same timeline also reverses the layer change at the pocket mouth.
@@ -50,19 +65,16 @@ export function createDocumentTimeline(paper: HTMLElement) {
   return gsap
     .timeline({ paused: true })
     .set(paper, { zIndex: 2 })
-    .fromTo(
-      paper,
-      { y: 0, yPercent: 0, rotation: -3, scale: pocketScale },
-      {
-        yPercent: -100,
-        y: clearanceOffset,
-        rotation: 0,
-        scale: 1,
-        duration: 0.28,
-        ease: 'power2.inOut',
-        immediateRender: false,
-      },
-    )
+    .fromTo(paper, pocketTransform, {
+      x: centeredOffsetX,
+      yPercent: -100,
+      y: clearanceOffset,
+      rotation: 0,
+      scale: 1,
+      duration: 0.28,
+      ease: 'power2.inOut',
+      immediateRender: false,
+    })
     .set(paper, { zIndex: 6 })
     .to(paper, {
       // Whole-pixel resting coordinates avoid fractional translation of the text.
