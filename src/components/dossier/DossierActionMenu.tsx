@@ -1,12 +1,14 @@
 /** Groups secondary dossier actions behind a compact disclosure; depends on native popovers and shared app controls. */
 import { useEffect, useId, useRef } from 'react';
-import { EllipsisVertical, RotateCcw, Trash2 } from 'lucide-react';
+import { Camera, EllipsisVertical, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 interface DossierActionMenuProps {
   disabled: boolean;
   busy: boolean;
   pending: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onNewBefore?: () => void;
+  onCompleteAfter?: () => void;
   onResume?: () => void;
 }
 
@@ -16,6 +18,8 @@ export function DossierActionMenu({
   pending,
   onDelete,
   onResume,
+  onNewBefore,
+  onCompleteAfter,
 }: DossierActionMenuProps) {
   const popoverId = useId();
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -78,6 +82,28 @@ export function DossierActionMenu({
         <EllipsisVertical size={20} aria-hidden="true" />
       </button>
       <div ref={popoverRef} id={popoverId} popover="auto" className="dossier-action-popover">
+        {onNewBefore && (
+          <button
+            type="button"
+            className="dossier-menu-item"
+            disabled={disabled}
+            onClick={() => activateAction(onNewBefore)}
+          >
+            <Plus size={16} aria-hidden="true" />
+            Nouvelle capture AVANT
+          </button>
+        )}
+        {onCompleteAfter && (
+          <button
+            type="button"
+            className="dossier-menu-item"
+            disabled={disabled}
+            onClick={() => activateAction(onCompleteAfter)}
+          >
+            <Camera size={16} aria-hidden="true" />
+            Compléter une capture APRÈS
+          </button>
+        )}
         {onResume && (
           <button
             type="button"
@@ -89,17 +115,19 @@ export function DossierActionMenu({
             Reprendre au tunnel
           </button>
         )}
-        <button
-          type="button"
-          className="dossier-menu-item dossier-delete"
-          disabled={disabled || busy}
-          title={busy ? 'Attendez la fin de la capture et de l’analyse.' : undefined}
-          onClick={() => activateAction(onDelete)}
-        >
-          <Trash2 size={16} aria-hidden="true" />
-          {pending ? 'Connexion…' : 'Supprimer'}
-        </button>
-        {busy && (
+        {onDelete && (
+          <button
+            type="button"
+            className="dossier-menu-item dossier-delete"
+            disabled={disabled || busy}
+            title={busy ? 'Attendez la fin de la capture et de l’analyse.' : undefined}
+            onClick={() => activateAction(onDelete)}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+            {pending ? 'Connexion…' : 'Supprimer'}
+          </button>
+        )}
+        {onDelete && busy && (
           <p className="dossier-menu-note">Suppression disponible après la capture et l’analyse.</p>
         )}
       </div>

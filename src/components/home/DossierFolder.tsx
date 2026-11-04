@@ -8,6 +8,7 @@ import type { Category } from '../../lib/workflows';
 import type { DossierSummary } from '../../types';
 import { FolderDocument } from './FolderDocument';
 import { FolderRegistrationPlate } from './FolderRegistrationPlate';
+import { CategoryFolderArtwork } from './CategoryFolderArtwork';
 
 const closedPocketOutline =
   'M.06 .19H.46C.52 .19 .53 .37 .62 .37H.94Q1 .37 .99 .46L.95 .91Q.94 .99 .87 .99H.11Q.035 .99 .03 .91L.005 .29Q0 .19 .06 .19Z';
@@ -128,6 +129,7 @@ export function DossierFolder({
         </defs>
       </svg>
       <div className="folder-back" style={{ clipPath: `url(#${folderId}-back)` }} />
+      {category && <CategoryFolderArtwork category={category} />}
       {/* The sheet moves within the pocket so both folder faces keep their shared bottom edge. */}
       {dossier && (
         <FolderDocument

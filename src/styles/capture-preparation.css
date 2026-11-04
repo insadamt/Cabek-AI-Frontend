@@ -228,9 +228,25 @@
   align-items: center;
   color: #536158;
 }
-.capture-controls .capture-phase-actions button {
-  background: transparent;
-  min-height: 44px;
+/* Keep the fresh-capture menu beside the fiche without reserving an empty edit slot. */
+.capture-controls .capture-actions:has(.capture-phase-menu) {
+  grid-template-columns: minmax(0, 1fr) 44px;
+  width: min(260px, 100%);
+  align-items: center;
+}
+.capture-actions:has(.capture-phase-menu) .capture-scanner {
+  min-width: 0;
+  transform: none;
+}
+.capture-actions:has(.capture-phase-menu) .capture-metadata-slot[aria-hidden='true'] {
+  display: none;
+}
+.capture-phase-menu {
+  justify-content: center;
+}
+.capture-phase-menu .dossier-menu-trigger {
+  border-color: #cbd4cc;
+  background: #f5f7f359;
 }
 .tunnel-stage .bay-camera-toolbar button {
   border-color: #cbd4cc;

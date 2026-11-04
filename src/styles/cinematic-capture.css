@@ -200,36 +200,6 @@
   border-radius: 3px;
   animation: capture-photo-received 320ms ease-out both;
 }
-.capture-after-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.capture-after-picker select {
-  margin-top: 8px;
-  width: 100%;
-  padding: 12px;
-}
-.capture-after-option {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 18px;
-  background: #f0f4f6;
-  border: 1px solid #d3dfe6;
-  text-align: left;
-}
-.capture-after-option span {
-  font-size: 11px;
-}
-.capture-picker-pagination {
-  display: flex;
-  justify-content: space-between;
-}
-.capture-picker-pagination button {
-  min-height: 44px;
-  padding: 10px;
-}
 .capture-metadata-form {
   padding: 0;
 }

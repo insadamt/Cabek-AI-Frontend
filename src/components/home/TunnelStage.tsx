@@ -13,6 +13,7 @@ import { AfterCapturePicker } from './AfterCapturePicker';
 import { CaptureFinale } from './CaptureFinale';
 import { CapturePreparationHeader } from './CapturePreparationHeader';
 import { DossierActions } from '../dossier/DossierActions';
+import { DossierActionMenu } from '../dossier/DossierActionMenu';
 import { AnimatedText } from '../AnimatedText';
 import { useStageEntrance } from '../../hooks/useStageEntrance';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
@@ -293,17 +294,18 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                     Modifier la fiche ↗
                   </button>
                 </div>
-              </div>
-              {category.type === 'verification' && !presentedDossier && (
-                <div className="capture-phase-slot">
-                  <div className="capture-phase-actions">
-                    <span className="visually-hidden">Nouvelle capture AVANT</span>
-                    <button type="button" onClick={() => setAfterPicker(true)}>
-                      Compléter une capture APRÈS
-                    </button>
+                {category.type === 'verification' && !presentedDossier && (
+                  <div className="dossier-actions capture-phase-menu">
+                    <DossierActionMenu
+                      disabled={!!current?.pending || !!current?.saving}
+                      busy={false}
+                      pending={false}
+                      onNewBefore={openMetadata}
+                      onCompleteAfter={() => setAfterPicker(true)}
+                    />
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
           <div className="capture-session-slot">

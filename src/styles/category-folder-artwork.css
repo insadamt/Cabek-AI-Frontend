@@ -1,0 +1,55 @@
+/* Tucks automotive prints between the glass faces and lifts them on hover/focus; depends on DossierFolder's pocket state and category palette. */
+.category-folder-artwork {
+  position: absolute;
+  z-index: 2;
+  top: 21%;
+  left: 10%;
+  width: 80%;
+  height: 58%;
+  padding: 5px;
+  overflow: hidden;
+  border: 1px solid #fff;
+  border-radius: 9px;
+  background: #f7f8f5;
+  box-shadow: 0 5px 16px #18201c24;
+  pointer-events: none;
+  transform: translateY(0) rotate(-3deg);
+  transform-origin: center bottom;
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.category-folder-artwork img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+/* Keep the print behind the pocket lip and the category label readable through the glass. */
+
+.dossier-folder[data-category-folder] .folder-cover {
+  background: linear-gradient(180deg, transparent 25%, var(--folder-glass-mid, #34393b) 65%);
+}
+.dossier-folder[data-category-folder].folder-mouth-open .category-folder-artwork {
+  transform: translateY(-65%) rotate(2deg);
+}
+@media (max-width: 650px) {
+  .category-folder-artwork {
+    left: 28%;
+    width: 64%;
+    height: 69%;
+    top: 17%;
+    padding: 3px;
+  }
+  /* Leave space above each pocket for keyboard previews in the stacked layout. */
+
+  .category-folder-grid {
+    row-gap: 58px;
+    padding-top: 32px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .category-folder-artwork {
+    transition: none;
+  }
+}

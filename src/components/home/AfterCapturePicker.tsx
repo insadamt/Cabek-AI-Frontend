@@ -1,9 +1,17 @@
-/** Selects persisted verification dossiers awaiting repair evidence; depends on server-filtered, paginated collections. */
+/** Selects saved before/after dossiers with readable vehicle identity; depends on server pagination and the shared animated drawer. */
 import { useState } from 'react';
+import { ArrowLeft, ArrowRight, Camera, CarFront, ChevronRight, FolderOpen } from 'lucide-react';
 import { DetailsDrawer } from '../dossier/DetailsDrawer';
 import { useResource } from '../../hooks/useResource';
 import { describeError, listDossiers } from '../../lib/api';
 import type { DossierSummary } from '../../types';
+import '../../styles/after-capture-picker.css';
+
+const pageSize = 20;
+const captureFilters = [
+  { value: 'awaiting_after', label: 'À commencer' },
+  { value: 'after_incomplete', label: 'À compléter' },
+] as const;
 
 export function AfterCapturePicker({
   onSelect,
@@ -21,76 +29,141 @@ export function AfterCapturePicker({
         workflow_status: workflow,
         status: 'all',
         search: '',
-        limit: 20,
+        limit: pageSize,
         offset,
         sort: 'updated_at_desc',
       },
       signal,
     ),
   );
+  const total = dossiers.data?.total ?? 0;
+  const hasError = dossiers.error != null;
   return (
     <DetailsDrawer
       title="Compléter une capture APRÈS"
-      subtitle="Même dossier · Même véhicule"
+      subtitle="Photos avant / après"
       onClose={onClose}
     >
       {(requestClose) => (
         <div className="capture-after-picker">
-          <label>
-            État
-            <select
-              value={workflow}
-              onChange={(event) => {
-                setWorkflow(event.target.value as typeof workflow);
-                setOffset(0);
-              }}
-            >
-              <option value="awaiting_after">En attente des photos après</option>
-              <option value="after_incomplete">Photos après incomplètes</option>
-            </select>
-          </label>
-          {dossiers.loading && <p role="status">Chargement des dossiers…</p>}
-          {dossiers.error != null && (
-            <p role="alert">
-              {describeError(dossiers.error)}{' '}
-              <button type="button" onClick={dossiers.refresh}>
-                Réessayer
-              </button>
+          <div className="capture-picker-intro">
+            <span className="capture-picker-icon">
+              <Camera size={20} aria-hidden="true" />
+            </span>
+            <p>
+              Sélectionnez le véhicule photographié avant réparation pour ajouter ses photos après.
             </p>
-          )}
-          {!dossiers.loading && dossiers.data?.items.length === 0 && <p>Aucun dossier éligible.</p>}
-          {dossiers.data?.items.map((dossier) => (
-            <button
-              className="capture-after-option"
-              key={dossier.dossier_id}
-              type="button"
-              disabled={dossiers.loading}
-              onClick={() => requestClose(() => onSelect(dossier))}
-            >
-              <strong>
-                <bdi>{dossier.vehicle.matricule}</bdi>
-              </strong>
-              <span>
-                {dossier.dossier_id} · {dossier.vehicle.marque} {dossier.vehicle.modele}
-              </span>
-            </button>
-          ))}
-          <div className="capture-picker-pagination">
-            <button
-              type="button"
-              disabled={!offset || dossiers.loading}
-              onClick={() => setOffset((value) => Math.max(0, value - 20))}
-            >
-              Précédents
-            </button>
-            <button
-              type="button"
-              disabled={dossiers.loading || !dossiers.data || offset + 20 >= dossiers.data.total}
-              onClick={() => setOffset((value) => value + 20)}
-            >
-              Suivants
-            </button>
           </div>
+          <div className="capture-picker-filters" role="group" aria-label="État des photos après">
+            {captureFilters.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                aria-pressed={workflow === filter.value}
+                onClick={() => {
+                  setWorkflow(filter.value);
+                  setOffset(0);
+                }}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <section
+            className="capture-picker-results"
+            aria-label="Dossiers disponibles"
+            aria-busy={dossiers.loading}
+          >
+            <div className="capture-picker-list-heading">
+              <h3>Choisir un véhicule</h3>
+              {!dossiers.loading && !hasError && (
+                <span role="status">
+                  {total} dossier{total !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            {dossiers.loading && (
+              <p className="capture-picker-feedback" role="status">
+                Chargement des dossiers…
+              </p>
+            )}
+            {hasError && (
+              <div className="capture-picker-feedback" role="alert">
+                <p>{describeError(dossiers.error)}</p>
+                <button type="button" onClick={dossiers.refresh}>
+                  Réessayer
+                </button>
+              </div>
+            )}
+            {!dossiers.loading && !hasError && total === 0 && (
+              <div className="capture-picker-empty" role="status">
+                <FolderOpen size={28} aria-hidden="true" />
+                <strong>
+                  {workflow === 'awaiting_after'
+                    ? 'Aucune capture à commencer'
+                    : 'Aucune capture à compléter'}
+                </strong>
+                <p>
+                  {workflow === 'awaiting_after'
+                    ? 'Les dossiers dont les photos avant sont terminées apparaîtront ici.'
+                    : 'Les dossiers avec des photos après encore manquantes apparaîtront ici.'}
+                </p>
+              </div>
+            )}
+            {!hasError &&
+              dossiers.data?.items.map((dossier) => (
+                <button
+                  className="capture-after-option"
+                  key={dossier.dossier_id}
+                  type="button"
+                  disabled={dossiers.loading}
+                  onClick={() => requestClose(() => onSelect(dossier))}
+                >
+                  <span className="capture-picker-icon">
+                    <CarFront size={22} aria-hidden="true" />
+                  </span>
+                  <span className="capture-picker-vehicle">
+                    <strong>
+                      <bdi>{dossier.vehicle.matricule || 'Matricule non renseigné'}</bdi>
+                    </strong>
+                    <span>
+                      {[dossier.vehicle.marque, dossier.vehicle.modele].filter(Boolean).join(' ') ||
+                        'Véhicule non renseigné'}
+                    </span>
+                    <span className="capture-picker-reference">{dossier.dossier_id}</span>
+                  </span>
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              ))}
+          </section>
+          {!hasError && (total > pageSize || offset > 0) && (
+            <nav className="capture-picker-pagination" aria-label="Pages des dossiers">
+              <button
+                type="button"
+                disabled={!offset || dossiers.loading}
+                onClick={() => setOffset((value) => Math.max(0, value - pageSize))}
+                aria-label="Page précédente"
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+              </button>
+              <span>
+                Page {Math.floor(offset / pageSize) + 1}
+                {dossiers.data && ` sur ${Math.max(1, Math.ceil(total / pageSize))}`}
+              </span>
+              <button
+                type="button"
+                disabled={dossiers.loading || !dossiers.data || offset + pageSize >= total}
+                onClick={() => setOffset((value) => value + pageSize)}
+                aria-label="Page suivante"
+              >
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </nav>
+          )}
+          <p className="capture-picker-note">
+            Les photos après seront ajoutées au même dossier. Vérifiez le matricule avant de
+            continuer.
+          </p>
         </div>
       )}
     </DetailsDrawer>
