@@ -148,14 +148,10 @@
   transition: none;
 }
 .capture-session-slot {
-  min-height: 36px;
   width: min(420px, 100%);
 }
 .capture-session-slot .capture-session-menu {
   animation: capture-dock-enter 320ms var(--motion-ease) 160ms both;
-}
-.capture-phase-slot {
-  min-height: 44px;
 }
 .capture-controls .capture-scanner {
   width: auto;
@@ -200,43 +196,37 @@
   color: #202820;
   text-decoration: underline;
 }
+/* Keep session navigation in one row; dossier lifecycle actions already have a disclosure. */
 .capture-session-menu {
-  width: min(420px, 100%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid #cbd4cc80;
   font-size: 11px;
 }
-.capture-session-menu > summary {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 36px;
-  margin-inline: auto;
-  list-style: none;
-  border: 1px solid transparent;
-  border-radius: 22px;
-  color: #68776d;
-  letter-spacing: 3px;
-  transition:
-    background-color var(--motion-feedback),
-    border-color var(--motion-feedback);
-}
-.capture-session-menu > summary::-webkit-details-marker {
-  display: none;
-}
-.capture-session-menu > summary:hover,
-.capture-session-menu[open] > summary {
-  border-color: #cbd4cc;
-  background: #f5f7f359;
-}
-.capture-session-menu[open] > :not(summary) {
-  animation: capture-dock-enter var(--motion-layout) var(--motion-ease) both;
+.capture-session-menu .capture-session-actions {
+  flex: 1 1 auto;
 }
 .capture-session-menu .dossier-actions {
   justify-content: center;
 }
+.capture-session-menu .dossier-menu-trigger {
+  width: 44px;
+  min-height: 44px;
+  border-color: #cbd4cc;
+  background: #f5f7f359;
+}
 .capture-session-menu > a {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
+  flex-basis: 100%;
   min-height: 36px;
   align-items: center;
+  color: #536158;
 }
 .capture-controls .capture-phase-actions button {
   background: transparent;
@@ -290,7 +280,9 @@
 }
 .tunnel-stage:is([data-entrance-phase='entering'], [data-entrance-phase='ready'])
   .category-stage-content {
-  animation: stage-scene-enter 480ms var(--motion-ease) 120ms both;
+  /* Release opacity and transform after entry so the finale can animate the scene out. */
+
+  animation: stage-scene-enter 480ms var(--motion-ease) 120ms backwards;
 }
 .tunnel-stage[data-entrance-phase='preparing'] .capture-page-title,
 .tunnel-stage:has(.capture-finale:not([data-waiting='true'])) .capture-page-title {
@@ -384,7 +376,6 @@
   .capture-vehicle-summary,
   .capture-controls .capture-actions,
   .capture-session-slot .capture-session-menu,
-  .capture-session-menu[open] > :not(summary),
   .tunnel-stage:is([data-entrance-phase='entering'], [data-entrance-phase='ready'])
     :is(
       .capture-controls,

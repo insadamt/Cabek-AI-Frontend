@@ -294,24 +294,21 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                   </button>
                 </div>
               </div>
-              {category.type === 'verification' && (
+              {category.type === 'verification' && !presentedDossier && (
                 <div className="capture-phase-slot">
-                  {!presentedDossier && (
-                    <div className="capture-phase-actions">
-                      <span className="visually-hidden">Nouvelle capture AVANT</span>
-                      <button type="button" onClick={() => setAfterPicker(true)}>
-                        Compléter une capture APRÈS
-                      </button>
-                    </div>
-                  )}
+                  <div className="capture-phase-actions">
+                    <span className="visually-hidden">Nouvelle capture AVANT</span>
+                    <button type="button" onClick={() => setAfterPicker(true)}>
+                      Compléter une capture APRÈS
+                    </button>
+                  </div>
                 </div>
               )}
             </>
           )}
           <div className="capture-session-slot">
             {presentedSession && (
-              <details className="capture-session-menu">
-                <summary aria-label="Actions du dossier">•••</summary>
+              <div className="capture-session-menu" role="group" aria-label="Actions de la session">
                 <div className="capture-session-actions">
                   <button
                     type="button"
@@ -346,7 +343,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                       Ouvrir le dossier enregistré
                     </a>
                   )}
-              </details>
+              </div>
             )}
           </div>
           {current && (
