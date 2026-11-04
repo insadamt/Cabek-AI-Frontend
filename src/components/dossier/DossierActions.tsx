@@ -11,6 +11,7 @@ import {
 } from '../../lib/dossierActions';
 import { categoryPath } from '../../lib/workflows';
 import type { DossierResponse, DossierSummary } from '../../types';
+import { DossierDeleteMenu } from './DossierDeleteMenu';
 import '../../styles/dossier-actions.css';
 
 interface DossierActionsProps {
@@ -107,15 +108,12 @@ export function DossierActions({
           Reprendre au tunnel
         </button>
       )}
-      <button
-        type="button"
-        className="text-link dossier-delete"
-        disabled={disabled || pending || busy || !!session?.pending || !!session?.saving}
-        title={busy ? 'Attendez la fin de la capture et de l’analyse.' : undefined}
-        onClick={() => void run(remove)}
-      >
-        {pending ? 'Connexion…' : 'Supprimer'}
-      </button>
+      <DossierDeleteMenu
+        disabled={disabled || pending || !!session?.pending || !!session?.saving}
+        busy={busy}
+        pending={pending}
+        onDelete={() => void run(remove)}
+      />
       {busy && (
         <p className="workflow-note">Suppression disponible après la capture et l’analyse.</p>
       )}

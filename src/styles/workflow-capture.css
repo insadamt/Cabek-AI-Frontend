@@ -108,11 +108,13 @@
   min-height: 48px;
   margin-bottom: 12px;
 }
-.quick-estimate-workspace {
+.quick-estimate-workspace,
+.verification-workspace {
   display: flex;
   flex-direction: column;
 }
-.quick-estimate-workspace > .dossier-result-workspace {
+.quick-estimate-workspace > .dossier-result-workspace,
+.verification-workspace > .dossier-result-workspace {
   flex: 1;
 }
 .workflow-capture {
@@ -233,10 +235,19 @@
   background: #161616;
   color: white;
 }
+.verification-workspace .workflow-view-switch {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.verification-workspace .dossier-result-panels > [role='tabpanel'] {
+  overflow-y: auto;
+}
 .repair-comparison {
-  padding: 20px 0;
+  height: auto;
+  min-height: 100%;
 }
 .repair-comparison-pair {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
@@ -249,7 +260,7 @@
   font-size: 12px;
   padding: 10px 0;
 }
-.repair-comparison-pair .comparison {
+.repair-comparison .repair-comparison-pair .comparison {
   height: clamp(200px, 42dvh, 500px);
   aspect-ratio: auto;
 }
@@ -260,7 +271,8 @@
     min-height: 300px;
     overflow: visible;
   }
-  .quick-estimate-workspace > .dossier-result-workspace {
+  .quick-estimate-workspace > .dossier-result-workspace,
+  .verification-workspace > .dossier-result-workspace {
     min-height: 500px;
   }
 }

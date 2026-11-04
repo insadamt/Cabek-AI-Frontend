@@ -12,6 +12,43 @@
 .dossier-actions .dossier-delete {
   color: #9b3029;
 }
+.dossier-actions .dossier-menu-trigger {
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.dossier-delete-popover {
+  position: fixed;
+  inset: auto;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 9%);
+}
+.dossier-delete-popover .dossier-delete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #9b3029;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.dossier-delete-popover .dossier-delete:hover:not(:disabled) {
+  background: #faf1f0;
+}
 .dossier-actions p {
   flex-basis: 100%;
   margin: 0;
