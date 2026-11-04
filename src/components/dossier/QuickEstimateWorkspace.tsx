@@ -3,6 +3,8 @@ import { useState } from 'react';
 import type { DossierResponse, DossierSummary } from '../../types';
 import { canAnalyzeDossier } from '../../lib/workflows';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
+import { QuickAnalysisStatus } from './QuickAnalysisStatus';
+import { CaptureMetadataDrawer } from '../home/CaptureMetadataDrawer';
 import { WorkflowPhotoCapture } from './WorkflowPhotoCapture';
 import { DossierResultWorkspace } from './DossierResultWorkspace';
 
@@ -25,12 +27,22 @@ export function QuickEstimateWorkspace({
   );
   const analysis = useHomeAnalysis();
   const [uploading, setUploading] = useState(false);
+  const [metadataOpen, setMetadataOpen] = useState(false);
   const canLaunch =
     canAnalyzeDossier(dossier) && ['not_analyzed', 'failed'].includes(response.status);
   const canFollow = ['queued', 'processing'].includes(response.status);
   return (
     <div className="workflow-workspace quick-estimate-workspace">
+      <QuickAnalysisStatus response={response} />
       <div className="workflow-view-switch">
+        <button
+          type="button"
+          className="text-link"
+          disabled={response.status === 'completed' || response.progress?.stage === 'finalizing'}
+          onClick={() => setMetadataOpen(true)}
+        >
+          Fiche véhicule ↗
+        </button>
         <button
           className="text-link"
           disabled={analysis.busy || uploading}
@@ -70,6 +82,14 @@ export function QuickEstimateWorkspace({
           loading={false}
           error={error}
           onRetry={onRefresh}
+        />
+      )}
+      {metadataOpen && (
+        <CaptureMetadataDrawer
+          type="chiffrage_rapide"
+          dossier={response}
+          onSaved={onSaved}
+          onClose={() => setMetadataOpen(false)}
         />
       )}
     </div>

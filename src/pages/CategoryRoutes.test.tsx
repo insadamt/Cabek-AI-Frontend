@@ -68,8 +68,8 @@ describe('category-first application routes', () => {
       const markup = render('/', `parcours=${slug}&scene=1`);
       expect(markup).toContain(`href="/categories/${slug}"`);
       expect(markup).toContain('Voir les dossiers');
-      expect(markup).toContain('Fiche véhicule');
-      expect(markup).toContain('SCANNER');
+      expect(markup).toContain('FICHE VÉHICULE');
+      expect(markup).not.toMatch(/>SCANNER<\/span>/);
       expect(markup.match(/class="scanning-bay-canvas-host"/g)).toHaveLength(1);
       expect(markup).toContain('data-entrance-phase="preparing"');
       expect(markup).toContain('class="stage-loading-screen"');
@@ -79,7 +79,7 @@ describe('category-first application routes', () => {
   it('restores a selected tunnel without replaying its entrance', () => {
     route.restoring = true;
     const markup = render('/', 'parcours=verification&scene=1');
-    expect(markup).toContain('data-entrance="settled"');
+    expect(markup).toContain('data-entrance="waiting"');
     expect(markup).toContain('data-entrance-phase="ready"');
     expect(markup).not.toContain('stage-loading-screen');
   });
@@ -93,12 +93,12 @@ describe('category-first application routes', () => {
   it.each(['chiffrage-rapide', 'verification'])(
     'opens the %s collection and creation screens directly',
     (slug) => {
-      expect(render(`/categories/${slug}`)).toContain('Créer un dossier');
+      expect(render(`/categories/${slug}`)).toContain('Nouveau dossier');
       expect(render(`/categories/${slug}/new`)).toContain('class="tunnel-stage"');
     },
   );
   it('keeps expertise externally created and rejects its creation route', () => {
-    expect(render('/categories/forfait-expertise')).not.toContain('Créer un dossier');
+    expect(render('/categories/forfait-expertise')).not.toContain('Nouveau dossier');
     expect(render('/categories/forfait-expertise/new')).toContain('Cette page est introuvable');
   });
   it('keeps dossier IDs and unknown routes distinct', () => {

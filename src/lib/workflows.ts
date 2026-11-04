@@ -173,13 +173,9 @@ export function canAnalyzeDossier(
 ) {
   if (dossier.type === 'verification') return false;
   if (dossier.type !== 'chiffrage_rapide') return true;
-  return (
-    dossier.photo_count > 0 &&
-    !!dossier.vehicle.marque_id &&
-    !!dossier.vehicle.model_id &&
-    !!dossier.vehicle.matricule.trim() &&
-    validDate(dossier.vehicle.date_mise_en_circulation ?? null)
-  );
+  // Detection accepts saved photographs; validated vehicle details are required later for pricing.
+
+  return dossier.photo_count > 0;
 }
 export function previewWorkflowStatus(response: DossierResponse): WorkflowStatus {
   if (response.type === 'verification') {

@@ -1,5 +1,18 @@
+/** Loads carousel windows and their neighbours; depends on paginated dossier reads and category query rules. */
 import { listDossiers } from './api';
+import { collectionQuery, type Category } from './workflows';
 import type { DossierQuery } from '../types';
+
+export function homeDossierQuery(category: Category, params: URLSearchParams): DossierQuery {
+  const requestedSlide = Number(params.get('slide') ?? 0);
+  const slide = Number.isSafeInteger(requestedSlide) && requestedSlide >= 0 ? requestedSlide : 0;
+  return {
+    ...collectionQuery(category, params),
+    search: '',
+    offset: Math.floor(slide / 12) * 12,
+    limit: 12,
+  };
+}
 
 export async function loadHomeDossierWindow(query: DossierQuery, signal: AbortSignal) {
   const currentPage = await listDossiers(query, signal);

@@ -19,7 +19,7 @@ const errorMessages: Record<string, string> = {
   analysis_not_supported: 'L’analyse IA est indisponible pour les photos avant / après.',
   scan_disabled_for_type: 'L’analyse IA est indisponible pour les photos avant / après.',
   incomplete_vehicle_metadata:
-    'Complétez le véhicule et sa date de mise en circulation avant l’analyse.',
+    'Enregistrez la marque, le modèle, le matricule et la date de mise en circulation avant de scanner.',
   unsupported_sort: 'Le tri par marque n’est pas encore disponible. Choisissez un tri par date.',
   invalid_date_range: 'La date de début doit précéder la date de fin.',
   upload_too_large: 'Chaque photo doit faire au maximum 10 Mio.',

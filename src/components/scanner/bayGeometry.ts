@@ -71,10 +71,10 @@ export function buildScanningBay(): ScanningBay {
     return material;
   }
 
-  const graphite = metal('Graphite powder coated frame', '#303436', 0.395, 0.04);
+  const graphite = metal('Graphite powder coated frame', '#141719', 0.34, 0.04);
   const pearl = finishMaterial(
     new MeshPhysicalMaterial({
-      color: '#c5cbce',
+      color: '#30363a',
       roughness: 0.28,
       metalness: 0.92,
       anisotropy: 0.4,
@@ -82,10 +82,10 @@ export function buildScanningBay(): ScanningBay {
     }),
   );
   pearl.name = 'Brushed aluminium shell';
-  const aluminium = metal('Machined edge detail', '#bcc4c8', 0.245, 0.95);
+  const aluminium = metal('Machined edge detail', '#707a80', 0.245, 0.95);
   const deck = finishMaterial(
     new MeshPhysicalMaterial({
-      color: '#aab4b9',
+      color: '#454e54',
       roughness: 0.305,
       metalness: 0.88,
       anisotropy: 0.5,

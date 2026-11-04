@@ -58,7 +58,7 @@ describe('home analysis lifecycle', () => {
     });
     expect(startScan).not.toHaveBeenCalled();
   });
-  it('rejects quick estimation without saved photographs or registration date', async () => {
+  it('rejects quick detection without saved photographs', async () => {
     const scan = createScan();
     vi.mocked(readDossier).mockResolvedValueOnce({
       ...response('not_analyzed'),
@@ -216,4 +216,20 @@ describe('home analysis lifecycle', () => {
     expect(readDossier).toHaveBeenCalledTimes(1);
     expect(startScan).toHaveBeenCalledTimes(1);
   });
+});
+
+it('follows real quick inference while vehicle metadata is still missing', async () => {
+  const scan = createScan();
+  scan.options.startIfNeeded = false;
+  const original = { photo_id: 'real-photo', original_url: '/real.jpg' };
+  vi.mocked(readDossier)
+    .mockResolvedValueOnce({
+      ...response('processing'),
+      type: 'chiffrage_rapide',
+      photos: [original],
+    })
+    .mockResolvedValueOnce({ ...response('failed'), type: 'chiffrage_rapide', photos: [original] });
+  expect((await runHomeScan(scan.options)).status).toBe('failed');
+  expect(scan.options.onResponse).toHaveBeenCalledTimes(2);
+  expect(startScan).not.toHaveBeenCalled();
 });

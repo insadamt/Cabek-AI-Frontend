@@ -11,6 +11,7 @@ import { defaultBayVisualSettings, type BayVisualSettings } from './bayControls'
 
 interface BayRuntimeOptions {
   initiallyParked: boolean;
+  waitingOutside?: boolean;
   reducedMotion: boolean;
   palette: BayPalette;
   visualSettings?: BayVisualSettings;
@@ -35,21 +36,27 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
   let vehicle: BayVehicle | undefined;
   let cinematicCamera = true;
   let reducedMotion = options.reducedMotion;
+  let capturing = false;
+  let captureElapsed = 0;
   let prepared = false;
   let readyReported = false;
+  let cameraInteractiveRequested = true;
+  let waitingOutside = options.waitingOutside ?? false;
 
   function failScene() {
     if (disposed || failed) return;
     failed = true;
     cameraController.setEnabled(false);
     synchronizeVisibility();
+    // A failed renderer must release the entrance waiter so real capture remains available.
+    choreography.skipIntro();
     options.onError();
   }
 
   function startEntrance() {
     if (disposed || failed || !readyReported) return;
     choreography.enter();
-    cameraController.setEnabled(true);
+    cameraController.setEnabled(cameraInteractiveRequested);
   }
 
   function requestRender() {
@@ -67,7 +74,12 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
       }
       const cameraMoving = !cinematicCamera && cameraController.update(deltaSeconds);
       try {
-        stage.render(choreography.state);
+        if (capturing && !reducedMotion) captureElapsed += deltaSeconds;
+        stage.render(choreography.state, {
+          capturing,
+          elapsedSeconds: captureElapsed,
+          reducedMotion,
+        });
       } catch {
         failScene();
         return;
@@ -80,7 +92,7 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
         options.onReady();
         if (options.autoStart !== false) startEntrance();
       }
-      if (cameraMoving) requestRender();
+      if (cameraMoving || (capturing && !reducedMotion)) requestRender();
       else lastFrameTime = undefined;
     });
   }
@@ -109,6 +121,10 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
   });
   cameraController.setEnabled(false);
   cameraController.setReducedMotion(reducedMotion);
+  if (waitingOutside) {
+    choreography.waitOutside();
+    cameraController.setEnabled(true);
+  }
 
   function synchronizeVisibility() {
     visible = !document.hidden && onScreen && active && !failed;
@@ -125,6 +141,7 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
     if (disposed || failed || !active) return;
     stage.resize();
     cameraController.resize();
+    if (waitingOutside) cameraController.applyCinematic(choreography.state);
     requestRender();
   }
   function handleContextLoss(event: Event) {
@@ -185,6 +202,44 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
     enter() {
       startEntrance();
     },
+    setCameraInteractive(interactive: boolean) {
+      if (disposed || failed) return;
+      cameraInteractiveRequested = interactive;
+      cameraController.setEnabled(interactive && readyReported);
+      if (interactive && readyReported && choreography.state.introComplete) {
+        // Hand the settled pose to OrbitControls now, rather than waiting for a reset to synchronize it.
+        cinematicCamera = false;
+        cameraController.update(0);
+      }
+      requestRender();
+    },
+    replayEntrance(): Promise<void> {
+      if (disposed || failed || !readyReported) return Promise.resolve();
+      const wasWaitingOutside = waitingOutside;
+      waitingOutside = false;
+      // Keep the prepared approach camera on launch instead of resetting through the parked view.
+      cameraController.reset(true, wasWaitingOutside);
+      cameraController.setEnabled(false);
+      cinematicCamera = true;
+      return new Promise((resolve) =>
+        choreography.replayEntry(() => {
+          if (!disposed && !failed) cameraController.setEnabled(cameraInteractiveRequested);
+          requestRender();
+          resolve();
+        }),
+      );
+    },
+    setWaitingOutside(waiting: boolean) {
+      if (disposed || failed || waitingOutside === waiting) return;
+      waitingOutside = waiting;
+      if (!waiting) return;
+      choreography.waitOutside();
+      cameraController.reset(true);
+      cameraController.applyCinematic(choreography.state);
+      cinematicCamera = true;
+      cameraController.setEnabled(cameraInteractiveRequested && readyReported);
+      requestRender();
+    },
     skipIntro() {
       if (disposed || failed || !readyReported) return;
       choreography.skipIntro();
@@ -192,6 +247,13 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
     },
     resetCamera() {
       if (disposed || failed || !readyReported) return;
+      if (waitingOutside) {
+        cinematicCamera = true;
+        cameraController.reset(true);
+        cameraController.applyCinematic(choreography.state);
+        requestRender();
+        return;
+      }
       if (!choreography.state.introComplete) choreography.skipIntro();
       cinematicCamera = false;
       cameraController.reset(reducedMotion);
@@ -200,11 +262,13 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
     setPalette(palette: BayPalette) {
       if (disposed || failed) return;
       choreography.setPalette(palette);
-      if (!cinematicCamera) cameraController.setCategory(palette.cameraPreset ?? 0, reducedMotion);
+      if (!cinematicCamera && !waitingOutside)
+        cameraController.setCategory(palette.cameraPreset ?? 0, reducedMotion);
     },
-    setCapturing(capturing: boolean) {
+    setCapturing(nextCapturing: boolean) {
       if (disposed || failed) return;
-      cameraController.setCapturing(capturing);
+      if (capturing !== nextCapturing) captureElapsed = 0;
+      capturing = nextCapturing;
       requestRender();
     },
     setReducedMotion(nextReducedMotion: boolean) {
@@ -212,6 +276,7 @@ export function createBayRuntime(canvas: HTMLCanvasElement, options: BayRuntimeO
       reducedMotion = nextReducedMotion;
       choreography.setReducedMotion(reducedMotion);
       cameraController.setReducedMotion(reducedMotion);
+      requestRender();
     },
     setVisualSettings(settings: BayVisualSettings) {
       if (disposed || failed) return;

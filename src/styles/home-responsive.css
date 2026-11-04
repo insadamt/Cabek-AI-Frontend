@@ -17,10 +17,6 @@
     min-width: 190px;
     font-size: 23px;
   }
-  .carousel-backdrop-word {
-    top: 23%;
-    font-size: 23vw;
-  }
   .carousel-stage {
     inset: 90px 0 70px;
   }

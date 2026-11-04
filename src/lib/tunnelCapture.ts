@@ -20,6 +20,32 @@ export function hasVehicleMetadata(response?: DossierResponse) {
   );
 }
 
+export function capturePhotosReady(session: CaptureSession | null) {
+  const capture = session?.capture;
+  const response = session?.response;
+  if (
+    !session?.synchronized ||
+    session.pending ||
+    session.saving ||
+    !capture ||
+    !response ||
+    capture.status !== 'completed' ||
+    capture.expected_count < 1 ||
+    capture.saved_count !== capture.expected_count ||
+    capture.photos.length !== capture.saved_count ||
+    response.dossier_id !== session.identity.dossierId
+  )
+    return false;
+
+  // Opening the saved originals must not wait for vehicle selection, AI inference or pricing.
+
+  return capture.photos.every((photo) =>
+    response.photos.some(
+      (saved) => saved.photo_id === photo.photo_id && saved.phase === photo.phase,
+    ),
+  );
+}
+
 export function captureReady(session: CaptureSession | null) {
   if (
     !session?.synchronized ||
@@ -48,13 +74,18 @@ export function captureLabel(session: CaptureSession) {
   if (!session.synchronized) return 'Restauration du dossier…';
   if (session.capture?.status === 'failed') return 'Capture interrompue';
   if (session.capture?.status === 'capturing') return 'Réception des photographies';
-  if (session.capture?.status !== 'completed') return 'Prêt à scanner';
+  if (session.capture?.status !== 'completed')
+    return hasVehicleMetadata(session.response) ? 'Prêt à scanner' : 'Fiche véhicule à compléter';
   if (session.capture.analysis_error || session.response?.status === 'failed')
     return 'Analyse à relancer';
-  if (!hasVehicleMetadata(session.response)) return 'Compléter la fiche véhicule';
-  if (captureReady(session)) return 'Dossier enregistré';
   if (session.response?.progress?.stage === 'awaiting_metadata')
-    return 'Estimation en attente de la fiche';
+    return 'Estimation en attente : complétez la fiche véhicule';
+  if (
+    !hasVehicleMetadata(session.response) &&
+    !['queued', 'processing'].includes(session.response?.status ?? '')
+  )
+    return 'Compléter la fiche véhicule';
+  if (captureReady(session)) return 'Dossier enregistré';
   const stages = {
     queued: 'Analyse IA en attente',
     preparing: 'Préparation de l’analyse IA',
@@ -111,7 +142,17 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
 
   function publish(update: Partial<CaptureSession>) {
     if (!session) return;
-    session = { ...session, ...update };
+    const receivedAt = update.response ? performance.now() : session.receivedAt;
+    const newAnalysis =
+      update.response &&
+      ['queued', 'processing'].includes(update.response.status) &&
+      (!session.startedAt || session.response?.status === 'failed');
+    session = {
+      ...session,
+      ...update,
+      receivedAt,
+      startedAt: newAnalysis ? receivedAt : session.startedAt,
+    };
     listeners.forEach((listener) => listener());
   }
 
@@ -191,8 +232,10 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
           : actionError,
       });
     })().finally(() => {
-      refreshing = undefined;
-      reading = undefined;
+      if (reading === controller) {
+        refreshing = undefined;
+        reading = undefined;
+      }
     });
     return refreshing;
   }
@@ -224,10 +267,15 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
       const capture = await service.readCapture(id, phase, controller.signal);
       revision++;
       publish({ response: detail, capture, synchronized: true });
-      // Complete evidence is immutable on this backend; never lock an AFTER set with an empty vehicle sheet.
-      if (type === 'verification' && phase === 'after' && !hasVehicleMetadata(detail))
-        throw new api.ApiError('incomplete_vehicle_metadata', 422);
       if (capture.status === 'capturing') return;
+
+      // Existing jobs remain followable; every new capture or AI retry requires saved vehicle details.
+
+      const alreadyRunning =
+        capture.status === 'completed' &&
+        ['queued', 'processing', 'completed'].includes(detail.status);
+      if (!alreadyRunning && !hasVehicleMetadata(detail))
+        throw new api.ApiError('incomplete_vehicle_metadata', 422);
       if (capture.status === 'completed') {
         if (type === 'chiffrage_rapide' && ['failed', 'not_analyzed'].includes(detail.status))
           publish({ response: await service.startScan(id, controller.signal) });
@@ -263,6 +311,7 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
     writes.add(controller);
     try {
       select(type, phase);
+      publish({ saving: true });
       const id = await ensureDraft();
       revision++;
       const response = await service.patchMetadata(id, patch, controller.signal);
@@ -271,6 +320,7 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
     } finally {
       writes.delete(controller);
       saving = false;
+      publish({ saving: false });
       await refresh();
       schedule();
     }
@@ -297,19 +347,22 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
     start,
     save,
     refresh,
-    restoreExisting(type: CreatableDossierType, phase: PhotoPhase, dossierId: string) {
+    restoreExisting(type: CreatableDossierType, phase: PhotoPhase | undefined, dossierId: string) {
       select(type, phase, dossierId);
       void refresh().then(schedule);
     },
     clear() {
-      if (starting || saving) return;
+      if (starting || saving) return false;
+      storage?.removeItem(captureStorageKey);
       revision++;
       reading?.abort();
+      reading = undefined;
+      refreshing = undefined;
       actionError = '';
       if (timer) clearTimeout(timer);
-      storage?.removeItem(captureStorageKey);
       session = null;
       listeners.forEach((listener) => listener());
+      return true;
     },
   };
 }

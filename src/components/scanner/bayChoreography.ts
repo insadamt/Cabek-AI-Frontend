@@ -59,6 +59,8 @@ export function createBayChoreography(options: BayChoreographyOptions) {
   let disposed = false;
   let entrance: gsap.core.Timeline | undefined;
   let lighting: gsap.core.Timeline | undefined;
+  let replayComplete: (() => void) | undefined;
+  let waitingOutside = false;
 
   function notifyChange() {
     if (!disposed) options.onChange();
@@ -69,6 +71,9 @@ export function createBayChoreography(options: BayChoreographyOptions) {
     completionReported = true;
     state.introComplete = true;
     options.onIntroComplete?.();
+    const completeReplay = replayComplete;
+    replayComplete = undefined;
+    completeReplay?.();
     notifyChange();
   }
 
@@ -89,10 +94,26 @@ export function createBayChoreography(options: BayChoreographyOptions) {
     state.sensorEmphasis = requestedSensorEmphasis;
   }
 
-  return {
+  const controller = {
     state,
-    enter() {
+    waitOutside() {
       if (disposed) return;
+      entrance?.kill();
+      entrance = undefined;
+      // Release an abandoned drive's waiter; the page's abort guard rejects its stale capture request.
+      const completeAbandonedEntry = replayComplete;
+      replayComplete = undefined;
+      completeAbandonedEntry?.();
+      waitingOutside = true;
+      entranceRequested = false;
+      completionReported = false;
+      state.entryProgress = 0;
+      state.revealProgress = state.reframeProgress = 1;
+      state.introComplete = true;
+      notifyChange();
+    },
+    enter() {
+      if (disposed || waitingOutside) return;
       if (entranceRequested || reducedMotion || state.entryProgress === 1) {
         if (state.entryProgress === 1 || reducedMotion) settleEntrance();
         return;
@@ -118,6 +139,23 @@ export function createBayChoreography(options: BayChoreographyOptions) {
       entrance.to(state, { reframeProgress: 1, duration: 1.55, ease: 'power2.inOut' }, 'reframe');
       entrance.addLabel('categories', 2.2);
       if (visible) entrance.play();
+    },
+    replayEntry(onComplete: () => void) {
+      if (disposed) {
+        onComplete();
+        return;
+      }
+      entrance?.kill();
+      waitingOutside = false;
+      replayComplete?.();
+      replayComplete = onComplete;
+      completionReported = false;
+      entranceRequested = false;
+      state.entryProgress = 0;
+      state.revealProgress = state.reframeProgress = 1;
+      state.introComplete = false;
+      notifyChange();
+      controller.enter();
     },
     interruptCamera() {
       if (disposed || state.introComplete) return;
@@ -195,7 +233,7 @@ export function createBayChoreography(options: BayChoreographyOptions) {
       lighting?.kill();
       lighting = undefined;
       settleLighting();
-      settleEntrance();
+      if (!waitingOutside) settleEntrance();
     },
     setVisible(nextVisible: boolean) {
       if (disposed || visible === nextVisible) return;
@@ -212,6 +250,9 @@ export function createBayChoreography(options: BayChoreographyOptions) {
       lighting?.kill();
       entrance = undefined;
       lighting = undefined;
+      replayComplete?.();
+      replayComplete = undefined;
     },
   };
+  return controller;
 }

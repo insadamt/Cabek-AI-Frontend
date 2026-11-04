@@ -1,6 +1,6 @@
 /**
  * Presents three shared glass folders, absorbing the chosen category into the island before entering its workflow.
- * Depends on DossierFolder, GSAP category motion, persisted tunnel sessions and the existing category collections.
+ * Depends on DossierFolder, prepared collection navigation, GSAP category motion and persisted tunnel sessions.
  */
 import { useEffect, useRef, useState } from 'react';
 import { HomeFrame } from '../components/home/HomeFrame';
@@ -8,12 +8,14 @@ import { DossierFolder } from '../components/home/DossierFolder';
 import { TunnelStage } from '../components/home/TunnelStage';
 import { useNavigation } from '../hooks/useNavigation';
 import { useTunnelCapture } from '../hooks/useTunnelCapture';
-import { categories, categoryForType, categoryPath, type Category } from '../lib/workflows';
+import { categories, categoryForType, type Category } from '../lib/workflows';
 import { absorbCategoryFolder } from '../lib/categoryFolderMotion';
+import { useCollectionNavigation } from '../hooks/useCollectionNavigation';
 
 export function CategoryStage() {
   const { navigate, searchParams } = useNavigation();
   const { session } = useTunnelCapture();
+  const collectionNavigation = useCollectionNavigation();
   const selected =
     session && searchParams.get('reprendre') === '1'
       ? categoryForType(session.identity.type)
@@ -42,6 +44,10 @@ export function CategoryStage() {
     const folder = allFolders.find((element) => element.dataset.categoryFolder === category.type);
     const island = document.querySelector<HTMLElement>('.ai-activity-island');
     if (!folder || !island) return;
+    if (category.type === 'forfait_expertise') {
+      collectionNavigation.openCollection(category, folders.current, { folder });
+      return;
+    }
     locked.current = true;
     setAbsorbing(true);
     transition.current?.();
@@ -52,16 +58,13 @@ export function CategoryStage() {
       () => {
         locked.current = false;
         setAbsorbing(false);
-        if (category.type === 'forfait_expertise') {
-          navigate(categoryPath(category.type), { ejectFolders: true });
-        } else {
-          navigate(`/?parcours=${category.slug}&scene=1`);
-        }
+        navigate(`/?parcours=${category.slug}&scene=1`);
       },
       () => {
         locked.current = false;
         setAbsorbing(false);
       },
+      folders.current ?? undefined,
     );
   }
 
@@ -80,17 +83,17 @@ export function CategoryStage() {
             }}
           />
         ) : (
-          <div ref={folders} className="category-folder-landing" aria-busy={absorbing}>
-            <div className="category-folder-heading">
-              <p className="eyebrow">CABEK AI</p>
-              <h1>Chaque véhicule a son histoire.</h1>
-              <p>Choisissez votre parcours.</p>
-            </div>
+          <div
+            ref={folders}
+            className="category-folder-landing"
+            aria-busy={absorbing || collectionNavigation.pending}
+          >
+            <h1 className="visually-hidden">Choisir un parcours</h1>
             <div
               className="category-folder-grid"
               role="group"
               aria-label="Choisir un parcours"
-              inert={absorbing}
+              inert={absorbing || collectionNavigation.pending}
             >
               {categories.map((category) => (
                 <div
@@ -107,7 +110,7 @@ export function CategoryStage() {
                 </div>
               ))}
             </div>
-            <p className="category-folder-footnote">Expertise · Estimation · Photographies</p>
+            {collectionNavigation.error && <p role="alert">{collectionNavigation.error}</p>}
           </div>
         )}
       </section>

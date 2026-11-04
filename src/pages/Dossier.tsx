@@ -1,5 +1,6 @@
 /** Dossier identity and physical entrance shared by expertise, quick estimates and repair evidence. */
 import { categoryForType, categoryPath, workflowLabels } from '../lib/workflows';
+import { DossierActions } from '../components/dossier/DossierActions';
 import { QuickEstimateWorkspace } from '../components/dossier/QuickEstimateWorkspace';
 import { VerificationWorkspace } from '../components/dossier/VerificationWorkspace';
 import { useHomeAnalysis } from '../hooks/useHomeAnalysis';
@@ -52,6 +53,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
         dossier_id: dossierId,
         type: response?.type ?? savedSummary?.type,
         workflow_status: response?.workflow_status ?? savedSummary?.workflow_status,
+        source: response?.source ?? savedSummary?.source,
         vehicle,
         status: response?.status ?? savedSummary?.status ?? 'not_analyzed',
         photo_count:
@@ -175,6 +177,14 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                   </div>
                 </dl>
               </div>
+              {response && (
+                <DossierActions
+                  dossier={response}
+                  disabled={analysis.busy}
+                  onError={resource.refresh}
+                  onDeleted={() => navigate(categoryPath(response.type))}
+                />
+              )}
               {isPreview && (
                 <p className="dossier-preview" data-dossier-metadata>
                   {dossier.type && dossier.type !== 'forfait_expertise'

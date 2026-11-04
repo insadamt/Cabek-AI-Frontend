@@ -64,3 +64,36 @@ export function createFolderFlight(source: HTMLElement, host: HTMLElement = sour
   document.body.append(layer);
   return layer;
 }
+
+export function createFolderRelease(source: HTMLElement, host: HTMLElement, islandBottom: number) {
+  const flight = createFolderFlight(source, host);
+  const aperture = document.createElement('div');
+
+  // Prepare the moving compositor layer before its first visible frame.
+
+  flight.style.willChange = 'transform';
+
+  // The stationary aperture hides artwork inside the island while the flight moves beneath it.
+
+  Object.assign(aperture.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '9',
+    pointerEvents: 'none',
+    clipPath: `inset(${Math.max(0, islandBottom)}px 0 0 0)`,
+  });
+  aperture.setAttribute('aria-hidden', 'true');
+  aperture.inert = true;
+  aperture.append(flight);
+  document.body.append(aperture);
+  let removed = false;
+  return {
+    flight,
+    remove: () => {
+      if (removed) return;
+      removed = true;
+      flight.remove();
+      aperture.remove();
+    },
+  };
+}

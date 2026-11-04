@@ -17,6 +17,8 @@ export interface BayIlluminationState {
   secondary: Color;
   focus: number;
   sensorEmphasis: number;
+  captureDepth?: number;
+  capturing?: boolean;
 }
 
 export interface PortalIllumination {
@@ -62,7 +64,10 @@ export function createBayIllumination(surfaces: BayIlluminationSurfaces) {
     const movingScan = progress > 0 && progress < 1 ? Math.min(1, (1 - progress) / 0.15) : 0;
     surfaces.portals.forEach(({ depth, material, lights }, index) => {
       const proximity = Math.exp(-Math.pow((vehicleFront - depth) / 1.1, 2));
-      const scanResponse = movingScan * proximity;
+      const captureResponse = state.capturing
+        ? Math.exp(-Math.pow(((state.captureDepth ?? 0) - depth) / 0.9, 2))
+        : 0;
+      const scanResponse = movingScan * proximity + captureResponse;
       const focusedStrength = depth === 0 ? 1.2 : 0.34;
       const atmosphere = MathUtils.lerp(1, focusedStrength, focus);
       material.emissive.copy(state.primary).lerp(state.secondary, index / 4);
@@ -94,6 +99,8 @@ export function createBayIllumination(surfaces: BayIlluminationSurfaces) {
   return {
     applyIllumination(nextState: BayIlluminationState) {
       state.entryProgress = nextState.entryProgress;
+      state.capturing = nextState.capturing;
+      state.captureDepth = nextState.captureDepth;
       state.primary.copy(nextState.primary);
       state.secondary.copy(nextState.secondary);
       state.focus = nextState.focus;

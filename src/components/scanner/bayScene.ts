@@ -3,6 +3,7 @@
  * Depends on Three.js, procedural bay meshes and automotive reflection cards; owns GPU stage resources.
  */
 import * as THREE from 'three';
+import { createBayCaptureSweep, type BayCaptureFrame } from './bayCaptureSweep';
 import { buildScanningBay } from './bayGeometry';
 import type { BayChoreographyState } from './bayChoreography';
 import { normalizeBayVisualSettings, type BayVisualSettings } from './bayControls';
@@ -18,6 +19,8 @@ export function createBayScene(canvas: HTMLCanvasElement) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 120);
   const bay = buildScanningBay();
+  const captureSweep = createBayCaptureSweep();
+  scene.add(captureSweep.root);
   const stageGeometry: THREE.BufferGeometry[] = [];
   const stageMaterials: THREE.Material[] = [];
   let reflectionMap: THREE.WebGLRenderTarget | undefined;
@@ -53,9 +56,10 @@ export function createBayScene(canvas: HTMLCanvasElement) {
   key.shadow.bias = -0.00004;
   key.shadow.normalBias = 0.004;
   key.shadow.radius = 3;
-  const rim = new THREE.DirectionalLight('#f3f7fa', 1.1);
+  // Lift the far frame and roof edges so the higher camera retains depth against the studio.
+  const rim = new THREE.DirectionalLight('#f3f7fa', 1.35);
   rim.position.set(7, 7, -5);
-  scene.add(key, key.target, rim, new THREE.HemisphereLight('#ffffff', '#7e898f', 0.35));
+  scene.add(key, key.target, rim, new THREE.HemisphereLight('#ffffff', '#7e898f', 0.45));
 
   try {
     const studio = createBayStudioEnvironment();
@@ -67,7 +71,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
       prefilter.dispose();
     }
     scene.environment = reflectionMap.texture;
-    scene.environmentIntensity = 0.95;
+    scene.environmentIntensity = 1.05;
 
     const lineMaterial = new THREE.MeshStandardMaterial({ color: '#e1e5df', roughness: 0.94 });
     const lineGeometry = new THREE.BoxGeometry(0.022, 0.002, 24);
@@ -81,6 +85,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     }
   } catch (error) {
     bay.dispose();
+    captureSweep.dispose();
     reflectionMap?.dispose();
     key.shadow.dispose();
     renderer.dispose();
@@ -118,11 +123,15 @@ export function createBayScene(canvas: HTMLCanvasElement) {
       bay.applySettings(normalizeBayVisualSettings(settings));
       lastProgress = Number.NaN;
     },
-    render(state: BayChoreographyState) {
+    render(
+      state: BayChoreographyState,
+      capture: BayCaptureFrame = { capturing: false, elapsedSeconds: 0, reducedMotion: true },
+    ) {
       if (disposed) return;
-      bay.applyIllumination(state);
+      const captureDepth = captureSweep.update(capture);
+      bay.applyIllumination({ ...state, capturing: capture.capturing, captureDepth });
       key.intensity = 2.6 - state.focus * 0.2 + state.sensorEmphasis * 0.2;
-      rim.intensity = 1.1 - state.focus * 0.15 + state.sensorEmphasis * 0.2;
+      rim.intensity = 1.35 - state.focus * 0.15 + state.sensorEmphasis * 0.2;
       if (lastProgress !== state.entryProgress) {
         renderer.shadowMap.needsUpdate = true;
         lastProgress = state.entryProgress;
@@ -133,6 +142,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
       if (disposed) return;
       disposed = true;
       bay.dispose();
+      captureSweep.dispose();
       scene.environment = null;
       reflectionMap?.dispose();
       key.shadow.dispose();

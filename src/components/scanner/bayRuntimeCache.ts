@@ -12,6 +12,7 @@ type SceneStatus = 'loading' | 'ready' | 'failed';
 interface CacheViewOptions {
   host: HTMLElement;
   initiallyParked: boolean;
+  waitingOutside?: boolean;
   palette: BayPalette;
   reducedMotion: boolean;
   onStatusChange: (status: SceneStatus) => void;
@@ -20,6 +21,7 @@ interface CacheViewOptions {
 
 interface CacheView extends CacheViewOptions {
   playbackRequested: boolean;
+  cameraInteractive: boolean;
 }
 
 interface CacheEntry {
@@ -63,6 +65,8 @@ export function createBayRuntimeCache(
     if (cached.disposed) return;
     cached.status = status;
     cached.view?.onStatusChange(status);
+    if (status === 'ready')
+      cached.runtime?.setCameraInteractive?.(cached.view?.cameraInteractive ?? false);
     if (status === 'ready' && cached.view?.playbackRequested) cached.runtime?.enter();
   }
 
@@ -72,6 +76,7 @@ export function createBayRuntimeCache(
         if (cached.disposed) return;
         cached.runtime = createBayRuntime(cached.canvas, {
           initiallyParked: cached.initiallyParked,
+          waitingOutside: cached.view?.waitingOutside,
           reducedMotion: cached.reducedMotion,
           palette: cached.palette,
           active: !!cached.view,
@@ -85,6 +90,7 @@ export function createBayRuntimeCache(
           },
         });
         cached.runtime.setCapturing?.(cached.capturing);
+        cached.runtime.setCameraInteractive?.(cached.view?.cameraInteractive ?? false);
       })
       .catch(() => publishStatus(cached, 'failed'));
   }
@@ -109,11 +115,13 @@ export function createBayRuntimeCache(
       const created = !entry;
       const cached = (entry ??= createEntry(options));
       if (cached.view) throw new Error('The cached studio already has an active view.');
-      const view: CacheView = { ...options, playbackRequested: false };
+      const view: CacheView = { ...options, playbackRequested: false, cameraInteractive: false };
       cached.view = view;
       options.host.appendChild(cached.canvas);
       setPalette(cached, options.palette);
       setReducedMotion(cached, options.reducedMotion);
+      cached.runtime?.setWaitingOutside?.(options.waitingOutside ?? false);
+      cached.runtime?.setCameraInteractive?.(false);
       cached.runtime?.setActive(true);
       options.onStatusChange(cached.status);
       if (cached.introComplete) options.onIntroComplete();
@@ -129,6 +137,20 @@ export function createBayRuntimeCache(
           if (!isConnected()) return;
           view.playbackRequested = true;
           if (cached.status === 'ready') cached.runtime?.enter();
+        },
+        replayEntrance() {
+          if (!isConnected() || cached.status !== 'ready') return Promise.resolve();
+          return cached.runtime?.replayEntrance() ?? Promise.resolve();
+        },
+        setWaitingOutside(waiting: boolean) {
+          if (!isConnected()) return;
+          view.waitingOutside = waiting;
+          cached.runtime?.setWaitingOutside?.(waiting);
+        },
+        setCameraInteractive(interactive: boolean) {
+          if (!isConnected()) return;
+          view.cameraInteractive = interactive;
+          cached.runtime?.setCameraInteractive?.(interactive);
         },
         skipIntro() {
           if (isConnected()) cached.runtime?.skipIntro();

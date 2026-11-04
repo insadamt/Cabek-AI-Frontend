@@ -11,7 +11,10 @@ export function CreateDossier({ type }: { type: CreatableDossierType }) {
   return (
     <HomeFrame>
       <section className="category-stage" data-category={type}>
-        <TunnelStage category={category} onBack={() => navigate(categoryPath(type))} />
+        <TunnelStage
+          category={category}
+          onBack={() => navigate(categoryPath(type), { ejectFolders: true })}
+        />
       </section>
     </HomeFrame>
   );

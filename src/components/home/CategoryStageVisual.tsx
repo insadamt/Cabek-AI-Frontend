@@ -2,8 +2,16 @@
  * Attaches the application's cached studio canvas so returning routes reuse decoded meshes, shaders and camera state.
  * Depends on BayRuntimeCacheProvider, the page cue and motion preferences; route cleanup pauses rather than disposes GPU resources.
  */
-import { RotateCcw } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Lock, Unlock, RotateCcw } from 'lucide-react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useImperativeHandle,
+  type RefObject,
+} from 'react';
 import type { Category } from '../../lib/workflows';
 import type { BayRuntimeConnection } from '../scanner/bayRuntimeCache';
 import type { BayPalette } from '../scanner/bayChoreography';
@@ -41,7 +49,14 @@ function subscribeToMotion(listener: () => void) {
   return () => query.removeEventListener('change', listener);
 }
 
+export interface ScannerPlayback {
+  playEntrance: () => Promise<void>;
+}
+
 interface CategoryStageVisualProps {
+  playbackRef?: RefObject<ScannerPlayback | null>;
+  entering?: boolean;
+  waitingOutside?: boolean;
   category: Category;
   initiallyParked: boolean;
   playIntro: boolean;
@@ -53,6 +68,9 @@ interface CategoryStageVisualProps {
 
 export function CategoryStageVisual({
   category,
+  playbackRef,
+  entering = false,
+  waitingOutside = false,
   initiallyParked,
   playIntro,
   onStatusChange,
@@ -84,10 +102,12 @@ export function CategoryStageVisual({
   };
   const [status, setStatus] = useState<StageSceneStatus>(() => cache.getSnapshot().status);
   const [attempt, setAttempt] = useState(0);
-  const cameraInteractive = status === 'ready' && playIntro;
+  const [rotationLocked, setRotationLocked] = useState(true);
+  const controlsAvailable = status === 'ready' && playIntro && !entering;
+  const cameraInteractive = controlsAvailable && !rotationLocked;
   useEffect(() => {
-    onParked?.(introComplete || status === 'failed');
-  }, [introComplete, status, onParked]);
+    onParked?.((waitingOutside && status === 'ready') || introComplete || status === 'failed');
+  }, [introComplete, status, onParked, waitingOutside]);
 
   useLayoutEffect(() => {
     const host = canvasHostRef.current;
@@ -96,6 +116,7 @@ export function CategoryStageVisual({
     const connection = cache.attach({
       host,
       initiallyParked: attempt > 0 || initialPose.current,
+      waitingOutside,
       palette: latest.current.palette,
       reducedMotion: latest.current.reducedMotion,
       onStatusChange(nextStatus) {
@@ -121,6 +142,7 @@ export function CategoryStageVisual({
     if (!canvas) return;
     canvas.setAttribute('aria-disabled', String(!cameraInteractive));
     canvas.tabIndex = cameraInteractive ? 0 : -1;
+    connectionRef.current?.setCameraInteractive(cameraInteractive);
   }, [cameraInteractive, attempt]);
 
   useEffect(() => {
@@ -146,8 +168,15 @@ export function CategoryStageVisual({
     connectionRef.current?.setReducedMotion(reducedMotion);
   }, [reducedMotion]);
   useEffect(() => {
-    if (playIntro) connectionRef.current?.enter();
-  }, [playIntro, attempt]);
+    connectionRef.current?.setWaitingOutside(waitingOutside);
+    if (playIntro && !waitingOutside && !entering) connectionRef.current?.enter();
+  }, [playIntro, waitingOutside, entering, attempt]);
+
+  useImperativeHandle(
+    playbackRef,
+    () => ({ playEntrance: () => connectionRef.current?.replayEntrance() ?? Promise.resolve() }),
+    [attempt],
+  );
 
   function retryScene() {
     cache.dispose();
@@ -160,11 +189,28 @@ export function CategoryStageVisual({
       data-renderer="three-webgl"
       data-model="/models/studio-v2/cabek-vehicle.glb"
       data-category={category.type}
-      data-entrance={introComplete ? 'settled' : 'playing'}
+      data-rotation-locked={rotationLocked}
+      data-entrance={waitingOutside ? 'waiting' : introComplete ? 'settled' : 'playing'}
     >
       <div ref={canvasHostRef} className="scanning-bay-canvas-host" />
       <div className="bay-camera-toolbar">
-        {cameraInteractive && !introComplete && (
+        {controlsAvailable && (
+          <button
+            type="button"
+            className="bay-rotation-lock"
+            aria-label="Verrouillage de la rotation"
+            aria-pressed={rotationLocked}
+            onClick={() => setRotationLocked((locked) => !locked)}
+          >
+            {rotationLocked ? (
+              <Lock size={14} aria-hidden="true" />
+            ) : (
+              <Unlock size={14} aria-hidden="true" />
+            )}
+            {rotationLocked ? 'Déverrouiller la rotation' : 'Verrouiller la rotation'}
+          </button>
+        )}
+        {controlsAvailable && !introComplete && !waitingOutside && (
           <button
             className="bay-skip-intro"
             type="button"
@@ -173,7 +219,7 @@ export function CategoryStageVisual({
             Passer l’introduction <span aria-hidden="true">↗</span>
           </button>
         )}
-        {cameraInteractive && introComplete && (
+        {controlsAvailable && (introComplete || waitingOutside) && (
           <button
             className="bay-reset-camera"
             type="button"

@@ -1,10 +1,11 @@
-/** Shared physical dossier carousel; current category and filters survive search transitions. */
+/** Presents browsable dossier folders with grouped navigation and search; depends on shared carousel gestures, analysis actions and collection handoff motion. */
 import { useCollectionEjection } from '../../hooks/useCollectionEjection';
 import { currentCollectionUrl } from '../../lib/workflows';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { AnalysisAction } from './AnalysisAction';
+import { DossierActions } from '../dossier/DossierActions';
 import { useDossierCarousel } from '../../hooks/useDossierCarousel';
 import { transitionHomeView } from '../../lib/homeViewTransition';
 import { vehicleName } from '../../lib/format';
@@ -111,7 +112,8 @@ export function DossierCarousel({
       onKeyDown={(event) => {
         if (analysis.busy) return;
         if (event.key === 'Escape') setOpenedDossierId(null);
-        if (event.target instanceof HTMLInputElement) return;
+        if (event.target instanceof Element && event.target.closest('input, button, a, select'))
+          return;
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
           event.currentTarget.focus({ preventScroll: true });
@@ -119,7 +121,6 @@ export function DossierCarousel({
         }
       }}
     >
-      <h1 className="carousel-backdrop-word">DOSSIERS</h1>
       <div
         className="carousel-stage"
         {...(analysis.busy ? {} : gestureHandlers)}
@@ -171,22 +172,28 @@ export function DossierCarousel({
           );
         })}
       </div>
-      <button
-        className="carousel-edge carousel-edge-previous"
-        onClick={() => browseDossiers(-1)}
-        disabled={total < 2 || analysis.busy}
-        aria-label="Dossier précédent"
-      >
-        <ChevronLeft size={22} strokeWidth={1.2} />
-      </button>
-      <button
-        className="carousel-edge carousel-edge-next"
-        onClick={() => browseDossiers(1)}
-        disabled={total < 2 || analysis.busy}
-        aria-label="Dossier suivant"
-      >
-        <ChevronRight size={22} strokeWidth={1.2} />
-      </button>
+      <div className="carousel-navigation" role="group" aria-label="Navigation des dossiers">
+        <button
+          className="carousel-edge carousel-edge-previous"
+          onClick={() => browseDossiers(-1)}
+          disabled={total < 2 || analysis.busy}
+          aria-label="Dossier précédent"
+        >
+          <ChevronLeft size={20} strokeWidth={1.6} aria-hidden="true" />
+        </button>
+        <span className="carousel-counter" aria-live="polite" aria-atomic="true">
+          <AnimatedText text={String(visibleDossierNumber).padStart(2, '0')} /> /{' '}
+          {String(total).padStart(2, '0')}
+        </span>
+        <button
+          className="carousel-edge carousel-edge-next"
+          onClick={() => browseDossiers(1)}
+          disabled={total < 2 || analysis.busy}
+          aria-label="Dossier suivant"
+        >
+          <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" />
+        </button>
+      </div>
       <div className="home-bottom-bar">
         <form
           className="home-folder-search"
@@ -226,10 +233,17 @@ export function DossierCarousel({
           }}
         />
       </div>
-      <span className="carousel-counter" aria-live="polite">
-        <AnimatedText text={String(visibleDossierNumber).padStart(2, '0')} /> /{' '}
-        {String(total).padStart(2, '0')}
-      </span>
+      {visibleDossier && (
+        <DossierActions
+          key={visibleDossier.dossier_id}
+          dossier={visibleDossier}
+          disabled={analysis.busy || dragging || animating}
+          onDeleted={() => {
+            setOpenedDossierId(null);
+            onStep(-activePosition);
+          }}
+        />
+      )}
     </section>
   );
 }

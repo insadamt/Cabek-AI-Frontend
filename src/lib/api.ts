@@ -80,6 +80,11 @@ export function createDraft(
   );
 }
 
+export function deleteDossier(id: string, signal?: AbortSignal): Promise<void> {
+  if (isPreview) return Promise.reject(new ApiError('preview_only'));
+  return request(() => client.delete(`/api/dossiers/${encodeURIComponent(id)}`, { signal }));
+}
+
 export function readCapture(
   id: string,
   phase?: PhotoPhase,

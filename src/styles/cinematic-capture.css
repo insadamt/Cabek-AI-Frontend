@@ -1,13 +1,17 @@
 /* Capture controls and live evidence fit the existing frame/island; depends on shared category tokens and dossier drawer styles. */
 .tunnel-stage {
+  position: relative;
   height: 100%;
   display: grid;
+  grid-template-areas: 'scene' 'controls';
   grid-template-rows: minmax(180px, 1fr) auto;
   gap: 12px;
   padding: 164px 24px 20px;
   overflow-y: auto;
 }
 .tunnel-stage .category-stage-content {
+  grid-area: scene;
+  min-width: 0;
   position: relative;
   inset: auto;
   min-height: 180px;
@@ -38,6 +42,8 @@
   font-size: 12px;
 }
 .capture-controls {
+  grid-area: controls;
+  min-width: 0;
   position: relative;
   z-index: 3;
   display: flex;
@@ -124,14 +130,15 @@
 .tunnel-stage:not([data-entrance-phase='ready']) .capture-stage-nav {
   visibility: hidden;
 }
-.tunnel-stage:has(.capture-finale) .capture-controls,
-.tunnel-stage:has(.capture-finale) .capture-stage-nav {
+.tunnel-stage:has(.capture-finale:not([data-waiting='true'])) .capture-controls,
+.tunnel-stage:has(.capture-finale:not([data-waiting='true'])) .capture-stage-nav {
   visibility: hidden;
 }
 .tunnel-stage:has(.capture-finale[data-released='true']) .category-stage-content {
   visibility: hidden;
 }
 .capture-finale {
+  opacity: 0;
   position: absolute;
   z-index: 4;
   left: 50%;
@@ -139,6 +146,9 @@
   margin-left: calc(min(65vw, 450px) / -2);
   margin-top: -120px;
   width: min(65vw, 450px);
+}
+.capture-finale[data-released='true'] {
+  opacity: 1;
 }
 .capture-finale .dossier-folder {
   width: 100%;
@@ -156,22 +166,26 @@
 .capture-finale-reference bdi {
   font-size: 18px;
 }
+/* The capture folder receives its fiche only after the return flight has finished. */
+.capture-finale .folder-cover {
+  pointer-events: none;
+  cursor: default;
+}
 .capture-finale .folder-document {
   visibility: hidden;
 }
 .capture-finale .dossier-folder[data-document-away='true'] .folder-document {
   visibility: hidden;
 }
-.capture-finale
-  .dossier-folder.folder-mouth-open:not([data-document-away='true'])
+.capture-finale[data-assembled='true']
+  .dossier-folder:not([data-document-away='true'])
   .folder-document {
   visibility: visible;
 }
-.capture-finale .folder-front-markings,
 .capture-finale-reference {
   opacity: 0;
 }
-.capture-finale[data-assembled='true'] .folder-front-markings,
+.capture-finale .folder-front-markings,
 .capture-finale[data-assembled='true'] .capture-finale-reference {
   opacity: 1;
 }
@@ -255,6 +269,7 @@
 @media (max-height: 550px) and (min-width: 651px) {
   .tunnel-stage {
     padding: 164px 18px 12px;
+    grid-template-areas: 'scene controls';
     grid-template-columns: minmax(180px, 1fr) 310px;
     grid-template-rows: minmax(180px, 1fr);
   }
@@ -270,5 +285,43 @@
 @media (prefers-reduced-motion: reduce) {
   .capture-island-photo {
     animation: none;
+  }
+}
+
+/* The island presents AI progress; session actions remain available beside the waiting folder. */
+.capture-finale[data-waiting='true'] .folder-document,
+.capture-finale[data-waiting='true'] .capture-finale-reference {
+  visibility: hidden;
+}
+@media (min-width: 1100px) and (min-height: 650px) {
+  .tunnel-stage {
+    grid-template-areas: 'scene controls';
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+    padding: 164px 32px 36px 24px;
+  }
+  .tunnel-stage .category-stage-content {
+    min-height: 350px;
+    height: 100%;
+  }
+  .capture-controls {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 24px 18px;
+    border-radius: 18px;
+    background: #fafbf8ed;
+  }
+  .capture-actions,
+  .capture-session-actions {
+    justify-content: center;
+  }
+  .capture-scanner {
+    width: 100%;
+  }
+  .capture-stage-nav {
+    right: 38px;
   }
 }

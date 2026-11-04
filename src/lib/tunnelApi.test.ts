@@ -1,6 +1,6 @@
 /** Checks the final backend tunnel contract without inventing endpoint names, photos or AI responses. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn() }));
+const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() }));
 vi.mock('axios', () => ({
   default: { create: () => client, isCancel: () => false, isAxiosError: () => false },
 }));
@@ -90,4 +90,12 @@ describe('final tunnel transport contract', () => {
     expect(client.post).not.toHaveBeenCalled();
     expect(client.patch).not.toHaveBeenCalled();
   });
+});
+
+it('deletes the selected persisted folder with the documented endpoint and no body', async () => {
+  client.delete.mockResolvedValue({ data: undefined });
+  const { deleteDossier } = await import('./api');
+  const signal = new AbortController().signal;
+  await expect(deleteDossier('REAL 42', signal)).resolves.toBeUndefined();
+  expect(client.delete).toHaveBeenCalledExactlyOnceWith('/api/dossiers/REAL%2042', { signal });
 });

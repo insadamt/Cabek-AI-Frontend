@@ -135,7 +135,8 @@ describe('real vehicle loading', () => {
     const paint = model.body.material as THREE.MeshPhysicalMaterial;
     expect(paint.clearcoat).toBe(0.65);
     expect(paint).toHaveProperty('defines.PHYSICAL', '');
-    expect(paint.color.equals(model.paint.color)).toBe(true);
+    expect(paint.color.getHexString()).toBe('111416');
+    expect(model.paint.color.getHexString()).toBe('bfc8bd');
     expect(paint.metalness).toBe(model.paint.metalness);
     expect(paint.roughness).toBe(model.paint.roughness);
     expect(paint.map).toBe(model.texture);

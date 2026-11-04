@@ -16,6 +16,7 @@ import { useReportDownloadNotification } from '../../lib/reportDownload';
 import { ReportDownloadActivity } from './ReportDownloadActivity';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { CaptureIslandActivity } from './CaptureIslandActivity';
+import { captureAnalysisSession } from '../../lib/captureAnalysis';
 import { captureLabel } from '../../lib/tunnelCapture';
 import { IslandActivityText } from './IslandActivityText';
 import { useIslandErrorTimeout } from '../../hooks/useIslandErrorTimeout';
@@ -128,10 +129,11 @@ export function AnalysisIsland() {
           ? `analysis:${analysisSession.dossier.dossier_id}:${analysisSession.startedAt}`
           : null;
   const errorDismissed = useIslandErrorTimeout(errorKey);
-  const session = errorDismissed ? null : analysisSession;
+  const captureAnalysis = captureEligible ? captureAnalysisSession(capture) : null;
+  const session = errorDismissed ? null : (captureAnalysis ?? analysisSession);
   const opening = errorDismissed ? null : openingSession;
   const reportDownload = errorDismissed ? null : reportNotification;
-  const showCapture = captureEligible && !errorDismissed;
+  const showCapture = captureEligible && !captureAnalysis && !errorDismissed;
   const expanded =
     !!reportDownload || !!opening || showCapture || (!!session && session.phase !== 'idle');
   const phase =
@@ -230,8 +232,10 @@ export function AnalysisIsland() {
       ref={islandRef}
       className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
       data-phase={errorKey && !errorDismissed ? 'error' : phase}
-      data-capture-presentation={showCapture ? capturePresentation : undefined}
-      data-category={showCapture ? capture.identity.type : undefined}
+      data-capture-presentation={
+        captureEligible && !errorDismissed ? capturePresentation : undefined
+      }
+      data-category={captureEligible && !errorDismissed ? capture.identity.type : undefined}
     >
       <AttachedIslandSurface />
       <div className="island-content-clip">

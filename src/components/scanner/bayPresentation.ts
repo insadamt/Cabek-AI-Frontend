@@ -1,9 +1,10 @@
 /**
  * Centers the complete bay inside the scanner scene area above its operational controls.
- * Depends on Three.js projection/view offsets and exported wheel radii; legacy QA framing remains available.
+ * Depends on baySubjectFraming, Three.js projection and exported wheel radii; legacy QA framing remains available.
  */
 import { PerspectiveCamera, Vector3 } from 'three';
 import type { BayVehicle } from './bayVehicle';
+import { fitBayCameraToSubject } from './baySubjectFraming';
 
 export const vehicleApproachDistance = 7.2;
 const arrivalCamera = new Vector3(4.5, 29, -5.5);
@@ -13,13 +14,14 @@ const parkedTarget = new Vector3(0, 0.75, 0);
 const lookTarget = new Vector3();
 const defaultWheelRadiusMetres = 0.33;
 //
-// Moving closer and toward the car's forward axis makes its front prominent without turning it inside the tunnel.
+// A raised corner view exposes the vehicle roof and both tunnel sensor arrays without changing their alignment.
 // This endpoint is shared by completion, skip, reduced motion and camera reset.
 //
-const homepageCamera = new Vector3(4.3, 3.8, -9.5);
+const homepageCamera = new Vector3(6.8, 7.4, -10.4);
 const homepageTarget = new Vector3(0, 0.6, 0);
 
 export interface BayCameraMotion {
+  entryProgress?: number;
   revealProgress: number;
   reframeProgress: number;
 }
@@ -41,14 +43,13 @@ function resolveBayComposition(aspect: number, viewport?: BayCameraViewport) {
   const stackedPanels = width < height;
   return {
     stackedPanels,
-    distance: Math.max(1.12, 1.45 / Math.max(aspect, 0.3)),
     horizontalShift: 0,
     verticalShift: 0,
   };
 }
 
 // ============================================================
-// Cinematic projection with an unchanged physical orbit target
+// Cinematic framing along the approach and parked target
 // ============================================================
 
 export function applyBayCameraFraming(
@@ -78,18 +79,18 @@ export function applyCinematicBayCamera(
   viewport?: BayCameraViewport,
 ) {
   const reframe = Math.min(1, Math.max(0, motion.reframeProgress));
-  targetOut.copy(homepageTarget);
-  camera.position.copy(homepageCamera);
+  const entry = Math.min(1, Math.max(0, motion.entryProgress ?? 1));
+  // Frame the approach lane as well as the tunnel, then follow the same car into its final position.
+  targetOut.set(0, 1.1, 3.3).lerp(homepageTarget, entry);
+  camera.position.set(14, 4, -4).lerp(homepageCamera, entry);
   const composition = resolveBayComposition(aspect, viewport);
   camera.fov = composition.stackedPanels ? 44 : 32;
   //
   // Keep the opening near its final size so the scene is prominent throughout the car's entrance.
   //
-  const entranceDistance = 1 + 0.04 * (1 - reframe);
-  camera.position
-    .sub(targetOut)
-    .multiplyScalar(composition.distance * entranceDistance)
-    .add(targetOut);
+  fitBayCameraToSubject(camera, targetOut, entry, aspect);
+  const entranceDistance = 1 + 0.025 * (1 - reframe);
+  camera.position.sub(targetOut).multiplyScalar(entranceDistance).add(targetOut);
   applyBayCameraFraming(camera, aspect, viewport);
   camera.lookAt(targetOut);
   camera.updateMatrixWorld();

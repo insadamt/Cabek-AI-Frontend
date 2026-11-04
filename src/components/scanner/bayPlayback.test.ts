@@ -56,7 +56,8 @@ describe('actual bay playback', () => {
     expect(wheel.rotation.x).toBeLessThan(0);
     expect(camera.position.distanceTo(revealingCamera)).toBeGreaterThan(0);
     expect(camera.projectionMatrix.equals(openingProjection)).toBe(true);
-    expect(target.equals(openingTarget)).toBe(true);
+    expect(target.z).toBeLessThan(openingTarget.z);
+    expect(target.z).toBeGreaterThan(0);
     expect(onIntroComplete).not.toHaveBeenCalled();
     expect(playback.state.reframeProgress).toBeGreaterThan(0);
     entrance.time(1.95, false);
@@ -65,10 +66,10 @@ describe('actual bay playback', () => {
     expect(playback.state.reframeProgress).toBeLessThan(1);
     entrance.time(entrance.duration(), false);
     expect(onIntroComplete).toHaveBeenCalledOnce();
-    expect(camera.position.x).toBeCloseTo(4.3 * 1.12);
-    expect(camera.position.y).toBeCloseTo(0.6 + 3.2 * 1.12);
-    expect(camera.position.z).toBeCloseTo(-9.5 * 1.12);
-    expect(target.toArray()).toEqual([0, 0.6, 0]);
+    expect((camera.position.x - target.x) / -(camera.position.z - target.z)).toBeCloseTo(
+      6.8 / 10.4,
+    );
+    expect(camera.position.y - target.y).toBeCloseTo(camera.position.x - target.x);
     expect(camera.projectionMatrix.equals(openingProjection)).toBe(true);
     expect(onChange).toHaveBeenCalled();
     const landingPosition = camera.position.clone();

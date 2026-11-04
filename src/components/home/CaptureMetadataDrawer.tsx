@@ -1,23 +1,38 @@
-/** Concurrent vehicle editing reuses the dossier drawer and catalogue; PATCH responses remain the source of saved metadata. */
+/** Requires a complete saved vehicle sheet before tunnel capture; depends on the shared drawer, catalogue and metadata API. */
 import { useState, type FormEvent } from 'react';
 import { DetailsDrawer } from '../dossier/DetailsDrawer';
 import { useResource } from '../../hooks/useResource';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
-import { describeError, listBrands, listModels } from '../../lib/api';
+import { describeError, listBrands, listModels, patchMetadata } from '../../lib/api';
 import { validDate } from '../../lib/workflows';
 import type { CreatableDossierType, PhotoPhase } from '../../workflowTypes';
 import type { MetadataPatch } from '../../captureTypes';
-import { validMoroccanPlate } from '../../lib/captureMetadata';
+import type { DossierResponse } from '../../types';
+import { completeCaptureVehicle, validMoroccanPlate } from '../../lib/captureMetadata';
 
 interface CaptureMetadataDrawerProps {
   type: CreatableDossierType;
   phase?: PhotoPhase;
   onClose: () => void;
+  dossier?: DossierResponse;
+  onSaved?: (response: DossierResponse) => void;
+  requireComplete?: boolean;
+  closeOnSave?: boolean;
 }
 
-export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataDrawerProps) {
+export function CaptureMetadataDrawer({
+  type,
+  phase,
+  onClose,
+  dossier,
+  onSaved,
+  requireComplete = false,
+  closeOnSave = false,
+}: CaptureMetadataDrawerProps) {
   const { session, store } = useTunnelCapture();
-  const [initialVehicle, setInitialVehicle] = useState(session?.response?.vehicle);
+  const [initialVehicle, setInitialVehicle] = useState(
+    dossier?.vehicle ?? session?.response?.vehicle,
+  );
   const [brandId, setBrandId] = useState(String(initialVehicle?.marque_id ?? ''));
   const [modelId, setModelId] = useState(String(initialVehicle?.model_id ?? ''));
   const [plate, setPlate] = useState(initialVehicle?.matricule ?? '');
@@ -31,11 +46,22 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
     brandId ? listModels(Number(brandId), signal) : Promise.resolve([]),
   );
 
-  async function submit(event: FormEvent) {
+  const catalogueUnavailable = brands.loading || models.loading || !!brands.error || !!models.error;
+  const complete =
+    !catalogueUnavailable &&
+    completeCaptureVehicle({ brandId, modelId, plate, date }, brands.data, models.data);
+
+  async function submit(event: FormEvent, requestClose: () => void) {
     event.preventDefault();
-    if (saving || !store) return;
+    if (saving || (!dossier && !store)) return;
     setError('');
     setMessage('');
+    if (requireComplete && !complete) {
+      setError(
+        'Complétez la fiche et choisissez une marque et un modèle dans le catalogue avant de scanner.',
+      );
+      return;
+    }
     const patch: MetadataPatch = {};
     if (plate.trim() !== (initialVehicle?.matricule ?? '')) {
       if (!validMoroccanPlate(plate.trim())) {
@@ -83,9 +109,25 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
     }
     setSaving(true);
     try {
-      await store.save(type, phase, patch);
-      setInitialVehicle(store.getSnapshot()?.response?.vehicle);
-      setMessage('Fiche enregistrée. La capture et l’analyse continuent.');
+      if (dossier) {
+        const saved = await patchMetadata(dossier.dossier_id, patch);
+        setInitialVehicle(saved.vehicle);
+        onSaved?.(saved);
+        void store?.refresh();
+      } else {
+        await store!.save(type, phase, patch);
+        const saved = store!.getSnapshot()?.response;
+        setInitialVehicle(saved?.vehicle);
+        if (saved) onSaved?.(saved);
+      }
+      setMessage(
+        requireComplete
+          ? 'Fiche enregistrée. Vous pouvez maintenant scanner.'
+          : 'Fiche enregistrée. La capture et l’analyse continuent.',
+      );
+      // Let the drawer release its backdrop and focus through the normal exit transition.
+
+      if (closeOnSave) requestClose();
     } catch (failure) {
       setError(describeError(failure));
     } finally {
@@ -99,21 +141,23 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
       subtitle="Informations enregistrées dans le dossier"
       onClose={onClose}
     >
-      {() => (
+      {(requestClose) => (
         <form
           className="workflow-vehicle-form capture-metadata-form"
-          onSubmit={submit}
+          onSubmit={(event) => submit(event, requestClose)}
           aria-busy={saving}
         >
           <p className="workflow-note">
-            Vous pouvez scanner sans ces informations et les compléter pendant la réception des
-            photos ou l’analyse.
+            {requireComplete
+              ? 'Renseignez la marque, le modèle, le matricule et la date de mise en circulation. Enregistrez la fiche pour accéder au bouton SCANNER.'
+              : 'Complétez la fiche véhicule pour permettre le chiffrage. Les photographies restent consultables pendant la saisie.'}
           </p>
           <div className="workflow-fields">
             <label>
               Marque
               <select
                 value={brandId}
+                required={requireComplete}
                 disabled={saving || brands.loading}
                 onChange={(event) => {
                   setBrandId(event.target.value);
@@ -132,6 +176,7 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
               Modèle
               <select
                 value={modelId}
+                required={requireComplete}
                 disabled={saving || !brandId || models.loading}
                 onChange={(event) => setModelId(event.target.value)}
               >
@@ -149,6 +194,7 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
                 dir="auto"
                 autoComplete="off"
                 value={plate}
+                required={requireComplete}
                 disabled={saving}
                 onChange={(event) => setPlate(event.target.value)}
                 placeholder="84654-ب-454"
@@ -159,6 +205,7 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
               <input
                 type="date"
                 value={date}
+                required={requireComplete}
                 disabled={saving}
                 onChange={(event) => setDate(event.target.value)}
               />
@@ -175,7 +222,8 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
           </div>
           {(brands.error || models.error) != null && (
             <p role="alert">
-              {describeError(brands.error ?? models.error)}{' '}
+              Le catalogue AutoEstimate est indisponible. Réessayez pour sélectionner le véhicule
+              avant de scanner.{' '}
               <button
                 type="button"
                 className="text-link"
@@ -194,7 +242,11 @@ export function CaptureMetadataDrawer({ type, phase, onClose }: CaptureMetadataD
             </p>
           )}
           <p role="status">{message}</p>
-          <button className="button workflow-primary" type="submit" disabled={saving}>
+          <button
+            className="button workflow-primary"
+            type="submit"
+            disabled={saving || (requireComplete && !complete)}
+          >
             {saving ? 'Enregistrement…' : 'Enregistrer la fiche'}
           </button>
         </form>

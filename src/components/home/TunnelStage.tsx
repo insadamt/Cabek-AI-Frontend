@@ -1,21 +1,27 @@
 /**
- * Connects the retained studio, capture controls, editable metadata and persisted-dossier finale.
- * Depends on useStageEntrance and the app capture store; visual completion never changes backend workflow state.
+ * Connects the retained studio, metadata-first capture controls and persisted-dossier finale.
+ * Depends on useStageEntrance and the app capture store; only the scan action admits the waiting vehicle.
  */
 import '../../styles/stage-entrance.css';
+import '../../styles/cinematic-capture.css';
+import '../../styles/capture-preparation.css';
 import { useEffect, useRef, useState } from 'react';
-import { CategoryStageVisual } from './CategoryStageVisual';
+import { CategoryStageVisual, type ScannerPlayback } from './CategoryStageVisual';
 import { StageLoadingScreen } from './StageLoadingScreen';
 import { CaptureMetadataDrawer } from './CaptureMetadataDrawer';
 import { AfterCapturePicker } from './AfterCapturePicker';
 import { CaptureFinale } from './CaptureFinale';
+import { CapturePreparationHeader } from './CapturePreparationHeader';
+import { DossierActions } from '../dossier/DossierActions';
+import { AnimatedText } from '../AnimatedText';
 import { useStageEntrance } from '../../hooks/useStageEntrance';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { useNavigation } from '../../hooks/useNavigation';
 import { categoryPath, type Category } from '../../lib/workflows';
-import { captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
-import { describeError, isPreview } from '../../lib/api';
+import { captureLabel, captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
+import { describeError, failureMessage, isPreview } from '../../lib/api';
 import type { CreatableDossierType } from '../../workflowTypes';
+import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
 
 type LocalCategory = Category & { type: CreatableDossierType };
 
@@ -23,54 +29,134 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
   const entrance = useStageEntrance();
   const { session, store } = useTunnelCapture();
   const { navigate } = useNavigation();
+  const collectionNavigation = useCollectionNavigation();
+  const page = useRef<HTMLDivElement>(null);
   const [drawer, setDrawer] = useState(false);
   const [afterPicker, setAfterPicker] = useState(false);
   const [error, setError] = useState('');
+  const [vehicleEntering, setVehicleEntering] = useState(false);
+  const playbackRef = useRef<ScannerPlayback | null>(null);
+  const entryOperation = useRef<AbortController | null>(null);
+  const scanEntranceRequested = useRef(false);
+  useEffect(() => () => entryOperation.current?.abort(), []);
   const [parked, setParked] = useState(entrance.restoreSettledView);
   const current = session?.identity.type === category.type ? session : null;
+  const sessionBeforeEditing = useRef(session);
+  const presentedSession = drawer ? sessionBeforeEditing.current : session;
+  const presentedDossier =
+    presentedSession?.identity.type === category.type ? presentedSession.response : undefined;
+  const metadataShown = hasVehicleMetadata(presentedDossier);
+
+  function openMetadata() {
+    // Keep the dock unchanged until the drawer's exit animation has finished.
+
+    sessionBeforeEditing.current = session;
+    setDrawer(true);
+  }
   const phase =
     category.type === 'verification' ? (current?.identity.phase ?? 'before') : undefined;
   const capture = current?.capture;
-  const metadataMissing =
-    (capture?.status === 'completed' || (phase === 'after' && !!current?.response)) &&
-    !hasVehicleMetadata(current?.response);
+  // Keep saved identity visible while refresh temporarily blocks scan admission.
+
+  const metadataSaved = hasVehicleMetadata(current?.response);
+  const metadataReady = !!current?.synchronized && metadataSaved;
   const processing =
     current?.response?.status === 'processing' || current?.response?.status === 'queued';
   const finale = captureReady(current) && !drawer && !afterPicker;
+  const analysisStage =
+    category.type === 'chiffrage_rapide' &&
+    capture?.status === 'completed' &&
+    !!current?.response &&
+    ['queued', 'processing', 'completed', 'failed'].includes(current.response.status);
+  useEffect(() => {
+    if (analysisStage) entrance.setSceneStatus('ready');
+  }, [analysisStage, entrance.setSceneStatus]);
   const blocked = !!session && !current;
   const disabled =
     current?.pending ||
+    current?.saving ||
+    vehicleEntering ||
+    !metadataReady ||
     capture?.status === 'capturing' ||
-    (processing && !metadataMissing) ||
+    processing ||
     !parked ||
-    (capture?.status === 'completed' && category.type === 'verification' && !metadataMissing) ||
-    (capture?.status === 'completed' &&
-      current?.response?.status === 'completed' &&
-      !metadataMissing);
+    (capture?.status === 'completed' && category.type === 'verification') ||
+    (capture?.status === 'completed' && current?.response?.status === 'completed');
   const ready = entrance.phase === 'ready';
   const scannerRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (ready && parked) scannerRef.current?.focus({ preventScroll: true });
-  }, [ready, parked]);
 
-  async function scan() {
-    if (metadataMissing) {
-      setDrawer(true);
+  function release(leave: boolean) {
+    if (leave) {
+      collectionNavigation.openCollection(category, page.current, {
+        beforeNavigate: () => {
+          // Keep the saved session visible until its page has finished leaving.
+
+          if (!store?.clear()) throw new Error('Attendez la fin de l’enregistrement en cours.');
+          entryOperation.current?.abort();
+          entryOperation.current = null;
+        },
+      });
       return;
     }
-    if (!store || disabled) return;
-    setError('');
     try {
-      await store.start(category.type, phase);
+      if (!store?.clear()) throw new Error('Attendez la fin de l’enregistrement en cours.');
+      entryOperation.current?.abort();
+      entryOperation.current = null;
+      scanEntranceRequested.current = false;
+      setVehicleEntering(false);
+      setError('');
+      setDrawer(false);
+      setAfterPicker(false);
     } catch (failure) {
       setError(describeError(failure));
+    }
+  }
+  const backendError =
+    current?.capture?.error_code ??
+    current?.response?.error?.code ??
+    current?.capture?.analysis_error;
+  const feedback =
+    collectionNavigation.error ||
+    error ||
+    current?.error ||
+    (backendError ? failureMessage(backendError) : '');
+
+  async function scan() {
+    if (!metadataReady) {
+      openMetadata();
+      return;
+    }
+    if (!store || disabled || entryOperation.current) return;
+    const controller = new AbortController();
+    entryOperation.current = controller;
+    setError('');
+    try {
+      if (capture?.status !== 'completed') {
+        // Metadata synchronization can be pending too; only this action authorizes vehicle entry.
+
+        scanEntranceRequested.current = true;
+        setVehicleEntering(true);
+        await playbackRef.current?.playEntrance();
+        controller.signal.throwIfAborted();
+      }
+      await store.start(category.type, phase);
+    } catch (failure) {
+      if (!controller.signal.aborted) {
+        scanEntranceRequested.current = false;
+        setError(describeError(failure));
+      }
+    } finally {
+      if (entryOperation.current === controller) entryOperation.current = null;
+      if (!controller.signal.aborted) setVehicleEntering(false);
     }
   }
 
   return (
     <div
+      ref={page}
       className="tunnel-stage"
       data-entrance-phase={entrance.phase}
+      data-analysis-stage={analysisStage}
       onAnimationEnd={entrance.handleEntranceEnd}
     >
       {entrance.phase !== 'ready' && <StageLoadingScreen />}
@@ -81,22 +167,43 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
       >
         <CategoryStageVisual
           category={category}
+          playbackRef={playbackRef}
+          entering={vehicleEntering}
+          waitingOutside={
+            !vehicleEntering &&
+            !scanEntranceRequested.current &&
+            (!capture || capture.status === 'not_started') &&
+            !processing
+          }
           initiallyParked={entrance.restoreSettledView || !!current}
           playIntro={ready}
           onStatusChange={entrance.setSceneStatus}
           onParked={setParked}
           capturing={capture?.status === 'capturing'}
-          finishing={finale}
+          finishing={finale || analysisStage}
         />
       </div>
       <>
+        <h1 className="capture-page-title" aria-hidden={!ready || finale || undefined}>
+          {category.title}
+          {phase && <span> · {phase === 'before' ? 'Avant' : 'Après'}</span>}
+        </h1>
         <nav
           className="capture-stage-nav"
           aria-label="Navigation du parcours"
           inert={!ready || finale}
           aria-hidden={finale || undefined}
         >
-          <button type="button" onClick={onBack}>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.location.pathname.endsWith('/new')) {
+                collectionNavigation.openCollection(category, page.current);
+              } else {
+                collectionNavigation.leavePage(page.current, onBack);
+              }
+            }}
+          >
             Tous les parcours
           </button>
           <a
@@ -104,7 +211,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
             onClick={(event) => {
               if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
               event.preventDefault();
-              navigate(categoryPath(category.type));
+              collectionNavigation.openCollection(category, page.current);
             }}
           >
             Voir les dossiers ↗
@@ -112,13 +219,14 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
         </nav>
         <div
           className="capture-controls"
-          inert={!ready || finale}
+          data-analysis-active={analysisStage}
+          inert={!ready || finale || collectionNavigation.pending}
           aria-hidden={!ready || finale || undefined}
         >
-          <p className="eyebrow">
-            {category.title}
-            {phase ? ` · ${phase === 'before' ? 'AVANT' : 'APRÈS'}` : ''}
-          </p>
+          <CapturePreparationHeader
+            metadataReady={metadataShown}
+            vehicle={presentedDossier?.vehicle}
+          />
           {blocked ? (
             <p role="status">
               Un dossier est actif.{' '}
@@ -128,75 +236,143 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
             </p>
           ) : (
             <>
-              <div className="capture-actions">
-                <button
-                  ref={scannerRef}
-                  className="capture-scanner"
-                  type="button"
-                  disabled={disabled || isPreview}
-                  onClick={() => {
-                    void scan();
-                  }}
-                >
-                  {metadataMissing
-                    ? 'COMPLÉTER LA FICHE'
-                    : current?.pending
-                      ? 'CONNEXION…'
-                      : capture?.status === 'capturing'
-                        ? 'CAPTURE EN COURS'
-                        : processing
-                          ? 'ANALYSE EN COURS'
-                          : capture?.status === 'failed'
-                            ? 'RÉESSAYER LA CAPTURE'
-                            : capture?.status === 'completed'
-                              ? category.type === 'verification'
-                                ? 'SYNCHRONISATION…'
-                                : 'RELANCER L’ANALYSE'
-                              : 'SCANNER'}
-                </button>
-                <button
-                  className="capture-metadata-toggle"
-                  type="button"
-                  onClick={() => setDrawer(true)}
-                >
-                  Fiche véhicule ↗
-                </button>
-              </div>
-              {category.type === 'verification' && !current && (
-                <div className="capture-phase-actions">
-                  <span>Nouvelle capture AVANT</span>
-                  <button type="button" onClick={() => setAfterPicker(true)}>
-                    Compléter une capture APRÈS
+              <div className="capture-actions" data-metadata-shown={metadataShown}>
+                {!metadataShown ? (
+                  <button
+                    ref={scannerRef}
+                    className="capture-scanner"
+                    type="button"
+                    disabled={isPreview || !!current?.pending || !!current?.saving}
+                    onClick={openMetadata}
+                    aria-label="FICHE VÉHICULE"
+                  >
+                    <AnimatedText text="FICHE VÉHICULE" />
                   </button>
+                ) : (
+                  <button
+                    ref={scannerRef}
+                    className="capture-scanner"
+                    type="button"
+                    disabled={disabled || isPreview}
+                    onClick={() => {
+                      void scan();
+                    }}
+                  >
+                    <AnimatedText
+                      text={
+                        vehicleEntering
+                          ? 'ENTRÉE DU VÉHICULE'
+                          : current?.pending
+                            ? 'CONNEXION…'
+                            : capture?.status === 'capturing'
+                              ? 'CAPTURE EN COURS'
+                              : processing
+                                ? 'ANALYSE EN COURS'
+                                : capture?.status === 'failed'
+                                  ? 'RÉESSAYER LA CAPTURE'
+                                  : capture?.status === 'completed'
+                                    ? category.type === 'verification'
+                                      ? 'SYNCHRONISATION…'
+                                      : 'RELANCER L’ANALYSE'
+                                    : 'SCANNER'
+                      }
+                    />
+                  </button>
+                )}
+                <div
+                  className="capture-metadata-slot"
+                  inert={!metadataShown}
+                  aria-hidden={!metadataShown}
+                >
+                  <button
+                    className="capture-metadata-toggle"
+                    type="button"
+                    disabled={!current?.identity.dossierId}
+                    onClick={openMetadata}
+                  >
+                    Modifier la fiche ↗
+                  </button>
+                </div>
+              </div>
+              {category.type === 'verification' && (
+                <div className="capture-phase-slot">
+                  {!presentedDossier && (
+                    <div className="capture-phase-actions">
+                      <span className="visually-hidden">Nouvelle capture AVANT</span>
+                      <button type="button" onClick={() => setAfterPicker(true)}>
+                        Compléter une capture APRÈS
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
           )}
-          {!current && <p role="status">Prêt à accueillir votre véhicule.</p>}
-          {error && !current && (
+          <div className="capture-session-slot">
+            {presentedSession && (
+              <details className="capture-session-menu">
+                <summary aria-label="Actions du dossier">•••</summary>
+                <div className="capture-session-actions">
+                  <button
+                    type="button"
+                    className="text-link"
+                    disabled={!!session?.pending || !!session?.saving || !session}
+                    onClick={() => release(false)}
+                  >
+                    Nouveau dossier
+                  </button>
+                  {session && (
+                    <button
+                      type="button"
+                      className="text-link"
+                      disabled={session.pending || session.saving}
+                      onClick={() => release(true)}
+                    >
+                      Quitter et conserver
+                    </button>
+                  )}
+                </div>
+                {current?.response && (
+                  <DossierActions
+                    dossier={current.response}
+                    disabled={current.pending}
+                    onDeleted={() => release(false)}
+                    onError={() => void store?.refresh()}
+                  />
+                )}
+                {current?.identity.dossierId &&
+                  (category.type !== 'chiffrage_rapide' || captureReady(current)) && (
+                    <a href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}>
+                      Ouvrir le dossier enregistré
+                    </a>
+                  )}
+              </details>
+            )}
+          </div>
+          {current && (
+            <p role="status" className="visually-hidden">
+              {captureLabel(current)}
+            </p>
+          )}
+          {feedback && (
             <p role="alert" className="inline-error">
-              {error}
+              {feedback}
             </p>
           )}
           {isPreview && <p>Connectez l’API CABEK pour scanner et enregistrer des photographies.</p>}
-          {current?.identity.dossierId && (
-            <a
-              href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}
-              onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                navigate(event.currentTarget.getAttribute('href')!);
-              }}
-            >
-              Ouvrir le dossier enregistré
-            </a>
-          )}
         </div>
       </>
       {drawer && (
         <CaptureMetadataDrawer
           type={category.type}
           phase={phase}
+          requireComplete
+          closeOnSave
+          onSaved={(saved) => {
+            if (hasVehicleMetadata(saved)) {
+              setError('');
+            }
+          }}
           onClose={() => setDrawer(false)}
         />
       )}
@@ -213,7 +389,9 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
           }}
         />
       )}
-      {finale && current?.response && <CaptureFinale response={current.response} />}
+      {(finale || analysisStage) && current?.response && (
+        <CaptureFinale response={current.response} ready={finale} />
+      )}
     </div>
   );
 }

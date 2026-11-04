@@ -16,7 +16,7 @@ export function CaptureIslandActivity({
   if (!session) return null;
   const { capture, response } = session;
   const latestPhoto = capture?.photos.filter((photo) => photo.status === 'saved').at(-1);
-  const failureCode = capture?.error_code ?? capture?.analysis_error ?? response?.error?.code;
+  const failureCode = capture?.error_code ?? response?.error?.code ?? capture?.analysis_error;
   const error = session.error || (failureCode ? failureMessage(failureCode) : '');
   const analysis = capture?.status === 'completed' && !!response?.progress;
   const completed = analysis ? response!.progress!.photos_completed : (capture?.saved_count ?? 0);

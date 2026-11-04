@@ -234,6 +234,22 @@ afterEach(() => {
 // ============================================================
 
 describe('3D bay runtime ownership', () => {
+  it('enables the first drag on page readiness without a reset or vehicle playback', async () => {
+    const session = createSession({ initiallyParked: true, autoStart: false });
+    session.runtime.setCameraInteractive(true);
+    expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(false);
+    await session.finishLoading();
+    session.flushFrame();
+    session.runtime.setCameraInteractive(true);
+    expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(true);
+    expect(mocks.camera.reset).not.toHaveBeenCalled();
+    expect(mocks.choreography.enter).not.toHaveBeenCalled();
+    mocks.cameraOptions.onManualInteraction();
+    session.flushFrame();
+    expect(mocks.camera.update).toHaveBeenCalled();
+    session.runtime.setCameraInteractive(false);
+    expect(mocks.camera.setEnabled).toHaveBeenLastCalledWith(false);
+  });
   it('starts only after the attached vehicle is prepared and a complete frame has rendered', async () => {
     const session = createSession();
     expect(mocks.cameraOptions.camera).toBe(mocks.stage.camera);
@@ -258,7 +274,6 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.camera.applyCinematic).toHaveBeenCalledWith(mocks.choreography.state);
     expect(mocks.camera.update).not.toHaveBeenCalled();
   });
-
   it('hands the final cinematic pose to orbit controls once and renders only requested damping frames', async () => {
     const session = createSession();
     await session.finishLoading();
@@ -278,7 +293,6 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.choreography.setPalette).toHaveBeenCalledWith(palette);
     expect(mocks.camera.setCategory).toHaveBeenCalledWith(2, false);
   });
-
   it('preserves manual ownership during vehicle motion and reduced motion, then resets explicitly', async () => {
     const session = createSession();
     await session.finishLoading();
@@ -299,7 +313,6 @@ describe('3D bay runtime ownership', () => {
     session.flushFrame();
     expect(mocks.camera.applyCinematic).toHaveBeenCalledTimes(2);
   });
-
   it('settles the full cinematic camera when reduced motion changes during intro or loading', async () => {
     const session = createSession();
     session.runtime.setReducedMotion(true);
@@ -313,7 +326,6 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.camera.update).toHaveBeenCalledOnce();
     expect(session.frames.size).toBe(0);
   });
-
   it('skips before reset and keeps a reset tween under the camera controller ownership', async () => {
     const session = createSession();
     await session.finishLoading();
@@ -327,7 +339,6 @@ describe('3D bay runtime ownership', () => {
     expect(mocks.stage.resize).toHaveBeenCalledTimes(2);
     expect(mocks.camera.resize).toHaveBeenCalledTimes(2);
   });
-
   it('cancels hidden or offscreen frames and resumes without an idle render loop', async () => {
     const session = createSession({ initiallyParked: true });
     await session.finishLoading();

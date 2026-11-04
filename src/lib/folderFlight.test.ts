@@ -1,11 +1,12 @@
 /** Protects frozen artwork, unique SVG references and inaccessible viewport layers without launching a browser; depends on a minimal DOM fixture. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFolderFlight } from './folderFlight';
+import { createFolderFlight, createFolderRelease } from './folderFlight';
 
 class ArtworkElement {
   attributesMap = new Map<string, string>();
   children: ArtworkElement[] = [];
   inert = false;
+  remove = vi.fn();
   className = '';
   computed: Record<string, string> = {
     transform: 'matrix(1,0,0,1,0,0)',
@@ -118,5 +119,25 @@ describe('frozen folder layers', () => {
       source as unknown as HTMLElement,
     ) as unknown as ArtworkElement;
     expect(first.children[0].children[0].id).not.toBe(second.children[0].children[0].id);
+  });
+  it('clips release at a stationary island edge and removes both presentation layers once', () => {
+    const { source, body } = fixture();
+    const release = createFolderRelease(
+      source as unknown as HTMLElement,
+      source as unknown as HTMLElement,
+      44,
+    );
+    const aperture = body.children.at(-1)!;
+    expect(aperture.style.position).toBe('fixed');
+    expect(aperture.style.inset).toBe('0');
+    expect(aperture.style.clipPath).toBe('inset(44px 0 0 0)');
+    expect(aperture.style.pointerEvents).toBe('none');
+    expect(aperture.inert).toBe(true);
+    expect(aperture.attributesMap.get('aria-hidden')).toBe('true');
+    expect(aperture.children[0]).toBe(release.flight);
+    release.remove();
+    release.remove();
+    expect(release.flight.remove).toHaveBeenCalledOnce();
+    expect(aperture.remove).toHaveBeenCalledOnce();
   });
 });

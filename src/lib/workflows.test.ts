@@ -135,7 +135,7 @@ describe('required metadata and catalogue dependency', () => {
 });
 
 describe('photo completeness and AI eligibility', () => {
-  it('permits a quick estimate with just one saved side and complete metadata', () => {
+  it('permits real detection with one saved side before vehicle metadata is complete', () => {
     const response = getPreviewResult('RAPIDE-APERCU-02');
     expect(response.photos).toHaveLength(1);
     expect(canAnalyzeDossier({ ...response, photo_count: 1 })).toBe(true);
@@ -146,7 +146,7 @@ describe('photo completeness and AI eligibility', () => {
         photo_count: 1,
         vehicle: { ...response.vehicle, date_mise_en_circulation: null },
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
   it.each(['before_incomplete', 'awaiting_after', 'after_incomplete', 'comparison_ready'] as const)(
     'derives %s from distinct saved phase sides',

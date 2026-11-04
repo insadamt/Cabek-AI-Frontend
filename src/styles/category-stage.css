@@ -1,4 +1,4 @@
-/* Category entry reuses physical glass folders, with restrained identities shared by collections and workspaces. */
+/* Presents the quiet category landing and responsive folder feedback; depends on shared glass folder geometry and category tokens. */
 .category-stage {
   position: relative;
   height: 100%;
@@ -20,42 +20,57 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 80px 4vw 28px;
-}
-.category-folder-heading {
-  text-align: center;
-  margin: 0 0 clamp(20px, 5vh, 70px);
-}
-.category-folder-heading h1 {
-  margin: 10px 0;
-  font-size: clamp(24px, 3vw, 46px);
-  letter-spacing: -0.055em;
-  font-weight: 500;
-}
-.category-folder-heading > p:last-child {
-  color: #777;
-  font-size: 13px;
+  padding: 88px 4vw 64px;
+  background: radial-gradient(ellipse at 50% 30%, #fff 0%, #f7f8f5 70%);
 }
 .category-folder-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(16px, 3vw, 60px);
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
 }
 .category-folder-choice {
   min-width: 0;
+  transition: transform 240ms var(--motion-ease);
+  animation: category-folder-enter 480ms ease-out backwards;
+  animation-delay: 80ms;
+}
+.category-folder-choice:nth-child(2) {
+  animation-delay: 150ms;
+}
+.category-folder-choice:nth-child(3) {
+  animation-delay: 220ms;
 }
 .category-folder-choice .dossier-folder {
   width: 100%;
   height: auto;
   aspect-ratio: 1.35;
   transform-origin: center;
+  filter: drop-shadow(0 14px 12px #17241b18);
 }
 .category-folder-choice .folder-cover {
   cursor: pointer;
+  /* Keep labels crisp; the gradient supplies the glass effect without blurring the rear face. */
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.category-folder-choice:has(.folder-cover:focus-visible) {
+  transform: translateY(-6px);
+}
+.category-folder-choice .dossier-folder:has(.folder-cover:focus-visible)::after {
+  border: 2px solid #334d40;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.category-folder-landing:not([aria-busy='true']) .category-folder-choice:has(.folder-cover:active) {
+  transform: translateY(-2px) scale(0.99);
 }
 .category-folder-title {
   position: absolute;
-  top: 49%;
+  top: 53%;
   left: 9%;
   right: 9%;
   font-size: clamp(16px, 1.8vw, 27px);
@@ -63,29 +78,17 @@
   letter-spacing: -0.035em;
   text-align: left;
   color: var(--folder-category-ink, #fff);
+  font-weight: 550;
+  text-wrap: balance;
 }
 .category-folder-number {
   position: absolute;
   top: 25%;
   left: 9%;
   color: var(--folder-category-ink, #fff);
-  opacity: 0.6;
+  opacity: 0.8;
   font-size: 11px;
-}
-.category-folder-choice .folder-label {
-  left: 9%;
-  right: 9%;
-  bottom: 12%;
-  font-size: clamp(9px, 0.8vw, 12px);
-  color: var(--folder-category-ink, #ddd);
-  opacity: 0.85;
-}
-.category-folder-footnote {
-  margin: clamp(28px, 7vh, 85px) 0 0;
-  text-align: center;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: #828781;
+  font-variant-numeric: tabular-nums;
 }
 [data-category='chiffrage_rapide'] {
   --category-accent: #bad689;
@@ -112,57 +115,65 @@
 .category-collection {
   border-top: 2px solid var(--category-accent, transparent);
 }
+@media (hover: hover) and (pointer: fine) {
+  .category-folder-landing:not([aria-busy='true']) .category-folder-choice:hover {
+    transform: translateY(-6px);
+  }
+  .category-folder-landing:not([aria-busy='true'])
+    .category-folder-choice:has(.folder-cover:active) {
+    transform: translateY(-2px) scale(0.99);
+  }
+}
+/* Fade the outer wrappers so entrance motion never competes with the folder flight transforms. */
+
+@keyframes category-folder-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @media (max-width: 650px) {
   .category-folder-landing {
-    padding: 72px 22px 20px;
+    padding: 88px 22px max(28px, env(safe-area-inset-bottom));
     overflow: auto;
     justify-content: flex-start;
-  }
-  .category-folder-heading {
-    margin-bottom: 18px;
-  }
-  .category-folder-heading h1 {
-    font-size: 24px;
   }
   .category-folder-grid {
     grid-template-columns: 1fr;
     gap: 20px;
     width: min(100%, 340px);
-    margin: auto;
+    margin: 0 auto;
   }
   .category-folder-choice .dossier-folder {
     aspect-ratio: 2.5;
     min-height: 125px;
   }
   .category-folder-title {
-    top: 42%;
+    top: 52%;
     font-size: 18px;
     line-height: 1.15;
-  }
-  .category-folder-choice .folder-label {
-    bottom: 9%;
-    font-size: 10px;
-  }
-  .category-folder-footnote {
-    margin-top: 24px;
   }
 }
 @media (max-height: 550px) and (min-width: 651px) {
   .category-folder-landing {
-    padding-top: 70px;
-  }
-  .category-folder-heading {
-    margin-bottom: 12px;
-  }
-  .category-folder-heading h1 {
-    font-size: 25px;
+    padding: 70px 4vw 24px;
+    overflow-y: auto;
+    justify-content: flex-start;
   }
   .category-folder-grid {
     max-width: 950px;
     margin: 0 auto;
     width: 100%;
   }
-  .category-folder-footnote {
-    margin-top: 18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .category-folder-choice {
+    animation: none;
+    transition: none;
+  }
+  .category-folder-landing .category-folder-choice {
+    transform: none !important;
   }
 }

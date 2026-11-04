@@ -41,10 +41,16 @@ function projectComposition(
 ) {
   const camera = new PerspectiveCamera(32, width / height, 0.1, 120);
   const target = new Vector3();
-  applyCinematicBayCamera(camera, { revealProgress, reframeProgress }, camera.aspect, target, {
-    width,
-    height,
-  });
+  applyCinematicBayCamera(
+    camera,
+    { entryProgress, revealProgress, reframeProgress },
+    camera.aspect,
+    target,
+    {
+      width,
+      height,
+    },
+  );
   const projected = [...equipmentCorners, ...vehicleCorners(entryProgress)].map((point) =>
     point.clone().project(camera),
   );
@@ -64,6 +70,14 @@ function projectComposition(
 // ============================================================
 
 describe('scanner control-surface composition', () => {
+  it('fills the wide scanner canvas with the waiting car and tunnel', () => {
+    const pose = projectComposition(1644, 650, 0, 1);
+    expect(pose.right - pose.left).toBeGreaterThan(0.7);
+    expect(pose.bottom - pose.top).toBeGreaterThan(0.5);
+    expect((pose.left + pose.right) / 2).toBeCloseTo(0.5, 1);
+    expect((pose.top + pose.bottom) / 2).toBeCloseTo(0.5, 1);
+  });
+
   it('retains finite projection while cached preparation finishes detached', () => {
     const pose = projectComposition(1, 1);
     expect(pose.camera.projectionMatrix.elements.every(Number.isFinite)).toBe(true);
@@ -83,8 +97,12 @@ describe('scanner control-surface composition', () => {
     (width, height) => {
       const mobile = width <= 650;
       const shortLandscape = height <= 550 && !mobile;
-      const sceneWidth = width - (mobile ? 24 : shortLandscape ? 358 : 48);
-      const sceneHeight = Math.max(180, height - (mobile ? 464 : shortLandscape ? 176 : 386));
+      const desktopSidebar = width >= 1100 && height >= 650;
+      const sceneWidth = width - (desktopSidebar ? 400 : mobile ? 24 : shortLandscape ? 358 : 48);
+      const sceneHeight = Math.max(
+        180,
+        height - (desktopSidebar ? 200 : mobile ? 464 : shortLandscape ? 176 : 386),
+      );
       for (const [entry, reframe] of [
         [0, 0],
         [0.25, 0.1],
@@ -105,9 +123,9 @@ describe('scanner control-surface composition', () => {
   );
 
   it.each([
-    [1318, 382],
-    [1552, 514],
-    [1872, 694],
+    [966, 568],
+    [1200, 700],
+    [1520, 880],
   ])(
     'keeps the parked subject prominent in a %i×%i scene without reserving a removed selector',
     (width, height) => {
@@ -116,7 +134,8 @@ describe('scanner control-surface composition', () => {
       expect(pose.bottom - pose.top).toBeLessThan(0.9);
       expect(pose.camera.view?.offsetX).toBe(0);
       expect(pose.camera.view?.offsetY).toBe(0);
-      expect(pose.target.toArray()).toEqual([0, 0.6, 0]);
+      expect((pose.left + pose.right) / 2).toBeCloseTo(0.5, 1);
+      expect((pose.top + pose.bottom) / 2).toBeCloseTo(0.5, 1);
       expect(pose.camera.scale.toArray()).toEqual([1, 1, 1]);
     },
   );

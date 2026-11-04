@@ -64,10 +64,12 @@ export function useResource<T>(
       if (!document.hidden) refresh();
     };
     window.addEventListener('focus', onFocus);
+    window.addEventListener('cabek:dossiers-changed', refresh);
     return () => {
       controller.abort();
       clearTimeout(timer);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('cabek:dossiers-changed', refresh);
     };
   }, [key, revision, refresh]);
 

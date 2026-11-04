@@ -37,6 +37,8 @@ function createRuntimeAdapter() {
     enter: vi.fn(),
     skipIntro: vi.fn(),
     resetCamera: vi.fn(),
+    setWaitingOutside: vi.fn(),
+    setCameraInteractive: vi.fn(),
     setPalette: vi.fn(),
     setReducedMotion: vi.fn(),
     setActive: vi.fn(),
@@ -59,13 +61,14 @@ function createSession() {
   caches.push(cache);
   const palette = { primary: '#b8db80', secondary: '#e5edcf' };
 
-  function attach(initiallyParked = false) {
+  function attach(initiallyParked = false, waitingOutside = false) {
     const host = new HostAdapter();
     const onStatusChange = vi.fn();
     const onIntroComplete = vi.fn();
     const connection = cache.attach({
       host: host as unknown as HTMLElement,
       initiallyParked,
+      waitingOutside,
       palette,
       reducedMotion: false,
       onStatusChange,
@@ -86,6 +89,37 @@ afterEach(() => {
 });
 
 describe('persistent studio runtime cache', () => {
+  it('starts each scene visit locked and forwards explicit unlock and lock actions', async () => {
+    const session = createSession();
+    const first = session.attach(true, true);
+    await Promise.resolve();
+    session.options[0].onReady();
+    const runtime = session.runtimes[0];
+    expect(runtime.setCameraInteractive).toHaveBeenLastCalledWith(false);
+    first.connection.setCameraInteractive(true);
+    expect(runtime.setCameraInteractive).toHaveBeenLastCalledWith(true);
+    first.connection.setCameraInteractive(false);
+    expect(runtime.setCameraInteractive).toHaveBeenLastCalledWith(false);
+    first.connection.release();
+    session.attach(true, true);
+    expect(runtime.setCameraInteractive).toHaveBeenLastCalledWith(false);
+  });
+
+  it('prepares and restores the same runtime with the vehicle outside before scan admission', async () => {
+    const session = createSession();
+    const first = session.attach(true, true);
+    await Promise.resolve();
+    expect(session.options[0].waitingOutside).toBe(true);
+    session.options[0].onReady();
+    first.connection.release();
+    const returned = session.attach(true, true);
+    expect(returned.connection.canvas).toBe(first.connection.canvas);
+    expect(session.runtimes[0].setWaitingOutside).toHaveBeenLastCalledWith(true);
+    expect(session.runtimes[0].enter).not.toHaveBeenCalled();
+    returned.connection.setWaitingOutside(false);
+    expect(session.runtimes[0].setWaitingOutside).toHaveBeenLastCalledWith(false);
+  });
+
   it('reattaches the same ready canvas and GPU runtime without another load or preparation', async () => {
     const session = createSession();
     const first = session.attach();

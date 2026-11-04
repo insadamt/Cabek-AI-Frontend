@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureSession } from '../../captureTypes';
 import type { DossierOpeningSession } from '../../lib/dossierOpeningState';
-import { previewDossiers } from '../../preview/data';
+import { getPreviewResult, previewDossiers } from '../../preview/data';
 import { AnalysisIsland } from './AnalysisIsland';
 
 const state = vi.hoisted(() => ({
@@ -154,4 +154,46 @@ describe('expired island error presentation', () => {
     expect(cancel).not.toHaveBeenCalled();
     expect(state.opening.retry).toBe(retry);
   });
+});
+
+it('renders confirmed tunnel AI with the same pixels, timer and progress as carousel analysis', () => {
+  const response = getPreviewResult(previewDossiers[0].dossier_id);
+  state.capture = {
+    identity: { type: 'chiffrage_rapide', creationKey: 'capture', dossierId: response.dossier_id },
+    pending: false,
+    synchronized: true,
+    error: '',
+    receivedAt: 100,
+    startedAt: 100,
+    capture: {
+      dossier_id: response.dossier_id,
+      phase: null,
+      capture_id: 'C',
+      status: 'completed',
+      expected_count: 4,
+      saved_count: 4,
+      photos: [],
+      error_code: null,
+      analysis_error: null,
+    },
+    response: {
+      ...response,
+      type: 'chiffrage_rapide',
+      status: 'processing',
+      progress: {
+        stage: 'analyzing_photos',
+        photos_completed: 1,
+        photos_total: 4,
+        elapsed_seconds: 2,
+        eta_seconds: 6,
+      } as never,
+    },
+  };
+  const markup = renderToStaticMarkup(<AnalysisIsland />);
+  expect(markup).toContain('data-phase="working"');
+  expect(markup).toContain('island-pixel-grid');
+  expect(markup).toContain('class="island-timer"');
+  expect(markup).toContain('Analyse des photos');
+  expect(markup).toContain('aria-valuenow="25"');
+  expect(markup).not.toContain('capture-island-activity');
 });

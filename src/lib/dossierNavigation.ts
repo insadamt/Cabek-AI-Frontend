@@ -1,4 +1,5 @@
 /** Coordinates real image loading and physical folder opening; preserves the originating collection URL. */
+import { categoryPath } from './workflows';
 import { approachCapturedFolder } from './capturedFolderMotion';
 import type { PhotoPhase } from '../workflowTypes';
 import { flushSync } from 'react-dom';
@@ -148,10 +149,16 @@ export async function openDossierFromFolder(options: OpenDossierOptions) {
     };
     window.removeEventListener('popstate', cancel);
     publishDossierOpening(null);
-    navigate(path, {
-      dossierEntrance: entrance,
-      returnTo: options.returnTo ?? window.location.pathname + window.location.search,
-    });
+    const returnTo =
+      options.returnTo ??
+      (options.captured
+        ? categoryPath(dossier.type)
+        : window.location.pathname + window.location.search);
+
+    // Replace the transient tunnel with its collection so Back cannot replay a completed capture.
+
+    if (options.captured) window.history.replaceState({}, '', returnTo);
+    navigate(path, { dossierEntrance: entrance, returnTo });
   } catch (error) {
     imageLoading.abort();
     if (signal.aborted) return;

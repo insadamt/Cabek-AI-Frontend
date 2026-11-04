@@ -1,14 +1,20 @@
 /** Minimal collection heading and disclosed server filters; depends on category rules and existing control motion. */
 import { ArrowLeft, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { categoryPath, collectionUrl, workflowLabels, type Category } from '../../lib/workflows';
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
-import { brandSortAvailable } from '../../lib/api';
+import { brandSortAvailable, describeError } from '../../lib/api';
+import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
 
 export function CategoryControls({ category }: { category: Category }) {
   const { pathname, searchParams, navigate } = useNavigation();
   const { busy } = useHomeAnalysis();
+  const collectionNavigation = useCollectionNavigation();
+  const { store, session } = useTunnelCapture();
+  const [error, setError] = useState('');
   const grid = searchParams.has('search');
   const indicator = useSelectionIndicator(grid);
   function filter(changes: Record<string, string | null>) {
@@ -17,31 +23,42 @@ export function CategoryControls({ category }: { category: Category }) {
   return (
     <div className="category-controls" inert={busy}>
       <div className="category-heading">
-        <button className="back-link" onClick={() => navigate(`/?parcours=${category.slug}`)}>
+        <button
+          className="back-link"
+          onClick={(event) =>
+            collectionNavigation.leavePage(
+              event.currentTarget.closest('.category-collection'),
+              () => navigate(`/?parcours=${category.slug}`),
+            )
+          }
+        >
           <ArrowLeft size={15} /> Accueil
         </button>
-        <span
-          className="category-marker"
-          data-category-marker
-          data-flip-id={`category-${category.type}`}
-          aria-hidden="true"
-        >
-          {category.number}
-        </span>
         <h1>{category.title}</h1>
         {category.type !== 'forfait_expertise' && (
           <button
             className="button workflow-primary"
-            onClick={() =>
-              navigate(`${categoryPath(category.type)}/new`, {
-                returnTo: pathname + window.location.search,
-              })
-            }
+            disabled={session?.pending || session?.saving}
+            onClick={(event) => {
+              try {
+                if (store && !store.clear()) return;
+                collectionNavigation.leavePage(
+                  event.currentTarget.closest('.category-collection'),
+                  () =>
+                    navigate(`${categoryPath(category.type)}/new`, {
+                      returnTo: pathname + window.location.search,
+                    }),
+                );
+              } catch (failure) {
+                setError(describeError(failure));
+              }
+            }}
           >
-            <Plus size={16} /> Créer un dossier
+            <Plus size={16} /> Nouveau dossier
           </button>
         )}
       </div>
+      {error && <p role="alert">{error}</p>}
       <div className="category-browse-controls">
         <div className="segmented-control" ref={indicator} aria-label="Affichage des dossiers">
           <span className="selection-indicator" aria-hidden="true" />

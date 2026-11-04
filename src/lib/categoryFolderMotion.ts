@@ -1,6 +1,7 @@
 /** Uniform viewport-layer absorption preserves the selected glass pocket; depends on journey ownership and frozen folder copies. */
 import { cancelJourneyMotion, runJourneyMotion } from './journeyMotion';
 import { createFolderFlight } from './folderFlight';
+import { addPageExit } from './pageJourneyMotion';
 
 export function absorbCategoryFolder(
   folder: HTMLElement,
@@ -8,6 +9,7 @@ export function absorbCategoryFolder(
   island: HTMLElement,
   onComplete: () => void,
   onCancel?: () => void,
+  scope?: HTMLElement,
 ) {
   cancelJourneyMotion();
   const origin = folder.getBoundingClientRect();
@@ -16,7 +18,9 @@ export function absorbCategoryFolder(
   const visibility = folder.style.visibility;
   folder.style.visibility = 'hidden';
   return runJourneyMotion({
+    deferRestore: true,
     build: (timeline) => {
+      if (scope) addPageExit(timeline, scope);
       if (peers.length) timeline.to(peers, { opacity: 0, scale: 0.94, y: 16, duration: 0.28 }, 0);
       timeline
         .to(flight, { y: -12, duration: 0.16, ease: 'power2.out' }, 0)
@@ -31,7 +35,7 @@ export function absorbCategoryFolder(
           },
           0.16,
         )
-        .to(island, { scale: 1.035, duration: 0.16 }, 0.7)
+        .to(island, { scale: 1.025, duration: 0.16 }, 0.7)
         .to(flight, { opacity: 0, scale: 0.08, duration: 0.12 }, 0.82)
         .to(island, { scale: 1, duration: 0.2 }, 0.86);
     },

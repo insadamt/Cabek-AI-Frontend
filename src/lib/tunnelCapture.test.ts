@@ -69,7 +69,7 @@ const stores: TunnelCaptureStore[] = [];
 function setup(storage = storageAdapter()) {
   const service = {
     createDraft: vi.fn().mockResolvedValue(detail()),
-    readDossier: vi.fn().mockResolvedValue(detail()),
+    readDossier: vi.fn().mockResolvedValue(detail({ vehicle })),
     readCapture: vi.fn().mockResolvedValue(capture()),
     startCapture: vi
       .fn()
@@ -96,8 +96,15 @@ afterEach(() => {
 });
 
 describe('persistent tunnel lifecycle', () => {
-  it('creates a real empty draft before capture and retains only its identity', async () => {
+  it('saves the vehicle sheet before capture and retains the same draft identity', async () => {
     const { service, store, storage } = setup();
+    await store.save('chiffrage_rapide', undefined, {
+      marque_id: 12,
+      model_id: 34,
+      matricule: vehicle.matricule,
+      date_mise_en_circulation: vehicle.date_mise_en_circulation,
+    });
+    expect(service.startCapture).not.toHaveBeenCalled();
     await store.start('chiffrage_rapide');
     expect(service.createDraft).toHaveBeenCalledWith(
       'chiffrage_rapide',
@@ -206,7 +213,9 @@ describe('persistent tunnel lifecycle', () => {
     service.patchMetadata.mockReturnValue(patch.promise);
     const saving = store.save('chiffrage_rapide', undefined, { matricule: '84654-ب-454' });
     await Promise.resolve();
-    expect(store.getSnapshot()?.response?.vehicle.matricule).toBe('');
+    expect(store.getSnapshot()?.response?.vehicle.matricule).toBe(vehicle.matricule);
+    expect(store.getSnapshot()?.saving).toBe(true);
+    expect(store.clear()).toBe(false);
     service.readDossier.mockResolvedValue(detail({ vehicle }));
     patch.resolve(detail({ vehicle }));
     await saving;
@@ -216,6 +225,7 @@ describe('persistent tunnel lifecycle', () => {
       expect.any(AbortSignal),
     );
     expect(store.getSnapshot()?.response?.vehicle.matricule).toBe('84654-ب-454');
+    expect(store.getSnapshot()?.saving).toBe(false);
     expect(store.getSnapshot()?.capture?.status).toBe('capturing');
     expect(service.createDraft).toHaveBeenCalledOnce();
   });
@@ -226,7 +236,7 @@ describe('persistent tunnel lifecycle', () => {
     await expect(store.save('chiffrage_rapide', undefined, { matricule: 'bad' })).rejects.toThrow(
       'invalid plate',
     );
-    expect(store.getSnapshot()?.response?.vehicle).toEqual(emptyVehicle);
+    expect(store.getSnapshot()?.response?.vehicle).toEqual(vehicle);
   });
   it('does not consider inference or missing metadata sufficient for completion', async () => {
     const { service, store } = setup();
@@ -270,6 +280,7 @@ describe('persistent tunnel lifecycle', () => {
   });
   it('requires metadata before AFTER evidence can become immutable, including a restore race', async () => {
     const { store, service } = setup();
+    service.readDossier.mockResolvedValue(detail());
     store.restoreExisting('verification', 'after', 'BEFORE-7');
     await expect(store.start('verification', 'after')).rejects.toMatchObject({
       code: 'incomplete_vehicle_metadata',
@@ -372,3 +383,70 @@ describe('authoritative folder completion', () => {
     expect(readCaptureIdentity(storage)).toBeUndefined();
   });
 });
+
+describe('leaving and starting fresh', () => {
+  it('releases a running capture without a backend write and gives the next draft a new key', async () => {
+    const { store, service, storage } = setup();
+    await store.start('chiffrage_rapide');
+    const key = service.createDraft.mock.calls[0][1];
+    const calls = service.startCapture.mock.calls.length;
+    expect(store.clear()).toBe(true);
+    expect(store.getSnapshot()).toBeNull();
+    expect(storage.getItem(captureStorageKey)).toBeNull();
+    expect(service.startCapture).toHaveBeenCalledTimes(calls);
+    await store.start('verification', 'before');
+    expect(service.createDraft.mock.calls[1][1]).not.toBe(key);
+  });
+  it('refuses to release an unresolved creation so its saved identity is not lost', async () => {
+    const { store, service } = setup();
+    const draft = deferred<DossierResponse>();
+    service.createDraft.mockReturnValue(draft.promise);
+    const starting = store.start('chiffrage_rapide');
+    expect(store.clear()).toBe(false);
+    draft.resolve(detail());
+    await starting;
+    expect(store.getSnapshot()?.identity.dossierId).toBe('REAL-42');
+  });
+  it('ignores an old read after release and allows the new session to refresh immediately', async () => {
+    const { store, service } = setup();
+    await store.start('chiffrage_rapide');
+    const old = deferred<DossierResponse>();
+    service.readDossier.mockReturnValueOnce(old.promise);
+    const previousRead = store.refresh();
+    expect(store.clear()).toBe(true);
+    store.restoreExisting('chiffrage_rapide', undefined, 'NEW-9');
+    service.readDossier.mockResolvedValue(detail({ dossier_id: 'NEW-9' }));
+    await store.refresh();
+    old.resolve(detail({ status: 'failed' }));
+    await previousRead;
+    await store.refresh();
+    expect(store.getSnapshot()?.identity.dossierId).toBe('NEW-9');
+    expect(store.getSnapshot()?.response?.dossier_id).toBe('NEW-9');
+    expect(service.createDraft).toHaveBeenCalledOnce();
+  });
+  it('retains the session when browser storage cannot release its identity', async () => {
+    const { store, storage } = setup();
+    await store.start('chiffrage_rapide');
+    storage.removeItem = () => {
+      throw new Error('storage blocked');
+    };
+    expect(() => store.clear()).toThrow('storage blocked');
+    expect(store.getSnapshot()?.identity.dossierId).toBe('REAL-42');
+  });
+});
+
+it.each(['chiffrage_rapide', 'verification'] as const)(
+  'blocks a restored %s draft with incomplete saved metadata before capture',
+  async (type) => {
+    const { store, service } = setup();
+    service.readDossier.mockResolvedValue(detail({ type }));
+    const phase = type === 'verification' ? 'before' : undefined;
+    store.restoreExisting(type, phase, 'REAL-42');
+    await expect(store.start(type, phase)).rejects.toMatchObject({
+      code: 'incomplete_vehicle_metadata',
+    });
+    expect(service.startCapture).not.toHaveBeenCalled();
+    expect(service.startScan).not.toHaveBeenCalled();
+    expect(service.createDraft).not.toHaveBeenCalled();
+  },
+);

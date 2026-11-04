@@ -295,3 +295,18 @@
     padding-inline: 5px;
   }
 }
+
+/* Capture evidence remains visible while inference and pricing progress separately. */
+.quick-analysis-status {
+  flex-shrink: 0;
+  padding: 10px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.quick-analysis-status .workflow-note {
+  margin-top: 4px;
+}
+.quick-estimate-workspace > .workflow-view-switch {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}

@@ -2,7 +2,10 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureSession } from '../../captureTypes';
-const state = vi.hoisted(() => ({ session: null as CaptureSession | null }));
+const state = vi.hoisted(() => ({
+  session: null as CaptureSession | null,
+  catalogueError: null as unknown,
+}));
 vi.mock('../../hooks/useTunnelCapture', () => ({
   useTunnelCapture: () => ({ session: state.session, store: {} }),
 }));
@@ -19,7 +22,7 @@ vi.mock('../../hooks/useNavigation', () => ({
   navigate: vi.fn(),
 }));
 vi.mock('../../hooks/useResource', () => ({
-  useResource: () => ({ data: [], loading: false, error: null, refresh: vi.fn() }),
+  useResource: () => ({ data: [], loading: false, error: state.catalogueError, refresh: vi.fn() }),
 }));
 vi.mock('./CategoryStageVisual', () => ({
   CategoryStageVisual: ({ capturing }: { capturing: boolean }) => (
@@ -27,7 +30,9 @@ vi.mock('./CategoryStageVisual', () => ({
   ),
 }));
 vi.mock('./CaptureFinale', () => ({
-  CaptureFinale: () => <div>Ouverture automatique du dossier enregistré</div>,
+  CaptureFinale: ({ ready }: { ready: boolean }) => (
+    <div>{ready ? 'Ouverture automatique du dossier enregistré' : 'Dossier vide en attente'}</div>
+  ),
 }));
 vi.mock('../dossier/DetailsDrawer', () => ({
   DetailsDrawer: ({ children }: { children: (close: () => void) => import('react').ReactNode }) => (
@@ -67,7 +72,14 @@ function activeSession(): CaptureSession {
       dossier_id: 'REAL-42',
       type: 'chiffrage_rapide',
       workflow_status: 'capturing',
-      vehicle: { marque: '', modele: '', matricule: '' },
+      vehicle: {
+        marque: 'Dacia',
+        modele: 'Sandero',
+        matricule: '84654-ب-454',
+        marque_id: 12,
+        model_id: 34,
+        date_mise_en_circulation: '2020-05-17',
+      },
       photos: [],
       status: 'not_analyzed',
       progress: null,
@@ -78,6 +90,7 @@ function activeSession(): CaptureSession {
 }
 beforeEach(() => {
   state.session = activeSession();
+  state.catalogueError = null;
 });
 function stage() {
   return renderToStaticMarkup(<TunnelStage category={categories[1]} onBack={() => {}} />);
@@ -86,33 +99,62 @@ function stage() {
 describe('capture presentation', () => {
   it('keeps the metadata drawer accessible during capture and prevents repeated scanning', () => {
     const markup = stage();
-    expect(markup).toContain('Fiche véhicule ↗');
-    expect(markup).toContain('disabled="">CAPTURE EN COURS');
+    expect(markup).toContain('Modifier la fiche ↗');
+    expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*CAPTURE EN COURS/);
     expect(markup).toContain('data-capturing="true"');
     expect(markup).toContain('Voir les dossiers');
     expect(markup).not.toContain('Ouverture automatique');
   });
+  it('keeps vehicle entry and navigation controls available on a fresh tunnel', () => {
+    state.session = null;
+    const markup = stage();
+    expect(markup).toContain('FICHE VÉHICULE');
+    expect(markup).toContain('Tous les parcours');
+    expect(markup).toContain('Voir les dossiers');
+    const controls = markup.match(/class="capture-controls"[^>]*>/)?.[0];
+    expect(controls).toBeDefined();
+    expect(controls).not.toContain('inert');
+    expect(controls).not.toContain('aria-hidden="true"');
+  });
+  it('keeps session controls accessible while the retained 3D scene exits during analysis', () => {
+    state.session!.capture!.status = 'completed';
+    state.session!.response!.status = 'processing';
+    state.session!.response!.workflow_status = 'analyzing';
+    const markup = stage();
+    expect(markup).toContain('Dossier vide en attente');
+    expect(markup).toContain('data-capturing="false"');
+    expect(markup).toContain('Modifier la fiche');
+    expect(markup).toContain('Nouveau dossier');
+    expect(markup).toContain('Quitter et conserver');
+    expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*ANALYSE EN COURS/);
+    const controls = markup.match(/class="capture-controls"[^>]*>/)?.[0];
+    expect(controls).toContain('data-analysis-active="true"');
+    expect(controls).not.toContain('inert');
+    expect(controls).not.toContain('aria-hidden="true"');
+  });
   it('offers complete fiche once photos finish without required metadata', () => {
     state.session!.capture!.status = 'completed';
-    expect(stage()).toContain('COMPLÉTER LA FICHE');
+    state.session!.response!.vehicle = { marque: '', modele: '', matricule: '' };
+    expect(stage()).toContain('FICHE VÉHICULE');
+    expect(stage()).not.toMatch(/>SCANNER<\/span>/);
     expect(stage()).not.toContain('Ouverture automatique');
   });
-  it('only triggers the finale on persisted estimated results and complete vehicle data', () => {
+  it('waits for a saved AI result before opening the captured dossier', () => {
     state.session!.capture!.status = 'completed';
-    state.session!.response = {
-      ...state.session!.response!,
-      status: 'completed',
-      workflow_status: 'estimated',
-      result: {} as never,
-      vehicle: {
-        marque: 'Dacia',
-        modele: 'Sandero',
-        marque_id: 12,
-        model_id: 34,
-        matricule: '84654-ب-454',
-        date_mise_en_circulation: '2020-05-17',
-      },
-    };
+    state.session!.capture!.saved_count = state.session!.capture!.expected_count = 1;
+    state.session!.response!.photos = [...state.session!.capture!.photos];
+    state.session!.response!.status = 'processing';
+    state.session!.response!.workflow_status = 'analyzing';
+    expect(stage()).not.toContain('Ouverture automatique');
+    expect(stage()).toContain('Dossier vide en attente');
+    expect(stage()).toContain('data-capturing="false"');
+    expect(stage()).not.toContain('Ouvrir le dossier enregistré');
+    state.session!.response!.status = 'failed';
+    expect(stage()).not.toContain('Ouverture automatique');
+    state.session!.response!.status = 'completed';
+    state.session!.response!.workflow_status = 'estimated';
+    expect(stage()).not.toContain('Ouverture automatique');
+    state.session!.response!.result = {} as never;
     expect(stage()).toContain('Ouverture automatique du dossier enregistré');
     state.session!.synchronized = false;
     expect(stage()).not.toContain('Ouverture automatique');
@@ -191,9 +233,9 @@ describe('capture presentation', () => {
 });
 
 describe('contextual capture recovery', () => {
-  it('keeps the failure explanation in the island instead of duplicating it over the scene', () => {
+  it('shows a visible recovery error at the scan controls as well as the island', () => {
     state.session!.error = 'Connexion au tunnel perdue';
-    expect(stage()).not.toContain('Connexion au tunnel perdue');
+    expect(stage()).toContain('Connexion au tunnel perdue');
     expect(
       renderToStaticMarkup(<CaptureIslandActivity contentRef={{ current: null }} />),
     ).toContain('Connexion au tunnel perdue');
@@ -211,7 +253,61 @@ describe('contextual capture recovery', () => {
       date_mise_en_circulation: '2020-05-17',
     };
     const markup = renderToStaticMarkup(<TunnelStage category={categories[2]} onBack={() => {}} />);
-    expect(markup).toContain('disabled="">SYNCHRONISATION…');
+    expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*SYNCHRONISATION…/);
     expect(markup).not.toContain('RELANCER L’ANALYSE');
   });
+});
+
+it('loads the vehicle sheet from the open dossier independently of a retained tunnel session', () => {
+  const dossier = {
+    ...state.session!.response!,
+    dossier_id: 'OPEN-DOSSIER',
+    vehicle: {
+      marque: 'Dacia',
+      modele: 'Sandero',
+      matricule: '12345-A-678',
+      date_mise_en_circulation: '2021-04-15',
+    },
+  };
+  const markup = renderToStaticMarkup(
+    <CaptureMetadataDrawer
+      type="chiffrage_rapide"
+      dossier={dossier}
+      onSaved={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  expect(markup).toContain('value="12345-A-678"');
+  expect(markup).toContain('value="2021-04-15"');
+});
+
+it('makes the vehicle sheet primary for a fresh session and hides SCANNER', () => {
+  state.session = null;
+  expect(stage()).toContain('FICHE VÉHICULE');
+  expect(stage()).not.toMatch(/>SCANNER<\/span>/);
+});
+
+it('keeps saved scanner controls visible but disabled while metadata synchronizes', () => {
+  state.session!.capture!.status = 'not_started';
+  expect(stage()).toContain('data-metadata-shown="true"');
+  expect(stage()).toContain('>SCANNER</span>');
+  expect(stage()).toContain('Modifier la fiche');
+  state.session!.synchronized = false;
+  const markup = stage();
+  expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*SCANNER/);
+  expect(markup).toContain('Modifier la fiche');
+  expect(markup).toContain('capture-vehicle-summary');
+  expect(markup).not.toContain('FICHE VÉHICULE');
+});
+
+it('blocks incomplete forms and explains catalogue failures before scanning', () => {
+  state.catalogueError = new Error('Unavailable');
+  const markup = renderToStaticMarkup(
+    <CaptureMetadataDrawer type="chiffrage_rapide" requireComplete onClose={() => {}} />,
+  );
+  expect(markup).toContain('Le catalogue AutoEstimate est indisponible');
+  expect(markup).toContain('Recharger le catalogue');
+  expect(markup).toMatch(/<button[^>]*type="submit"[^>]*disabled/);
+  expect(markup).toMatch(/<select[^>]*required/);
+  expect(markup).toMatch(/<input[^>]*type="date"[^>]*required/);
 });

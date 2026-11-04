@@ -34,5 +34,8 @@ export interface CaptureSession {
   capture?: CaptureStatus;
   synchronized: boolean;
   pending: boolean;
+  saving?: boolean;
+  receivedAt?: number;
+  startedAt?: number;
   error: string;
 }

@@ -6,23 +6,9 @@
   overflow: hidden;
   isolation: isolate;
 }
-.carousel-backdrop-word {
+.dossier-carousel .carousel-stage {
   position: absolute;
-  left: 50%;
-  top: 12%;
-  transform: translateX(-50%);
-  font-size: 20vw;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.07em;
-  color: transparent;
-  -webkit-text-stroke: 1px #dedede;
-  pointer-events: none;
-  user-select: none;
-}
-.carousel-stage {
-  position: absolute;
-  inset: 70px 0 80px;
+  inset: 48px 0 calc(200px + env(safe-area-inset-bottom));
   perspective: 1400px;
   touch-action: pan-y;
   cursor: grab;
@@ -33,11 +19,11 @@
 }
 .carousel-folder-slot {
   --folder-scale: calc(1 - var(--folder-distance) * 0.32);
-  --folder-turn: calc(-8deg + var(--folder-position) * -22deg);
-  --folder-lean: calc(-4deg + var(--folder-position) * 7deg);
+  --folder-turn: calc(-3deg + var(--folder-position) * -18deg);
+  --folder-lean: calc(-1deg + var(--folder-position) * 5deg);
   position: absolute;
   left: 50%;
-  top: 51%;
+  top: 50%;
   width: var(--home-folder-width);
   aspect-ratio: 1.36;
   padding: 0;
@@ -51,7 +37,7 @@
   transition:
     transform 0.6s cubic-bezier(0.22, 0.8, 0.2, 1),
     filter 0.6s;
-  opacity: calc(1 - var(--folder-distance) * 0.18);
+  opacity: calc(1 - var(--folder-distance) * 0.25);
 }
 .carousel-folder-slot.is-active .dossier-folder {
   transform: rotateX(var(--folder-tilt-x)) rotateY(var(--folder-tilt-y));
@@ -66,34 +52,82 @@
   height: 100%;
   text-align: left;
 }
-.carousel-edge {
+.carousel-navigation {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 5;
-  width: 34px;
-  height: 150px;
+  left: 50%;
+  bottom: calc(136px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+/* Keep navigation in normal flow inside its group, independent of legacy viewport anchors. */
+
+.carousel-navigation .carousel-edge {
+  position: static;
+  transform: none;
+  flex: none;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  background: var(--home-ink);
-  color: white;
+  padding: 0;
+  border: 1px solid #cdd5ce;
+  border-radius: 50%;
+  clip-path: none;
+  background: #fff;
+  color: #34433a;
+  box-shadow: 0 2px 5px #18291c06;
+  transition:
+    background-color 160ms,
+    border-color 160ms,
+    scale 160ms;
 }
-.carousel-edge:active:not(:disabled) {
-  transform: translateY(-50%);
+.carousel-navigation .carousel-edge:active:not(:disabled) {
+  transform: none;
+  scale: 0.94;
 }
-.carousel-edge:focus-visible {
-  outline-offset: -6px;
-  outline-color: white;
+.carousel-navigation .carousel-edge:focus-visible {
+  outline: 2px solid #344f3e;
+  outline-offset: 4px;
 }
-.carousel-edge-previous {
-  left: 0;
-  clip-path: polygon(0 0, 100% 20%, 100% 80%, 0 100%);
-  padding-right: 7px;
+.carousel-navigation .carousel-edge:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
-.carousel-edge-next {
-  right: 0;
-  clip-path: polygon(100% 0, 0 20%, 0 80%, 100% 100%);
-  padding-left: 7px;
+.carousel-navigation .carousel-counter {
+  position: static;
+  transform: none;
+  min-width: 64px;
+  text-align: center;
+  color: #536158;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.dossier-carousel .dossier-folder {
+  filter: drop-shadow(0 12px 12px #14201920);
+}
+.dossier-carousel .folder-cover {
+  /* Preserve translucent depth while making the vehicle sheet easier to recognize. */
+
+  backdrop-filter: blur(2px) saturate(1);
+  -webkit-backdrop-filter: blur(2px) saturate(1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .carousel-navigation .carousel-edge:hover:not(:disabled) {
+    background: #edf3e8;
+    border-color: #93a88e;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carousel-navigation .carousel-edge {
+    transition: none;
+  }
+  .carousel-navigation .carousel-edge:active:not(:disabled) {
+    scale: 1;
+  }
 }
 
 /* Opening the active sheet flattens its pose for readable metadata. */

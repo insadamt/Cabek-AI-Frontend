@@ -1,0 +1,66 @@
+/* Folder lifecycle controls shared by collections, dossier details and the tunnel; depends on the app button styles. */
+.dossier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  max-width: 100%;
+}
+.dossier-actions button {
+  min-height: 36px;
+}
+.dossier-actions .dossier-delete {
+  color: #9b3029;
+}
+.dossier-actions p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dossier-actions [role='alert'] {
+  color: #9b3029;
+}
+.dossier-overview-sidebar > .dossier-actions {
+  margin: 18px 0;
+}
+.capture-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 16px;
+}
+.capture-session-actions > button {
+  min-height: 40px;
+}
+.capture-controls > [role='status'],
+.capture-controls > [role='alert'] {
+  max-width: 420px;
+  line-height: 1.6;
+}
+.carousel-controls > .dossier-actions {
+  justify-content: center;
+}
+
+.dossier-carousel > .dossier-actions {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 620px);
+  justify-content: center;
+  z-index: 20;
+}
+.home-grid-folder > .dossier-actions {
+  justify-content: center;
+  margin-top: 10px;
+}
+@media (max-width: 650px) {
+  .dossier-carousel > .dossier-actions {
+    bottom: 4px;
+    gap: 4px 14px;
+  }
+  .dossier-actions .workflow-note {
+    display: none;
+  }
+}

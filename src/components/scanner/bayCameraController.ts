@@ -339,9 +339,15 @@ export function createBayCameraController(options: BayCameraControllerOptions) {
       if (!capturing && !manuallyAdjusted) moveToPreset(currentPreset, reducedMotion);
       notifyChange();
     },
-    reset(resetReducedMotion: boolean) {
+    reset(resetReducedMotion: boolean, preservePose = false) {
       if (disposed) return;
       manuallyAdjusted = false;
+      if (preservePose) {
+        stopTransition();
+        clearOrbitMomentum();
+        zoomDistance = undefined;
+        return;
+      }
       moveToPreset(0, resetReducedMotion || reducedMotion);
     },
     setReducedMotion(nextReducedMotion: boolean) {

@@ -1,4 +1,4 @@
-/** Animated glass folder for saved dossiers and category navigation; depends on shared sheet and GSAP motion. */
+/** Presents interactive glass folders for dossiers and category navigation using the shared sheet, analysis providers and GSAP pocket motion. */
 import gsap from 'gsap';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
@@ -20,6 +20,7 @@ type DossierFolderProps = (
   isActive: boolean;
   isOpen: boolean;
   onSelect: () => void;
+  interactive?: boolean;
   onDocumentMotionChange?: (moving: boolean) => void;
 };
 
@@ -29,6 +30,7 @@ export function DossierFolder({
   isActive,
   isOpen,
   onSelect,
+  interactive = true,
   onDocumentMotionChange,
 }: DossierFolderProps) {
   const analysis = useHomeAnalysis();
@@ -60,7 +62,9 @@ export function DossierFolder({
     ? (documentOpen && openingSession.phase !== 'loading') || documentMoving
     : analysisSession && analysis.busy
       ? (documentOpen && analysisSession.phase !== 'working') || documentMoving
-      : (!navigationClosing && isActive && hovered) || documentOpen || documentMoving;
+      : (!navigationClosing && interactive && isActive && hovered) ||
+        documentOpen ||
+        documentMoving;
 
   useLayoutEffect(() => {
     const folder = folderElement.current;
@@ -104,11 +108,12 @@ export function DossierFolder({
       data-category={category?.type ?? dossier?.type}
       data-category-folder={category?.type}
       data-active={isActive}
+      data-interactive={interactive}
       data-document-away={documentAway || undefined}
       data-analysis-active={openingBusy || (!!analysisSession && analysis.busy) || undefined}
       inert={!isActive}
       onPointerEnter={(event) => {
-        if (isActive && event.pointerType !== 'touch') setHovered(true);
+        if (interactive && isActive && event.pointerType !== 'touch') setHovered(true);
       }}
       onPointerLeave={() => setHovered(false)}
     >
@@ -146,12 +151,20 @@ export function DossierFolder({
             : '')
         }
         aria-pressed={category ? undefined : isActive}
-        aria-disabled={!isActive}
+        aria-disabled={!isActive || !interactive}
         aria-expanded={category ? undefined : documentOpen && !documentAway}
         aria-controls={category ? undefined : `${folderId}-document`}
-        tabIndex={isActive ? 0 : -1}
+        tabIndex={isActive && interactive ? 0 : -1}
+        onFocus={() => {
+          // Category pockets offer the same preview to keyboard and pointer users.
+
+          if (interactive && category && isActive) setHovered(true);
+        }}
+        onBlur={() => {
+          if (category) setHovered(false);
+        }}
         onClick={() => {
-          if (isActive && !analysis.busy && !openingBusy) {
+          if (interactive && isActive && !analysis.busy && !openingBusy) {
             if (openingSession?.phase === 'error') openingSession.cancel();
             if (dossier) analysis.revealDocument(dossier.dossier_id);
             onSelect();
@@ -203,7 +216,6 @@ export function DossierFolder({
             <>
               <span className="category-folder-number">{category.number}</span>
               <span className="category-folder-title">{category.title}</span>
-              <span className="folder-label">{category.description}</span>
             </>
           ) : (
             dossier && (

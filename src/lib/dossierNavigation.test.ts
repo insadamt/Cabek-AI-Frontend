@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   flyDocument: vi.fn(),
   flyPhotos: vi.fn(),
   approach: vi.fn(),
+  replaceHistory: vi.fn(),
 }));
 vi.mock('../hooks/useNavigation', () => ({ navigate: mocks.navigate }));
 vi.mock('react-dom', () => ({ flushSync: (callback: () => void) => callback() }));
@@ -74,9 +75,12 @@ function open(options: Parameters<typeof openDossierFromFolder>[0]) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.navigate.mockReset();
+  mocks.replaceHistory.mockReset();
   vi.stubGlobal(
     'window',
     Object.assign(new EventTarget(), {
+      history: { replaceState: mocks.replaceHistory },
       location: {
         pathname: '/categories/forfait-expertise',
         search: '?search=Dacia&slide=3',
@@ -137,6 +141,7 @@ describe('fast prepared dossier opening', () => {
       },
     });
     expect(source.scope.inert).toBe(false);
+    expect(mocks.replaceHistory).not.toHaveBeenCalled();
     expect(source.styles.has('--document-playback-rate')).toBe(false);
   });
 
@@ -257,9 +262,43 @@ describe('persisted capture assembly', () => {
     source.finishInsertion();
     await task;
     expect(mocks.approach).toHaveBeenCalledOnce();
+    expect(mocks.replaceHistory).toHaveBeenCalledExactlyOnceWith(
+      {},
+      '',
+      '/categories/chiffrage-rapide',
+    );
+    expect(mocks.replaceHistory.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.navigate.mock.invocationCallOrder[0],
+    );
     expect(mocks.navigate).toHaveBeenCalledWith(
       '/dossiers/test',
       expect.objectContaining({ returnTo: '/categories/chiffrage-rapide' }),
     );
   });
+});
+
+it('returns browser Back to the collection after opening from the tunnel', async () => {
+  const source = createFolder();
+  const history = ['/', '/?parcours=chiffrage-rapide&scene=1'];
+  mocks.replaceHistory.mockImplementation((_state, _title, path) => {
+    history[history.length - 1] = path;
+  });
+  mocks.navigate.mockImplementation((path) => history.push(path));
+  const task = open({
+    ...source.options,
+    captured: true,
+    returnTo: '/categories/chiffrage-rapide?slide=2',
+  });
+  await vi.waitFor(() => expect(getDossierOpening()?.phase).toBe('loading'));
+  finishPreparation(response);
+  await vi.waitFor(() => expect(getDossierOpening()?.phase).toBe('stowing'));
+  source.finishInsertion();
+  await task;
+  expect(history).toEqual(['/', '/categories/chiffrage-rapide?slide=2', '/dossiers/test']);
+  history.pop();
+  window.dispatchEvent(new Event('popstate'));
+  expect(history.at(-1)).toBe('/categories/chiffrage-rapide?slide=2');
+  expect(mocks.prepare).toHaveBeenCalledOnce();
+  expect(mocks.approach).toHaveBeenCalledOnce();
+  expect(getDossierOpening()).toBeNull();
 });

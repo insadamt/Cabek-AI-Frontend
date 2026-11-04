@@ -10,6 +10,7 @@ import { useFolderGridMotion } from '../../hooks/useFolderGridMotion';
 import { useFolderGridScale } from '../../hooks/useFolderGridScale';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { AnalysisAction } from './AnalysisAction';
+import { DossierActions } from '../dossier/DossierActions';
 import { useResource } from '../../hooks/useResource';
 import { listDossiers } from '../../lib/api';
 import { SearchResultTitle } from './SearchResultTitle';
@@ -96,6 +97,16 @@ export function HomeSearchResults({ search, offset, query }: HomeSearchResultsPr
                   ? workflowLabels[dossier.workflow_status]
                   : statusLabels[dossier.status]}
               </span>
+              <DossierActions
+                dossier={dossier}
+                disabled={busy || analysis.busy}
+                onDeleted={() => {
+                  if (selectedFolder) selection.returnToGrid();
+                  if (data?.items.length === 1 && offset > 0)
+                    showPage(Math.max(0, offset - data.limit));
+                  else resource.refresh();
+                }}
+              />
             </article>
           ))}
         {resource.error != null && (

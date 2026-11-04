@@ -118,6 +118,33 @@ beforeEach(() => {
 // ============================================================
 
 describe('cinematic bay choreography', () => {
+  it('keeps the car outside through page entry and motion preference changes until Scanner is clicked', () => {
+    const { controller } = setup({ parked: true });
+    controller.waitOutside();
+    controller.enter();
+    controller.setReducedMotion(true);
+    expect(controller.state).toMatchObject({ entryProgress: 0, introComplete: true });
+    expect(motion.timelines).toHaveLength(0);
+    const arrived = vi.fn();
+    controller.replayEntry(arrived);
+    expect(controller.state.entryProgress).toBe(1);
+    expect(arrived).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
+
+  it('drives from the waiting position before releasing capture admission', () => {
+    const { controller } = setup({ parked: true });
+    controller.waitOutside();
+    const arrived = vi.fn();
+    controller.replayEntry(arrived);
+    expect(controller.state.entryProgress).toBe(0);
+    expect(arrived).not.toHaveBeenCalled();
+    motion.timelines[0].progress(1);
+    expect(controller.state.entryProgress).toBe(1);
+    expect(arrived).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
+
   it('starts camera and vehicle immediately and overlaps the reframe to finish within 2.4 seconds', () => {
     const { controller, onChange, onIntroComplete } = setup();
     expect(controller.state).toMatchObject({
@@ -161,6 +188,35 @@ describe('cinematic bay choreography', () => {
     });
     expect(onIntroComplete).toHaveBeenCalledOnce();
     controller.dispose();
+  });
+
+  it('replays the drive from a parked car and waits for arrival before accepting capture', () => {
+    const { controller } = setup({ parked: true });
+    const acceptCapture = vi.fn();
+    controller.enter();
+    controller.replayEntry(acceptCapture);
+    expect(controller.state).toMatchObject({ entryProgress: 0, introComplete: false });
+    expect(acceptCapture).not.toHaveBeenCalled();
+    motion.timelines[0].progress(1);
+    expect(controller.state.entryProgress).toBe(1);
+    expect(acceptCapture).toHaveBeenCalledOnce();
+    motion.timelines[0].options.onComplete?.();
+    expect(acceptCapture).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
+
+  it('settles a replay immediately for reduced motion and releases waiters on disposal', () => {
+    const reduced = setup({ reduced: true }).controller;
+    const accepted = vi.fn();
+    reduced.replayEntry(accepted);
+    expect(accepted).toHaveBeenCalledOnce();
+    expect(reduced.state.entryProgress).toBe(1);
+    reduced.dispose();
+    const normal = setup({ parked: true }).controller;
+    const released = vi.fn();
+    normal.replayEntry(released);
+    normal.dispose();
+    expect(released).toHaveBeenCalledOnce();
   });
 
   it('skips all phases immediately and reports completion only once', () => {

@@ -430,3 +430,20 @@ describe('capture camera orbit', () => {
     controller.dispose();
   });
 });
+
+it('reclaims cinematic ownership without flashing the parked camera before scan entry', () => {
+  const { controller, camera, pointer } = setup();
+  const approach = { entryProgress: 0, revealProgress: 1, reframeProgress: 1 };
+  controller.applyCinematic(approach);
+  pointer();
+  const position = camera.position.clone();
+  const rotation = camera.quaternion.clone();
+  motion.controls.momentum.set(0.2, 0, 0);
+  controller.reset(true, true);
+  expect(camera.position.equals(position)).toBe(true);
+  expect(camera.quaternion.equals(rotation)).toBe(true);
+  expect(motion.controls.momentum.lengthSq()).toBe(0);
+  controller.applyCinematic({ ...approach, entryProgress: 0.2 });
+  expect(camera.position.equals(position)).toBe(false);
+  controller.dispose();
+});

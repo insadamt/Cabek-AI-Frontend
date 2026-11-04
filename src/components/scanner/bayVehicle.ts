@@ -1,5 +1,5 @@
 /**
- * Loads the supplied sedan and balances its authored PBR layers for the white automotive studio.
+ * Loads the supplied sedan with black clearcoat paint against the white automotive studio.
  * Depends on Three.js GLTF/Draco loaders and the studio-v2 GLB; owns decoded and enhanced GPU resources.
  */
 import * as THREE from 'three';
@@ -122,7 +122,8 @@ function enhancePaintMaterial(source: THREE.Material): THREE.Material {
     paint.clearcoatRoughness = Math.min(source.clearcoatRoughness, 0.18);
   }
   paint.roughness = Math.max(source.roughness, 0.22);
-  paint.envMapIntensity = Math.min(source.envMapIntensity, 0.9);
+  paint.color.set('#111416');
+  paint.envMapIntensity = Math.min(source.envMapIntensity, 1.05);
   return paint;
 }
 
