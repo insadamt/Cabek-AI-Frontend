@@ -1,3 +1,4 @@
+/* Lays out searchable folder cards and focused results; depends on shared folder sizing and selection state. */
 .home-search-results {
   --folder-grid-columns: 5;
   --folder-display-scale: var(--folder-grid-scale, 0.4);
@@ -48,9 +49,16 @@
 }
 .home-grid-folder {
   width: var(--folder-display-width);
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  text-align: left;
+}
+.home-grid-folder[hidden] {
+  display: none;
 }
 .home-grid-folder-preview {
+  grid-column: 1 / -1;
   position: relative;
   width: 100%;
   /* Reserve the visible scaled footprint so captions follow the folder rather than its native height. */
@@ -61,7 +69,15 @@
   margin: 14px 0 8px;
   font-size: 14px;
 }
+.home-grid-folder .home-result-title {
+  grid-column: 1;
+  grid-row: 2;
+}
 .home-grid-folder .status-badge {
+  grid-column: 1;
+  grid-row: 3;
+  justify-self: start;
+  max-width: 100%;
   font-size: 11px;
 }
 .home-grid-folder .dossier-folder {

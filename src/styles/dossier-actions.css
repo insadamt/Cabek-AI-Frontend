@@ -19,7 +19,7 @@
   border-radius: 50%;
   background: var(--surface);
 }
-.dossier-delete-popover {
+.dossier-action-popover {
   position: fixed;
   inset: auto;
   box-sizing: border-box;
@@ -30,7 +30,7 @@
   background: var(--surface);
   box-shadow: 0 8px 30px rgb(0 0 0 / 9%);
 }
-.dossier-delete-popover .dossier-delete {
+.dossier-action-popover .dossier-menu-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -40,16 +40,22 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #9b3029;
+  color: var(--ink);
   font: inherit;
   font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
-.dossier-delete-popover .dossier-delete:hover:not(:disabled) {
+.dossier-action-popover .dossier-menu-item:hover:not(:disabled) {
+  background: #f3f3f3;
+}
+.dossier-action-popover .dossier-delete {
+  color: #9b3029;
+}
+.dossier-action-popover .dossier-delete:hover:not(:disabled) {
   background: #faf1f0;
 }
-.dossier-actions p {
+.dossier-actions > p {
   flex-basis: 100%;
   margin: 0;
   font-size: 12px;
@@ -79,25 +85,32 @@
   justify-content: center;
 }
 
-.dossier-carousel > .dossier-actions {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(90%, 620px);
-  justify-content: center;
-  z-index: 20;
-}
+/* Keep failure feedback below the main row without widening the three-dot control. */
+.home-bottom-bar > .dossier-actions,
 .home-grid-folder > .dossier-actions {
-  justify-content: center;
-  margin-top: 10px;
+  display: contents;
 }
-@media (max-width: 650px) {
-  .dossier-carousel > .dossier-actions {
-    bottom: 4px;
-    gap: 4px 14px;
-  }
-  .dossier-actions .workflow-note {
-    display: none;
-  }
+.home-bottom-bar > .dossier-actions > .dossier-menu-trigger {
+  grid-column: 3;
+  grid-row: 1;
+}
+.home-bottom-bar > .dossier-actions > p {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+.home-grid-folder > .dossier-actions > .dossier-menu-trigger {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  align-self: center;
+  justify-self: end;
+}
+.home-grid-folder > .dossier-actions > p {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.dossier-actions .dossier-menu-note {
+  margin: 4px 12px 8px;
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.5;
 }

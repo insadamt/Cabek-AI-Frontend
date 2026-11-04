@@ -67,7 +67,7 @@ export function addCollectionEntrance(
   reveal('.home-bottom-bar .home-folder-search', { opacity: 0, y: 18 }, 0.08, 0.28);
   reveal('.home-bottom-bar .home-open-dossier', { opacity: 0, y: 18, scale: 0.94 }, 0.12, 0.28);
   reveal('.carousel-navigation', { opacity: 0, y: 10 }, 0.1);
-  reveal('.dossier-carousel > .dossier-actions', { opacity: 0, y: 10 }, 0.14);
+  reveal('.home-bottom-bar .dossier-menu-trigger', { opacity: 0, y: 10 }, 0.14);
 }
 
 export function enterEmptyCollection(scope: HTMLElement, onComplete: () => void) {

@@ -26,7 +26,7 @@ function fixture(count = 3, reduced = false) {
     '.home-bottom-bar .home-folder-search': node(),
     '.home-bottom-bar .home-open-dossier': actions,
     '.carousel-navigation': details,
-    '.dossier-carousel > .dossier-actions': node(),
+    '.home-bottom-bar .dossier-menu-trigger': node(),
   };
   const collection = {
     inert: false,

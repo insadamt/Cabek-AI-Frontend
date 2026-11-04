@@ -1,4 +1,4 @@
-/** Resume or permanently delete a local folder; depends on backend admission and the recoverable tunnel store. */
+/** Groups secondary local folder actions in a shared menu; depends on backend admission and the recoverable tunnel store. */
 import { useRef, useState } from 'react';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { navigate } from '../../hooks/useNavigation';
@@ -11,7 +11,7 @@ import {
 } from '../../lib/dossierActions';
 import { categoryPath } from '../../lib/workflows';
 import type { DossierResponse, DossierSummary } from '../../types';
-import { DossierDeleteMenu } from './DossierDeleteMenu';
+import { DossierActionMenu } from './DossierActionMenu';
 import '../../styles/dossier-actions.css';
 
 interface DossierActionsProps {
@@ -98,25 +98,13 @@ export function DossierActions({
       aria-busy={pending}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {canResumeCapture(dossier) && (
-        <button
-          type="button"
-          className="text-link"
-          disabled={disabled || pending || !!session?.pending || !!session?.saving}
-          onClick={() => void run(resume)}
-        >
-          Reprendre au tunnel
-        </button>
-      )}
-      <DossierDeleteMenu
+      <DossierActionMenu
         disabled={disabled || pending || !!session?.pending || !!session?.saving}
         busy={busy}
         pending={pending}
         onDelete={() => void run(remove)}
+        onResume={canResumeCapture(dossier) ? () => void run(resume) : undefined}
       />
-      {busy && (
-        <p className="workflow-note">Suppression disponible après la capture et l’analyse.</p>
-      )}
       {error && <p role="alert">{error}</p>}
     </div>
   );

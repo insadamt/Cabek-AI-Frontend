@@ -232,18 +232,18 @@ export function DossierCarousel({
             onSelect(visibleDossierIndex);
           }}
         />
+        {visibleDossier && (
+          <DossierActions
+            key={visibleDossier.dossier_id}
+            dossier={visibleDossier}
+            disabled={analysis.busy || dragging || animating}
+            onDeleted={() => {
+              setOpenedDossierId(null);
+              onStep(-activePosition);
+            }}
+          />
+        )}
       </div>
-      {visibleDossier && (
-        <DossierActions
-          key={visibleDossier.dossier_id}
-          dossier={visibleDossier}
-          disabled={analysis.busy || dragging || animating}
-          onDeleted={() => {
-            setOpenedDossierId(null);
-            onStep(-activePosition);
-          }}
-        />
-      )}
     </section>
   );
 }
