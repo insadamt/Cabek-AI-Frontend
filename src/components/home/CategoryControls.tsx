@@ -8,6 +8,7 @@ import { categoryPath, collectionUrl, workflowLabels, type Category } from '../.
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
 import { brandSortAvailable, describeError } from '../../lib/api';
 import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
+import { transitionHomeView } from '../../lib/homeViewTransition';
 
 export function CategoryControls({ category }: { category: Category }) {
   const { pathname, searchParams, navigate } = useNavigation();
@@ -19,6 +20,30 @@ export function CategoryControls({ category }: { category: Category }) {
   const indicator = useSelectionIndicator(grid);
   function filter(changes: Record<string, string | null>) {
     navigate(collectionUrl(pathname, searchParams, { offset: null, slide: null, ...changes }));
+  }
+
+  function switchView(showGrid: boolean, collection: HTMLElement | null) {
+    if (showGrid === grid) return;
+    const selectedId =
+      collection?.querySelector<HTMLElement>('.home-search-results')?.dataset.selectedDossierId;
+    const selectedSlot =
+      !showGrid && selectedId
+        ? Array.from(collection?.querySelectorAll<HTMLElement>('.carousel-folder-slot') ?? []).find(
+            (slot) =>
+              slot.querySelector<HTMLElement>('.dossier-folder')?.dataset.dossierId === selectedId,
+          )
+        : undefined;
+
+    // Capture the shared controls before navigation so search and action surfaces can morph.
+
+    transitionHomeView(
+      collectionUrl(pathname, searchParams, {
+        offset: null,
+        search: showGrid ? (searchParams.get('search') ?? '') : null,
+        ...(selectedSlot ? { slide: selectedSlot.dataset.collectionIndex! } : {}),
+      }),
+      showGrid ? 'forward' : 'reverse',
+    );
   }
   return (
     <div className="category-controls" inert={busy}>
@@ -65,14 +90,18 @@ export function CategoryControls({ category }: { category: Category }) {
           <button
             className={!grid ? 'selected' : ''}
             aria-pressed={!grid}
-            onClick={() => filter({ search: null })}
+            onClick={(event) =>
+              switchView(false, event.currentTarget.closest('.category-collection'))
+            }
           >
             Carrousel
           </button>
           <button
             className={grid ? 'selected' : ''}
             aria-pressed={grid}
-            onClick={() => filter({ search: searchParams.get('search') ?? '' })}
+            onClick={(event) =>
+              switchView(true, event.currentTarget.closest('.category-collection'))
+            }
           >
             Grille
           </button>

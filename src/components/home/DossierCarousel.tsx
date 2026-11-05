@@ -143,6 +143,7 @@ export function DossierCarousel({
             <div
               key={dossier.dossier_id}
               role="group"
+              data-collection-index={indices?.[index] ?? offset + index}
               className={`carousel-folder-slot ${index === activeIndex ? 'is-active' : ''}`}
               style={
                 {

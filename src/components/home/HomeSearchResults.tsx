@@ -53,6 +53,7 @@ export function HomeSearchResults({ search, offset, query }: HomeSearchResultsPr
       ref={sectionRef}
       className={`home-search-results ${selectedFolder ? 'has-selected-folder' : ''}`}
       aria-label="Résultats de recherche"
+      data-selected-dossier-id={selectedFolder?.dossier_id}
       onKeyDown={(event) => {
         if (!analysis.busy && event.key === 'Escape' && selectedFolder) selection.returnToGrid();
       }}

@@ -133,6 +133,10 @@
   transform: translateX(calc(50% + 6px));
 }
 .capture-metadata-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
@@ -146,12 +150,6 @@
   transform: translateY(8px);
   visibility: hidden;
   transition: none;
-}
-.capture-session-slot {
-  width: min(420px, 100%);
-}
-.capture-session-slot .capture-session-menu {
-  animation: capture-dock-enter 320ms var(--motion-ease) 160ms both;
 }
 .capture-controls .capture-scanner {
   width: auto;
@@ -172,6 +170,8 @@
   translate: 0 -3px;
 }
 .capture-controls .capture-metadata-toggle {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   min-height: 50px;
   padding: 0 18px;
@@ -180,53 +180,16 @@
   background: #f5f7f359;
   color: #536158;
 }
-.capture-controls .capture-session-actions {
-  justify-content: center;
-  margin: 0;
-  gap: 4px 20px;
-}
-.capture-session-actions .text-link {
-  min-height: 36px;
-  font-size: 11px;
-  color: #68776d;
-  background: transparent;
-  text-decoration: none;
-}
-.capture-session-actions .text-link:hover:not(:disabled) {
-  color: #202820;
-  text-decoration: underline;
-}
-/* Keep session navigation in one row; dossier lifecycle actions already have a disclosure. */
-.capture-session-menu {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 4px 12px;
-  width: 100%;
-  padding-top: 8px;
-  border-top: 1px solid #cbd4cc80;
-  font-size: 11px;
-}
-.capture-session-menu .capture-session-actions {
-  flex: 1 1 auto;
-}
-.capture-session-menu .dossier-actions {
+/* Reserve the menu width so long fiche labels wrap without displacing the trigger. */
+.capture-metadata-slot > .dossier-actions {
+  flex: 0 0 44px;
   justify-content: center;
 }
-.capture-session-menu .dossier-menu-trigger {
+.capture-metadata-slot .dossier-menu-trigger {
   width: 44px;
   min-height: 44px;
   border-color: #cbd4cc;
   background: #f5f7f359;
-}
-.capture-session-menu > a {
-  display: flex;
-  justify-content: center;
-  flex-basis: 100%;
-  min-height: 36px;
-  align-items: center;
-  color: #536158;
 }
 /* Keep the fresh-capture menu beside the fiche without reserving an empty edit slot. */
 .capture-controls .capture-actions:has(.capture-phase-menu) {
@@ -391,7 +354,6 @@
 @media (prefers-reduced-motion: reduce) {
   .capture-vehicle-summary,
   .capture-controls .capture-actions,
-  .capture-session-slot .capture-session-menu,
   .tunnel-stage:is([data-entrance-phase='entering'], [data-entrance-phase='ready'])
     :is(
       .capture-controls,

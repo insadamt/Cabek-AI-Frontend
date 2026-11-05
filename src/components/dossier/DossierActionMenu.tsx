@@ -1,8 +1,9 @@
 /** Groups secondary dossier actions behind a compact disclosure; depends on native popovers and shared app controls. */
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Camera, EllipsisVertical, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 interface DossierActionMenuProps {
+  children?: ReactNode;
   disabled: boolean;
   busy: boolean;
   pending: boolean;
@@ -13,6 +14,7 @@ interface DossierActionMenuProps {
 }
 
 export function DossierActionMenu({
+  children,
   disabled,
   busy,
   pending,
@@ -62,9 +64,13 @@ export function DossierActionMenu({
     popover.style.bottom = openAbove ? `${window.innerHeight - bounds.top + 8}px` : 'auto';
   }
 
-  function activateAction(action: () => void) {
+  function closePopover() {
     popoverRef.current?.hidePopover();
     triggerRef.current?.focus({ preventScroll: true });
+  }
+
+  function activateAction(action: () => void) {
+    closePopover();
     action();
   }
 
@@ -82,6 +88,7 @@ export function DossierActionMenu({
         <EllipsisVertical size={20} aria-hidden="true" />
       </button>
       <div ref={popoverRef} id={popoverId} popover="auto" className="dossier-action-popover">
+        {children && <div onClick={closePopover}>{children}</div>}
         {onNewBefore && (
           <button
             type="button"

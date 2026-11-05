@@ -152,6 +152,39 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
     }
   }
 
+  const sessionActions = presentedSession ? (
+    <div className="capture-session-menu" role="group" aria-label="Actions de la session">
+      <button
+        type="button"
+        className="dossier-menu-item"
+        disabled={!!session?.pending || !!session?.saving || !session}
+        onClick={() => release(false)}
+      >
+        Nouveau dossier
+      </button>
+      {session && (
+        <button
+          type="button"
+          className="dossier-menu-item"
+          disabled={session.pending || session.saving}
+          onClick={() => release(true)}
+        >
+          Quitter et conserver
+        </button>
+      )}
+
+      {current?.identity.dossierId &&
+        (category.type !== 'chiffrage_rapide' || captureReady(current)) && (
+          <a
+            className="dossier-menu-item"
+            href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}
+          >
+            Ouvrir le dossier enregistré
+          </a>
+        )}
+    </div>
+  ) : null;
+
   return (
     <div
       ref={page}
@@ -293,61 +326,35 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                   >
                     Modifier la fiche ↗
                   </button>
+                  {current?.response && (
+                    <DossierActions
+                      dossier={current.response}
+                      disabled={current.pending}
+                      onDeleted={() => release(false)}
+                      onError={() => void store?.refresh()}
+                    >
+                      {sessionActions}
+                    </DossierActions>
+                  )}
                 </div>
-                {category.type === 'verification' && !presentedDossier && (
+                {!current?.response && (category.type === 'verification' || presentedSession) && (
                   <div className="dossier-actions capture-phase-menu">
                     <DossierActionMenu
                       disabled={!!current?.pending || !!current?.saving}
                       busy={false}
                       pending={false}
-                      onNewBefore={openMetadata}
-                      onCompleteAfter={() => setAfterPicker(true)}
-                    />
+                      onNewBefore={category.type === 'verification' ? openMetadata : undefined}
+                      onCompleteAfter={
+                        category.type === 'verification' ? () => setAfterPicker(true) : undefined
+                      }
+                    >
+                      {sessionActions}
+                    </DossierActionMenu>
                   </div>
                 )}
               </div>
             </>
           )}
-          <div className="capture-session-slot">
-            {presentedSession && (
-              <div className="capture-session-menu" role="group" aria-label="Actions de la session">
-                <div className="capture-session-actions">
-                  <button
-                    type="button"
-                    className="text-link"
-                    disabled={!!session?.pending || !!session?.saving || !session}
-                    onClick={() => release(false)}
-                  >
-                    Nouveau dossier
-                  </button>
-                  {session && (
-                    <button
-                      type="button"
-                      className="text-link"
-                      disabled={session.pending || session.saving}
-                      onClick={() => release(true)}
-                    >
-                      Quitter et conserver
-                    </button>
-                  )}
-                </div>
-                {current?.response && (
-                  <DossierActions
-                    dossier={current.response}
-                    disabled={current.pending}
-                    onDeleted={() => release(false)}
-                    onError={() => void store?.refresh()}
-                  />
-                )}
-                {current?.identity.dossierId &&
-                  (category.type !== 'chiffrage_rapide' || captureReady(current)) && (
-                    <a href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}>
-                      Ouvrir le dossier enregistré
-                    </a>
-                  )}
-              </div>
-            )}
-          </div>
           {current && (
             <p role="status" className="visually-hidden">
               {captureLabel(current)}

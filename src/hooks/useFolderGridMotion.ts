@@ -1,3 +1,4 @@
+/** Rearranges loaded grid results; depends on native folder bounds and yields entrances to collection switches. */
 import { useLayoutEffect, useRef } from 'react';
 import { animateElement, prefersReducedMotion } from '../lib/motion';
 
@@ -20,7 +21,8 @@ export function useFolderGridMotion(content: unknown, paused = false) {
       wasPaused.current = true;
       return;
     }
-    const reducedMotion = prefersReducedMotion() || wasPaused.current;
+    const reducedMotion =
+      prefersReducedMotion() || wasPaused.current || !!grid.closest('[data-collection-switch]');
     wasPaused.current = false;
     const origin = grid.getBoundingClientRect();
     const nextFolders = new Map<string, FolderSnapshot>();

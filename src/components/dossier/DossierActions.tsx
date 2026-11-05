@@ -1,5 +1,5 @@
 /** Groups secondary local folder actions in a shared menu; depends on backend admission and the recoverable tunnel store. */
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { navigate } from '../../hooks/useNavigation';
 import { deleteDossier, describeError, isPreview, readDossier } from '../../lib/api';
@@ -16,6 +16,7 @@ import '../../styles/dossier-actions.css';
 
 interface DossierActionsProps {
   dossier: DossierSummary | DossierResponse;
+  children?: ReactNode;
   disabled?: boolean;
   onDeleted?: () => void;
   onError?: () => void;
@@ -23,6 +24,7 @@ interface DossierActionsProps {
 
 export function DossierActions({
   dossier,
+  children,
   disabled = false,
   onDeleted,
   onError,
@@ -31,7 +33,10 @@ export function DossierActions({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const running = useRef(false);
-  if (!isLocalDossier(dossier) || isPreview) return null;
+  const allowDossierActions = isLocalDossier(dossier) && !isPreview;
+  // Session navigation remains available even when dossier mutations are unavailable.
+
+  if (!allowDossierActions && !children) return null;
   const busy =
     isDossierBusy(dossier) ||
     (session?.identity.dossierId === dossier.dossier_id && session.capture?.status === 'capturing');
@@ -102,9 +107,13 @@ export function DossierActions({
         disabled={disabled || pending || !!session?.pending || !!session?.saving}
         busy={busy}
         pending={pending}
-        onDelete={() => void run(remove)}
-        onResume={canResumeCapture(dossier) ? () => void run(resume) : undefined}
-      />
+        onDelete={allowDossierActions ? () => void run(remove) : undefined}
+        onResume={
+          allowDossierActions && canResumeCapture(dossier) ? () => void run(resume) : undefined
+        }
+      >
+        {children}
+      </DossierActionMenu>
       {error && <p role="alert">{error}</p>}
     </div>
   );

@@ -124,8 +124,10 @@ describe('capture presentation', () => {
     expect(markup).toContain('Dossier vide en attente');
     expect(markup).toContain('data-capturing="false"');
     expect(markup).toContain('Modifier la fiche');
-    expect(markup).toContain('Nouveau dossier');
-    expect(markup).toContain('Quitter et conserver');
+    const popover = markup.match(/<div[^>]*popover="auto"[\s\S]*?<\/div><\/div>/)?.[0];
+    expect(popover).toContain('Nouveau dossier');
+    expect(popover).toContain('Quitter et conserver');
+    expect(markup).not.toContain('capture-session-slot');
     expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*ANALYSE EN COURS/);
     const controls = markup.match(/class="capture-controls"[^>]*>/)?.[0];
     expect(controls).toContain('data-analysis-active="true"');
