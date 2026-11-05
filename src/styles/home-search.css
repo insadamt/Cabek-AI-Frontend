@@ -181,6 +181,20 @@
 .home-carousel-view {
   height: 100%;
 }
+/* Keep both native layouts stable; the collection fade hook exclusively owns artwork opacity. */
+
+.collection-fade-view {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+.collection-fade-view[data-collection-active='false'] {
+  pointer-events: none;
+}
+.collection-fade-view[data-collection-active='false'] .home-bottom-bar,
+.collection-fade-view[data-collection-active='false'] .home-search-controls {
+  visibility: hidden;
+}
 .home-result-title {
   overflow-wrap: anywhere;
 }

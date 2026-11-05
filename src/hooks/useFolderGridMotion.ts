@@ -1,4 +1,4 @@
-/** Rearranges loaded grid results; depends on native folder bounds and yields entrances to collection switches. */
+/** Rearranges retained grid results and fades new cards; depends on native folder bounds and reduced-motion preferences. */
 import { useLayoutEffect, useRef } from 'react';
 import { animateElement, prefersReducedMotion } from '../lib/motion';
 
@@ -21,8 +21,8 @@ export function useFolderGridMotion(content: unknown, paused = false) {
       wasPaused.current = true;
       return;
     }
-    const reducedMotion =
-      prefersReducedMotion() || wasPaused.current || !!grid.closest('[data-collection-switch]');
+    const reducedMotion = prefersReducedMotion() || wasPaused.current;
+    const firstPopulation = previousFolders.current.size === 0;
     wasPaused.current = false;
     const origin = grid.getBoundingClientRect();
     const nextFolders = new Map<string, FolderSnapshot>();
@@ -35,9 +35,11 @@ export function useFolderGridMotion(content: unknown, paused = false) {
       const left = bounds.left - origin.left + grid.scrollLeft;
       const top = bounds.top - origin.top + grid.scrollTop;
       nextFolders.set(id, { bounds, left, top, clone: folder.cloneNode(true) as HTMLElement });
-      if (reducedMotion) return;
+      // The collection fade owns the first reveal; a second card fade would make folders blink in later.
+
+      if (reducedMotion || firstPopulation) return;
       const x = previous ? previous.left - left : 0;
-      const y = previous ? previous.top - top : 12;
+      const y = previous ? previous.top - top : 0;
 
       // Polling unchanged results must not restart motion or mistake scrolling for rearrangement.
 
@@ -51,10 +53,7 @@ export function useFolderGridMotion(content: unknown, paused = false) {
               },
               { transform: 'translate(0, 0)' },
             ]
-          : [
-              { opacity: 0, transform: 'translateY(12px)' },
-              { opacity: 1, transform: 'translateY(0)' },
-            ],
+          : [{ opacity: 0 }, { opacity: 1 }],
         { duration: 320 },
       );
       if (animation) animations.push(animation);

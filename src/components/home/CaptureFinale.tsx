@@ -17,7 +17,7 @@ export function CaptureFinale({
   ready?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const { store, session } = useTunnelCapture();
+  const { store, session } = useTunnelCapture(response.type);
   const opening = useDossierOpening();
   const [released, setReleased] = useState(false);
   const dossier: DossierSummary = {

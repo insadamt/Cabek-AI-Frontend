@@ -45,7 +45,7 @@ interface ActionProps {
 function findAction(node: ReactNode, label: string): ActionProps | undefined {
   for (const child of Children.toArray(node)) {
     if (!isValidElement<ActionProps>(child)) continue;
-    if (child.props.children === label) return child.props;
+    if (Children.toArray(child.props.children).includes(label)) return child.props;
     const found = findAction(child.props.children, label);
     if (found) return found;
   }

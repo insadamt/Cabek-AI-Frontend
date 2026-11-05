@@ -1,5 +1,5 @@
 /**
- * Owns one recoverable tunnel session without persisting business state in the browser.
+ * Owns one recoverable workflow session without persisting business state in the browser.
  * Depends on the documented capture API and durable identity storage; only explicit operator actions write to the backend.
  */
 import * as api from './api';
@@ -99,9 +99,12 @@ export function captureLabel(session: CaptureSession) {
     : (stages[session.response?.progress?.stage as keyof typeof stages] ?? 'Analyse IA en cours');
 }
 
-export function readCaptureIdentity(storage?: Storage): CaptureIdentity | undefined {
+export function readCaptureIdentity(
+  storage?: Storage,
+  storageKey = captureStorageKey,
+): CaptureIdentity | undefined {
   try {
-    const value = JSON.parse(storage?.getItem(captureStorageKey) ?? 'null');
+    const value = JSON.parse(storage?.getItem(storageKey) ?? 'null');
     if (
       !value ||
       !['chiffrage_rapide', 'verification'].includes(value.type) ||
@@ -123,8 +126,12 @@ type CaptureApi = Pick<
   'createDraft' | 'readDossier' | 'readCapture' | 'startCapture' | 'patchMetadata' | 'startScan'
 >;
 
-export function createTunnelCaptureStore(service: CaptureApi = api, storage?: Storage) {
-  const restored = readCaptureIdentity(storage);
+export function createTunnelCaptureStore(
+  service: CaptureApi = api,
+  storage?: Storage,
+  storageKey = captureStorageKey,
+) {
+  const restored = readCaptureIdentity(storage, storageKey);
   let session: CaptureSession | null = restored
     ? { identity: restored, synchronized: false, pending: false, error: '' }
     : null;
@@ -161,7 +168,7 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
       throw new Error(
         'Le stockage de reprise est indisponible. Activez le stockage du navigateur.',
       );
-    storage.setItem(captureStorageKey, JSON.stringify(identity));
+    storage.setItem(storageKey, JSON.stringify(identity));
   }
 
   function select(type: CreatableDossierType, phase?: PhotoPhase, dossierId?: string) {
@@ -353,7 +360,7 @@ export function createTunnelCaptureStore(service: CaptureApi = api, storage?: St
     },
     clear() {
       if (starting || saving) return false;
-      storage?.removeItem(captureStorageKey);
+      storage?.removeItem(storageKey);
       revision++;
       reading?.abort();
       reading = undefined;

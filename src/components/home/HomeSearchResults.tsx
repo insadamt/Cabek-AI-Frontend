@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import type { DossierQuery } from '../../types';
 import { currentCollectionUrl, workflowLabels } from '../../lib/workflows';
 import { SearchReturnControl } from './SearchReturnControl';
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { transitionHomeView } from '../../lib/homeViewTransition';
 import { useGridFolderSelection } from '../../hooks/useGridFolderSelection';
 import { useFolderGridMotion } from '../../hooks/useFolderGridMotion';
@@ -21,9 +21,10 @@ interface HomeSearchResultsProps {
   search: string;
   offset: number;
   query?: DossierQuery;
+  onReady?: () => void;
 }
 
-export function HomeSearchResults({ search, offset, query }: HomeSearchResultsProps) {
+export function HomeSearchResults({ search, offset, query, onReady }: HomeSearchResultsProps) {
   const analysis = useHomeAnalysis();
   const sectionRef = useRef<HTMLElement>(null);
   const selection = useGridFolderSelection(sectionRef);
@@ -37,6 +38,9 @@ export function HomeSearchResults({ search, offset, query }: HomeSearchResultsPr
   const data = resource.data ?? previousData.current;
   useFolderGridScale(sectionRef, data);
   const gridRef = useFolderGridMotion(data, busy || !!selectedFolder);
+  useLayoutEffect(() => {
+    if (data || resource.error) onReady?.();
+  }, [data, resource.error, onReady]);
 
   const folders = data?.items ?? [];
   const visibleFolders =

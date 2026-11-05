@@ -14,7 +14,7 @@ export function CategoryControls({ category }: { category: Category }) {
   const { pathname, searchParams, navigate } = useNavigation();
   const { busy } = useHomeAnalysis();
   const collectionNavigation = useCollectionNavigation();
-  const { store, session } = useTunnelCapture();
+  const { store, session } = useTunnelCapture(category.type);
   const [error, setError] = useState('');
   const grid = searchParams.has('search');
   const indicator = useSelectionIndicator(grid);

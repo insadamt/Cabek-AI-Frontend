@@ -6,6 +6,7 @@ import '../../styles/stage-entrance.css';
 import '../../styles/cinematic-capture.css';
 import '../../styles/capture-preparation.css';
 import { useEffect, useRef, useState } from 'react';
+import { FolderOpen, LogOut, Plus } from 'lucide-react';
 import { CategoryStageVisual, type ScannerPlayback } from './CategoryStageVisual';
 import { StageLoadingScreen } from './StageLoadingScreen';
 import { CaptureMetadataDrawer } from './CaptureMetadataDrawer';
@@ -28,7 +29,7 @@ type LocalCategory = Category & { type: CreatableDossierType };
 
 export function TunnelStage({ category, onBack }: { category: LocalCategory; onBack: () => void }) {
   const entrance = useStageEntrance();
-  const { session, store } = useTunnelCapture();
+  const { session, store } = useTunnelCapture(category.type);
   const { navigate } = useNavigation();
   const collectionNavigation = useCollectionNavigation();
   const page = useRef<HTMLDivElement>(null);
@@ -160,6 +161,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
         disabled={!!session?.pending || !!session?.saving || !session}
         onClick={() => release(false)}
       >
+        <Plus size={16} aria-hidden="true" />
         Nouveau dossier
       </button>
       {session && (
@@ -169,6 +171,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
           disabled={session.pending || session.saving}
           onClick={() => release(true)}
         >
+          <LogOut size={16} aria-hidden="true" />
           Quitter et conserver
         </button>
       )}
@@ -179,6 +182,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
             className="dossier-menu-item"
             href={`/dossiers/${encodeURIComponent(current.identity.dossierId)}`}
           >
+            <FolderOpen size={16} aria-hidden="true" />
             Ouvrir le dossier enregistré
           </a>
         )}

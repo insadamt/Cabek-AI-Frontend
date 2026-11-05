@@ -20,7 +20,7 @@ interface VerificationProps {
   onRefresh: () => void;
 }
 export function VerificationWorkspace(props: VerificationProps) {
-  const { store, session } = useTunnelCapture();
+  const { store, session } = useTunnelCapture('verification');
   const [captureError, setCaptureError] = useState('');
   const ready =
     savedPhaseSideCount(props.response, 'before') === 4 &&

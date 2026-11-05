@@ -1,5 +1,5 @@
 /** Presents category folders without a route-loading flash; depends on prepared dossier windows and shared carousel, search and document interactions. */
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CategoryControls } from '../components/home/CategoryControls';
 import { categoryPath, collectionQuery, collectionUrl, type Category } from '../lib/workflows';
 import { DossierCarousel } from '../components/home/DossierCarousel';
@@ -12,6 +12,7 @@ import { homeDossierQuery, loadHomeDossierWindow } from '../lib/homeDossiers';
 import { getPreparedCollection } from '../lib/collectionPreparation';
 import { finishHomeViewTransition } from '../lib/homeViewTransition';
 import { enterEmptyCollection } from '../lib/pageJourneyMotion';
+import { useCollectionViewFade } from '../hooks/useCollectionViewFade';
 
 function HomeCarousel({ category }: { category: Category }) {
   const { searchParams } = useNavigation();
@@ -124,6 +125,14 @@ function HomeCarousel({ category }: { category: Category }) {
 
 export function Home({ category }: { category: Category }) {
   const { searchParams } = useNavigation();
+  const grid = searchParams.has('search');
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridOpened = useRef(grid);
+  if (grid) gridOpened.current = true;
+  const [gridReady, setGridReady] = useState(false);
+  const markGridReady = useCallback(() => setGridReady(true), []);
+  useCollectionViewFade(carouselRef, gridRef, grid, gridReady);
   useEffect(() => () => finishHomeViewTransition(), []);
 
   // Presence of the query enables the grid even when an empty search requests all folders.
@@ -131,6 +140,16 @@ export function Home({ category }: { category: Category }) {
   const requestedOffset = Number(searchParams.get('offset') ?? 0);
   const offset =
     Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
+  const latestGridProps = {
+    search: searchParams.get('search') ?? '',
+    offset,
+    query: collectionQuery(category, searchParams, 24),
+  };
+  const retainedGridProps = useRef(latestGridProps);
+
+  // Keep loaded grid data and its query intact while hidden so returning does not refetch or flash empty results.
+
+  if (grid) retainedGridProps.current = latestGridProps;
   return (
     <HomeFrame>
       <div
@@ -144,16 +163,26 @@ export function Home({ category }: { category: Category }) {
       >
         <CategoryControls category={category} />
         <div className="category-content">
-          <div className="home-carousel-view" hidden={searchParams.has('search')}>
+          <div
+            ref={carouselRef}
+            className="home-carousel-view collection-fade-view"
+            data-collection-active={!grid}
+            inert={grid}
+            aria-hidden={grid || undefined}
+          >
             <HomeCarousel category={category} />
           </div>
-          {searchParams.has('search') && (
-            <HomeSearchResults
-              search={searchParams.get('search') ?? ''}
-              offset={offset}
-              query={collectionQuery(category, searchParams, 24)}
-            />
-          )}
+          <div
+            ref={gridRef}
+            className="home-grid-view collection-fade-view"
+            data-collection-active={grid}
+            inert={!grid}
+            aria-hidden={!grid || undefined}
+          >
+            {gridOpened.current && (
+              <HomeSearchResults {...retainedGridProps.current} onReady={markGridReady} />
+            )}
+          </div>
         </div>
       </div>
     </HomeFrame>

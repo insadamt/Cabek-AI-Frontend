@@ -29,7 +29,7 @@ export function CaptureMetadataDrawer({
   requireComplete = false,
   closeOnSave = false,
 }: CaptureMetadataDrawerProps) {
-  const { session, store } = useTunnelCapture();
+  const { session, store } = useTunnelCapture(type);
   const [initialVehicle, setInitialVehicle] = useState(
     dossier?.vehicle ?? session?.response?.vehicle,
   );

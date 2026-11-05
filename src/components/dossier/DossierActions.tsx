@@ -29,7 +29,7 @@ export function DossierActions({
   onDeleted,
   onError,
 }: DossierActionsProps) {
-  const { store, session } = useTunnelCapture();
+  const { store, session } = useTunnelCapture(dossier.type);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const running = useRef(false);

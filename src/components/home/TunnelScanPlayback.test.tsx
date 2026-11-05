@@ -54,7 +54,9 @@ function setup() {
     arrive,
     playEntrance,
     scan: find(tree, (element) => element.props.className === 'capture-scanner').props.onClick,
-    reset: find(tree, (element) => element.props.children === 'Nouveau dossier').props.onClick,
+    reset: find(tree, (element) =>
+      Children.toArray(element.props.children).includes('Nouveau dossier'),
+    ).props.onClick,
   };
 }
 beforeEach(() => {
