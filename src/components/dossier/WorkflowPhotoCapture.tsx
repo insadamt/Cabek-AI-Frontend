@@ -1,6 +1,6 @@
-/** Side/phase capture from saved originals; uploads use the central API and never fabricate progress. */
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Camera, Check, Upload } from 'lucide-react';
+/** Shared photo collection matches the dossier controls; depends on saved evidence rules, motion and the upload API. */
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { Camera, Check, Images, LoaderCircle, Upload } from 'lucide-react';
 import type { DossierResponse, OriginalPhoto } from '../../types';
 import type { PhotoPhase, PhotoSide } from '../../workflowTypes';
 import { describeError, isPreview, uploadDossierPhotos } from '../../lib/api';
@@ -28,8 +28,10 @@ export function WorkflowPhotoCapture({ response, onSaved, onRefresh, onBusyChang
   const [error, setError] = useState('');
   const operation = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadHelpId = useId();
   const sidesRef = useSelectionIndicator(side);
   const phasesRef = useSelectionIndicator(phase);
+  const sideLabel = vehicleSides.find(([value]) => value === side)![1];
   useEffect(() => () => operation.current?.abort(), []);
   useEffect(() => {
     onBusyChange?.(busy);
@@ -104,107 +106,131 @@ export function WorkflowPhotoCapture({ response, onSaved, onRefresh, onBusyChang
           </p>
           <h2>{verification ? 'Avant. Après. Chaque côté.' : 'Choisissez un côté.'}</h2>
         </div>
-        <span role="status">
+        <span className="workflow-photo-count" role="status">
+          <Images size={15} aria-hidden="true" />
           {verification
-            ? `${beforeCount + afterCount}/8`
+            ? `${beforeCount + afterCount}/8 photos`
             : `${response.photos.length} photo${response.photos.length > 1 ? 's' : ''}`}
         </span>
       </div>
-      {verification && (
+      <div className="workflow-capture-controls">
+        {verification && (
+          <div
+            className="segmented-control workflow-phases"
+            ref={phasesRef}
+            aria-label="Phase de réparation"
+          >
+            <span className="selection-indicator" aria-hidden="true" />
+            {(['before', 'after'] as const).map((value) => (
+              <button
+                key={value}
+                disabled={busy || (value === 'after' && beforeCount < 4)}
+                className={phase === value ? 'selected' : ''}
+                aria-pressed={phase === value}
+                onClick={() => {
+                  setPhase(value);
+                  resetSelection();
+                }}
+              >
+                {value === 'before' ? 'Avant réparation' : 'Après réparation'}
+                <span className="workflow-phase-count">
+                  {value === 'before' ? beforeCount : afterCount}/4
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         <div
-          className="segmented-control workflow-phases"
-          ref={phasesRef}
-          aria-label="Phase de réparation"
+          className="segmented-control workflow-sides"
+          ref={sidesRef}
+          aria-label="Côté du véhicule"
         >
           <span className="selection-indicator" aria-hidden="true" />
-          {(['before', 'after'] as const).map((value) => (
-            <button
-              key={value}
-              disabled={busy || (value === 'after' && beforeCount < 4)}
-              className={phase === value ? 'selected' : ''}
-              aria-pressed={phase === value}
-              onClick={() => {
-                setPhase(value);
-                resetSelection();
-              }}
-            >
-              {value === 'before' ? 'Avant réparation' : 'Après réparation'} ·{' '}
-              {value === 'before' ? beforeCount : afterCount}/4
-            </button>
-          ))}
+          {vehicleSides.map(([value, label]) => {
+            const count = response.photos.filter(
+              (photo) => photo.side === value && (!verification || photo.phase === phase),
+            ).length;
+            return (
+              <button
+                key={value}
+                className={side === value ? 'selected' : ''}
+                aria-pressed={side === value}
+                disabled={busy}
+                onClick={() => {
+                  setSide(value);
+                  resetSelection();
+                }}
+              >
+                {label}{' '}
+                {count > 0 && (
+                  <>
+                    <Check size={13} aria-hidden="true" />
+                    <span className="visually-hidden">{count} enregistrée(s)</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
       {verification && beforeCount < 4 && (
-        <p className="workflow-note">
+        <p className="workflow-note workflow-phase-note">
           Enregistrez les quatre côtés avant de passer aux photos après réparation.
         </p>
       )}
-      <div
-        className="segmented-control workflow-sides"
-        ref={sidesRef}
-        aria-label="Côté du véhicule"
-      >
-        <span className="selection-indicator" aria-hidden="true" />
-        {vehicleSides.map(([value, label]) => {
-          const count = response.photos.filter(
-            (photo) => photo.side === value && (!verification || photo.phase === phase),
-          ).length;
-          return (
-            <button
-              key={value}
-              className={side === value ? 'selected' : ''}
-              aria-pressed={side === value}
-              disabled={busy}
-              onClick={() => {
-                setSide(value);
-                resetSelection();
-              }}
-            >
-              {label}{' '}
-              {count > 0 && (
-                <>
-                  <Check size={13} aria-hidden="true" />
-                  <span className="visually-hidden">{count} enregistrée(s)</span>
-                </>
-              )}
-            </button>
-          );
-        })}
-      </div>
       <div ref={reveal} className="workflow-capture-content">
         <div data-workflow-reveal>
           {photos.length > 0 ? (
             <SavedSidePhotos key={`${side}-${phase}`} photos={photos} />
           ) : (
             <div className="workflow-photo-placeholder">
-              <Camera size={36} strokeWidth={1} />
-              <p>Aucune photo enregistrée pour ce côté.</p>
+              <span className="workflow-placeholder-icon" aria-hidden="true">
+                <Camera size={26} strokeWidth={1.4} />
+              </span>
+              <div>
+                <h3>
+                  {verification
+                    ? `${phase === 'before' ? 'Avant' : 'Après'} réparation · `
+                    : 'Vue · '}
+                  {sideLabel}
+                </h3>
+                <p>Aucune photo enregistrée pour ce côté.</p>
+              </div>
             </div>
           )}
         </div>
       </div>
       <form className="workflow-upload-form" onSubmit={upload} aria-busy={busy}>
         {!alreadySaved && !locked && (
-          <label className="workflow-file-label">
-            <Upload size={16} /> {verification ? 'Choisir une photo' : 'Choisir des photos'}
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png"
-              multiple={!verification}
-              disabled={busy}
-              onChange={(event) => {
-                setFiles(Array.from(event.target.files ?? []));
-                setError('');
-                setFeedback('');
-              }}
-            />
-          </label>
+          <div className="workflow-upload-picker">
+            <label className={`workflow-file-label${busy ? ' is-disabled' : ''}`}>
+              <Upload size={16} aria-hidden="true" />
+              <span>{verification ? 'Choisir une photo' : 'Choisir des photos'}</span>
+              {/* Keep the native input focusable so keyboard and touch use the same file picker. */}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                multiple={!verification}
+                disabled={busy}
+                aria-describedby={uploadHelpId}
+                onChange={(event) => {
+                  setFiles(Array.from(event.target.files ?? []));
+                  setError('');
+                  setFeedback('');
+                }}
+              />
+            </label>
+            <p id={uploadHelpId}>JPEG ou PNG · 10 Mo maximum par photo</p>
+          </div>
         )}
         {files.length > 0 && (
-          <ul className="workflow-file-list">
+          <ul className="workflow-file-list" aria-label="Photos sélectionnées">
             {files.map((file, index) => (
-              <li key={`${file.name}-${index}`}>{file.name}</li>
+              <li key={`${file.name}-${index}`}>
+                <Images size={14} aria-hidden="true" />
+                <span>{file.name}</span>
+              </li>
             ))}
           </ul>
         )}
@@ -219,6 +245,11 @@ export function WorkflowPhotoCapture({ response, onSaved, onRefresh, onBusyChang
               className="button workflow-primary"
               disabled={!files.length || busy}
             >
+              {busy ? (
+                <LoaderCircle size={16} className="spin" aria-hidden="true" />
+              ) : (
+                <Check size={16} aria-hidden="true" />
+              )}
               {busy ? 'Envoi en cours…' : 'Enregistrer les photos'}
             </button>
           )

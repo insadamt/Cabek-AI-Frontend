@@ -1,6 +1,6 @@
-/** Repair evidence uses the quick-estimate inspection design, shared photo viewer and saved phase rules. */
+/** Repair evidence shares dossier action styling and photo inspection; depends on saved phases and tunnel capture. */
 import { useState, type KeyboardEvent } from 'react';
-import { Columns2, Images } from 'lucide-react';
+import { ArrowUpRight, Camera, Columns2, Images, Upload } from 'lucide-react';
 import { DossierPhotoWorkspace } from './DossierPhotoWorkspace';
 import type { DossierResponse } from '../../types';
 import type { PhotoSide } from '../../workflowTypes';
@@ -46,18 +46,24 @@ export function VerificationWorkspace(props: VerificationProps) {
       <div className="workflow-view-switch">
         <button
           className="text-link"
+          type="button"
           onClick={() => {
             setShowCapture(!showCapture);
             setCompare(false);
           }}
         >
+          {showCapture ? (
+            <Images size={16} aria-hidden="true" />
+          ) : (
+            <Upload size={16} aria-hidden="true" />
+          )}
           {showCapture ? 'Voir les photos' : 'Collection des photos'}
         </button>
         {savedPhaseSideCount(props.response, 'before') === 4 &&
           !props.response.comparison?.finalized && (
             <div>
               <button
-                className="text-link"
+                className="button button-secondary workflow-tunnel-action"
                 type="button"
                 onClick={() => {
                   try {
@@ -73,7 +79,9 @@ export function VerificationWorkspace(props: VerificationProps) {
                   }
                 }}
               >
-                Compléter la capture APRÈS au tunnel ↗
+                <Camera size={16} aria-hidden="true" />
+                Capture après au tunnel
+                <ArrowUpRight size={15} aria-hidden="true" />
               </button>
               {captureError && <p role="alert">{captureError}</p>}
             </div>

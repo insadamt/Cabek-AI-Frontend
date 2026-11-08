@@ -1,0 +1,114 @@
+/* Photo selection uses app buttons while retaining the accessible native file input.
+   Depends on WorkflowPhotoCapture, shared button styles and workflow capture layout. */
+
+/* ============================================================
+   File selection and upload actions
+   ============================================================ */
+
+.workflow-upload-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.workflow-upload-picker {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+.workflow-upload-picker > p {
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.workflow-file-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.workflow-file-label:hover:not(.is-disabled) {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+/* An invisible native input covers only the button, preserving file-picker keyboard behavior. */
+
+.workflow-file-label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.workflow-file-label:has(input:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+.workflow-file-label.is-disabled {
+  opacity: 0.48;
+}
+.workflow-file-label input:disabled {
+  cursor: not-allowed;
+}
+.workflow-file-list {
+  order: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.workflow-file-list li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.workflow-file-list li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workflow-upload-form .workflow-primary:disabled {
+  background: #efefef;
+  color: #737373;
+  opacity: 1;
+}
+.workflow-upload-form > .workflow-note {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .workflow-upload-picker {
+    flex-basis: 100%;
+  }
+  .workflow-upload-form > .workflow-primary {
+    width: 100%;
+    white-space: normal;
+  }
+}
