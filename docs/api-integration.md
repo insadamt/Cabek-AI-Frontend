@@ -56,3 +56,24 @@ Suggested commits:
 
 - `feat(api): support current vehicle metadata and originals in dossier results`
 - `test(api): cover updated dossier and vehicle selection contracts`
+
+## Physical tunnel lighting
+
+The existing `createTunnelCaptureStore.start()` → `api.startCapture()` request now
+also drives the ESP32 through the backend capture lifecycle. No new browser state
+machine, startup POST, hardware credentials or serial connection belongs in React.
+Routing, refreshing and restoring a capture continue to read status without
+replaying startup or success lighting events. The 3D scene remains presentation;
+its category colors are independent of actual strip acknowledgments.
+
+The backend enters red before photo delivery, green after every required photo is
+saved/validated, and white after a 10-second completion interval when its actual
+capture services are ready. Failed/interrupted captures never trigger green. A new
+capture supersedes that interval, and lighting outages do not fail normal capture.
+Maintenance tests cannot replace an active capture's lights.
+
+See the [lighting API contract](../../cabek_ai_global/docs/lighting-api.md) and
+[Linux deployment/manual hardware checklist](../../cabek-esp32/docs/lighting-deployment.md).
+Use the existing capture UI for end-to-end acceptance; do not fabricate capture
+success through the maintenance API. No lighting token should appear in `VITE_*`
+configuration or browser bundles.
