@@ -12,10 +12,10 @@ export default defineConfig(({ mode }) => {
       name: 'local-lighting-proxy',
       configureServer(server) {
         server.middlewares.use((request, response, next) => {
-          // Token-free hardware controls remain local even when the app serves the LAN.
+          // Match the proxy prefix, including encoded separators, so LAN requests cannot bypass the guard.
           const localAddresses = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
           const pathname = (request.url ?? '').split('?')[0];
-          if ((pathname === '/api/v1/lights' || pathname.startsWith('/api/v1/lights/')) &&
+          if (pathname.startsWith('/api/lights') &&
               !localAddresses.includes(request.socket.remoteAddress ?? '')) {
             response.statusCode = 403;
             response.end('Lighting controls are available on this machine.');
@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
-        '/api/v1/lights': { target: environment.VITE_LIGHTS_API_BASE_URL || 'http://127.0.0.1:8001', changeOrigin: true },
+        '/api/lights': { target: environment.VITE_LIGHTS_API_BASE_URL || 'http://127.0.0.1:8001', changeOrigin: true },
         ...(apiBaseUrl ? { '/api': { target: apiBaseUrl, changeOrigin: true } } : {}),
       },
     },

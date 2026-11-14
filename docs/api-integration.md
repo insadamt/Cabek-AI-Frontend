@@ -59,35 +59,31 @@ Suggested commits:
 
 ## Physical tunnel lighting
 
-The existing `createTunnelCaptureStore.start()` → `api.startCapture()` request now
-also drives the ESP32 through the backend capture lifecycle. No new browser state
-machine, startup POST, hardware credentials or serial connection belongs in React.
-Routing, refreshing and restoring a capture continue to read status without
-replaying startup or success lighting events. The 3D scene remains presentation;
-its category colors are independent of actual strip acknowledgments.
-
-The backend enters red before photo delivery, green after every required photo is
-saved/validated, and white after a 10-second completion interval when its actual
-capture services are ready. Failed/interrupted captures never trigger green. A new
-capture supersedes that interval, and lighting outages do not fail normal capture.
-Maintenance tests cannot replace an active capture's lights.
-
-See the [lighting API contract](../../cabek-esp32/docs/lighting-api.md) and
-[Linux deployment/manual hardware checklist](../../cabek-esp32/docs/lighting-deployment.md).
-Use the existing capture UI for end-to-end acceptance; do not fabricate capture
-success through the maintenance API. No lighting token should appear in `VITE_*`
-configuration or browser bundles.
-
+CABEK AI sends direct `POST /api/lights/set` commands at startup, after application
+startup completes, and around captures. It sends red repeating pulses during
+capture, green `mission_complete` on success, then solid white ten seconds later.
+A new capture cancels that countdown. Failure selects `warning`; shutdown sends
+bodyless `POST /api/lights/off`. A single background HTTP worker keeps lighting
+outages outside capture requests. No readiness probe or lifecycle snapshot is sent
+to the lighting service. The 3D scene remains independent presentation.
 
 ## Lighting maintenance
 
-Open `/maintenance/lights` directly. The panel reads the standalone API without
-login, bearer tokens or Authorization headers. It loads status and capabilities
-on mount; reads never start effects or replay startup events. Preview controls
-remain unavailable during captures and outside READY; the server enforces those
-same lifecycle rules. Simulation is labeled and unsupported hardware effects are disabled.
+Open `/maintenance/lights` on the tunnel PC. The panel sends only `/set` and `/off`
+and makes no requests on mount. Choose an effect, brightness, cycle duration,
+speed, repeat, easing and an optional color palette. Any command replaces the
+current effect, including automatic capture output. OFF remains available while
+SET is pending. Repeating effects persist until replaced or stopped; there is no
+preview expiry or capture lock in the lighting service.
+
+Responses confirm initial serial delivery, not physical appearance or future
+animation frames. Legacy firmware supports only full-strength red, blue, green,
+white and OFF; other outputs require the RGB extension and return a clear error
+when unsupported. No connection status is inferred from previous requests.
 
 Set `VITE_LIGHTS_API_BASE_URL` independently of the main application API URL.
-Vite proxies `/api/v1/lights` to the standalone server, normally port 8001.
+Vite proxies `/api/lights` to `127.0.0.1:8001` and rejects non-loopback clients for
+that proxy even when the rest of the app serves the LAN. Production access must
+retain a trusted local boundary. No hardware credentials belong in browser code.
 See the [API contract](../../cabek-esp32/docs/lighting-api.md) and
 [deployment guide](../../cabek-esp32/docs/lighting-deployment.md).

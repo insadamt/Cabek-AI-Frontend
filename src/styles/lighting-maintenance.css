@@ -1,5 +1,5 @@
-/* Styles the protected operator panel using existing application surface tokens.
- * Depends on base.css; zone swatches describe simulation, never physical LEDs. */
+/* Styles direct local lighting controls using existing application surface tokens.
+ * Depends on base.css; form controls act on the entire analog RGB strip. */
 .lighting-maintenance {
   max-width: 900px;
 }
@@ -32,15 +32,8 @@
   flex-wrap: wrap;
   gap: 12px;
 }
-.lighting-zones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-top: 20px;
-}
-.lighting-zones span {
-  width: 16px;
-  height: 24px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
+.lighting-controls input[type='checkbox'] {
+  min-height: 24px;
+  width: 24px;
+  padding: 0;
 }

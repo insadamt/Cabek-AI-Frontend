@@ -1,191 +1,117 @@
-/**
- * Provide opt-in lighting diagnostics to operators at /maintenance/lights.
- * Depends on backend hardware capabilities; lifecycle ownership stays server-side.
- */
-import { useEffect, useState } from 'react';
+/** Control the whole physical RGB strip independently of capture readiness.
+ * Depends on the two-route lighting client; responses confirm only initial delivery. */
+import { useRef, useState } from 'react';
 import {
-  lightingRequest,
-  loadLightingSession,
-  previewPayload,
-  type LightingSession,
+  effectPayload, lightingEffects, lightingRequest,
+  type LightingEffect, type LightingResult,
 } from '../lib/lightingApi';
 import '../styles/lighting-maintenance.css';
 
 export function LightingMaintenance() {
-  const [session, setSession] = useState<LightingSession | null>(null);
-  const [effectName, setEffectName] = useState('solid');
-  const [color, setColor] = useState('#2563EB');
-  const [brightness, setBrightness] = useState(80);
+  const [effect, setEffect] = useState<LightingEffect>('solid');
+  const [color, setColor] = useState('#FFFFFF');
+  const [brightness, setBrightness] = useState(100);
   const [duration, setDuration] = useState(2000);
+  const [speed, setSpeed] = useState(1);
+  const [repeat, setRepeat] = useState(false);
+  const [easing, setEasing] = useState('ease_in_out');
+  const [palette, setPalette] = useState('#0066FF, #8B00FF, #00FFFF');
+  const [result, setResult] = useState<LightingResult | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const effect = session?.effects.find((item) => item.effect === effectName);
-  const idle =
-    session?.status.state === 'READY' && session.status.ready && !session.status.active_capture_id;
+  const commandSequence = useRef(0);
+  const animated = effect !== 'solid';
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
-    async function refresh() {
-      try {
-        const next = await loadLightingSession(controller.signal);
-        if (!controller.signal.aborted) setSession(next);
-      } catch (failure) {
-        if (!controller.signal.aborted) {
-          setError(failure instanceof Error ? failure.message : 'Connexion indisponible');
-          setSession(null);
-        }
-      } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, 1000);
-      }
-    }
-    void refresh();
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, []);
-
-  async function control(stop = false) {
-    if (!effect || !idle) return;
-    setBusy(true);
+  async function control(off = false) {
+    const sequence = ++commandSequence.current;
     setError('');
+    if (!off) setBusy(true);
     try {
-      await lightingRequest(
-        stop ? '/stop' : '/effects',
-        stop ? {} : previewPayload(effect, color, brightness, duration),
-      );
-      setSession(await loadLightingSession());
+      const next = await lightingRequest(off ? '/off' : '/set', off ? undefined : effectPayload(
+        effect, color, brightness, duration, speed, repeat, easing, palette,
+      ));
+      if (sequence === commandSequence.current) setResult(next);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Commande refusée');
+      if (sequence === commandSequence.current) {
+        setResult(null);
+        setError(failure instanceof Error ? failure.message : 'Commande refusée');
+      }
     } finally {
-      setBusy(false);
+      if (!off) setBusy(false);
     }
   }
 
   return (
     <main className="page lighting-maintenance">
-      <a className="text-link" href="/">
-        Retour à CABEK AI
-      </a>
+      <a className="text-link" href="/">Retour à CABEK AI</a>
       <header className="page-heading">
         <div>
           <p className="eyebrow">MAINTENANCE</p>
           <h1>Éclairage extérieur</h1>
-          <p>Les captures restent prioritaires. Les aperçus expirent automatiquement.</p>
+          <p>Chaque commande remplace l’effet actuel. Arrêter éteint immédiatement le ruban.</p>
         </div>
       </header>
-      {session && (
-        <>
-          <div className="notice" aria-live="polite">
-            <div>
-              <strong>
-                {session.status.state} · {session.status.active_effect}
-              </strong>
-              <p>
-                {session.capabilities.driver} · {session.status.connection_status} ·{' '}
-                {session.status.synchronized
-                  ? 'Confirmé par le pilote'
-                  : 'En attente de confirmation'}
-              </p>
-              <p>
-                RGB {session.status.rgb.join(', ')} · {Math.round(session.status.brightness)} %
-              </p>
-              <p>
-                {session.capabilities.simulated
-                  ? 'SIMULATION — aucune sortie physique'
-                  : 'RGB global — aucune zone indépendante'}
-              </p>
-              {!session.capabilities.supports_smooth_transitions && (
-                <p>
-                  Extension RGB non confirmée. Vérifiez la connexion et le firmware avant les
-                  aperçus.
-                </p>
-              )}
-              {session.status.last_error && <p>{session.status.last_error}</p>}
-              {!idle && <p>Aperçu indisponible pendant une capture ou hors de l’état prêt.</p>}
-            </div>
-          </div>
-          <div className="surface lighting-controls">
-            <label>
-              Effet
-              <select value={effectName} onChange={(event) => setEffectName(event.target.value)}>
-                {session.effects.map((item) => (
-                  <option key={item.effect} value={item.effect} disabled={!item.supported}>
-                    {item.effect}
-                    {item.supported ? '' : ' — matériel incompatible'}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Couleur
-              <input
-                type="color"
-                value={color}
-                disabled={!effect?.parameters.color}
-                onChange={(event) => setColor(event.target.value)}
-              />
-            </label>
-            <label>
-              Intensité : {brightness} %
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={brightness}
-                onChange={(event) => setBrightness(Number(event.target.value))}
-              />
-            </label>
-            <label>
-              Durée (ms)
-              <input
-                type="number"
-                min="100"
-                max="120000"
-                step="100"
-                value={duration}
-                disabled={!effect?.parameters.duration_ms}
-                onChange={(event) => setDuration(Number(event.target.value))}
-              />
-            </label>
-            <div className="lighting-actions">
-              <button
-                className="button button-primary"
-                disabled={
-                  busy || !idle || !effect?.supported || duration < 100 || duration > 120000
-                }
-                onClick={() => void control()}
-              >
-                Démarrer l’aperçu
-              </button>
-              <button
-                className="button button-secondary"
-                disabled={busy || !idle}
-                onClick={() => void control(true)}
-              >
-                Arrêter l’aperçu
-              </button>
-            </div>
-          </div>
-          {session.status.pixels && (
-            <div className="lighting-zones" aria-label="Simulation des zones logiques">
-              {session.status.pixels.map((pixel, index) => (
-                <span
-                  key={index}
-                  title={`Zone ${index}: ${pixel.join(', ')}`}
-                  style={{ backgroundColor: `rgb(${pixel.join(',')})` }}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-      {error && (
-        <p className="notice" role="alert">
-          {error}
-        </p>
-      )}
+      <p className="notice">
+        RGB global. Les animations et l’intensité variable nécessitent le firmware RGB.
+        Un effet répété continue jusqu’à la prochaine commande.
+      </p>
+      <div className="surface lighting-controls">
+        <label>
+          Effet
+          <select value={effect} onChange={(event) => setEffect(event.target.value as LightingEffect)}>
+            {lightingEffects.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+        <label>
+          Couleur
+          <input type="color" value={color} onChange={(event) => setColor(event.target.value)} />
+        </label>
+        <label>
+          Intensité : {brightness} %
+          <input type="range" min="0" max="100" value={brightness}
+            onChange={(event) => setBrightness(Number(event.target.value))} />
+        </label>
+        {animated && <>
+          <label>
+            Durée du cycle (ms)
+            <input type="number" min="1" max="120000" value={duration}
+              onChange={(event) => setDuration(Number(event.target.value))} />
+          </label>
+          <label>
+            Vitesse
+            <input type="number" min="0.1" max="5" step="0.1" value={speed}
+              onChange={(event) => setSpeed(Number(event.target.value))} />
+          </label>
+          <label>
+            Courbe
+            <select value={easing} onChange={(event) => setEasing(event.target.value)}>
+              {['linear', 'ease_in', 'ease_out', 'ease_in_out'].map((name) =>
+                <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+          <label>
+            <input type="checkbox" checked={repeat} onChange={(event) => setRepeat(event.target.checked)} />
+            Répéter
+          </label>
+        </>}
+        {['transition', 'color_cycle', 'cyber_morph'].includes(effect) && <label>
+          Couleurs HEX séparées par des virgules
+          <input value={palette} onChange={(event) => setPalette(event.target.value)} />
+        </label>}
+        <div className="lighting-actions">
+          <button className="button button-primary"
+            disabled={busy || (animated && (duration < 1 || duration > 120000 || speed < .1 || speed > 5))}
+            onClick={() => void control()}>Appliquer</button>
+          <button className="button button-secondary" onClick={() => void control(true)}>Arrêter</button>
+        </div>
+      </div>
+      {result && <p className="notice" aria-live="polite">
+        {result.status === 'off' ? 'OFF confirmé par l’ESP32.' :
+          result.status === 'running' ? 'Animation acceptée, première commande confirmée.' :
+          'Couleur confirmée par l’ESP32.'}
+        {' '}L’apparence physique et les commandes futures ne sont pas vérifiées ici.
+      </p>}
+      {error && <p className="notice" role="alert">{error}</p>}
     </main>
   );
 }

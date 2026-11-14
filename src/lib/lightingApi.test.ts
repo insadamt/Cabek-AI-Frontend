@@ -1,58 +1,38 @@
-/** Verify token-free requests and effect payloads honor server schemas.
- * Depends on a mocked fetch transport; no browser automation or hardware access. */
+/** Verify direct commands, bodyless OFF and palettes using mocked fetch.
+ * Depends on Vitest; no browser automation or physical hardware is used. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { lightingRequest, loadLightingSession, previewPayload } from './lightingApi';
+import { effectPayload, lightingEffects, lightingRequest } from './lightingApi';
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('lighting requests', () => {
-  it('sends no authorization header', async () => {
-    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ state: 'READY' }) });
+describe('lighting commands', () => {
+  it('sends a bodyless POST for OFF without authorization or redirects', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, status: 'off' }) });
     vi.stubGlobal('fetch', fetcher);
-    await lightingRequest('/stop', {});
+    await lightingRequest('/off');
     const [url, options] = fetcher.mock.calls[0];
-    expect(url).not.toContain('private-key');
-    expect(options.headers).not.toHaveProperty('Authorization');
+    expect(url).toMatch(/\/api\/lights\/off$/);
     expect(options.method).toBe('POST');
+    expect(options).not.toHaveProperty('body');
+    expect(options.headers).not.toHaveProperty('Authorization');
     expect(options.redirect).toBe('error');
   });
-  it('propagates a server scan conflict', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        json: async () => ({ error: { message: 'Capture owns lights' } }),
-      }),
-    );
-    await expect(lightingRequest('/effects', {})).rejects.toThrow('Capture owns lights');
-  });
-  it('only reads state when opening the panel', async () => {
-    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  it('posts set parameters and propagates firmware errors', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: false,
+      json: async () => ({ error: { message: 'RGB firmware required' } }) });
     vi.stubGlobal('fetch', fetcher);
-    await loadLightingSession();
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    expect(fetcher.mock.calls.every(([, options]) => options.method === 'GET')).toBe(true);
+    await expect(lightingRequest('/set', { effect: 'solid', brightness: 100 })).rejects.toThrow('RGB firmware required');
+    expect(fetcher.mock.calls[0][0]).toMatch(/\/api\/lights\/set$/);
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ effect: 'solid', brightness: 100 });
   });
-  it('omits irrelevant effect parameters and supports brightness zero', () => {
-    expect(
-      previewPayload(
-        { effect: 'solid', supported: true, parameters: { color: {}, brightness: {} } },
-        '#000000',
-        0,
-        2000,
-      ),
-    ).toEqual({ effect: 'solid', color: '#000000', brightness: 0 });
-    expect(
-      previewPayload(
-        {
-          effect: 'breathing',
-          supported: true,
-          parameters: { brightness: {}, min_brightness: {}, repeat: {} },
-        },
-        '#000000',
-        0,
-        2000,
-      ),
-    ).toEqual({ effect: 'breathing', brightness: 0, min_brightness: 0, repeat: true });
+  it('builds solid and multicolor requests with consistent cycle duration and speed', () => {
+    expect(effectPayload('solid', '#000000', 0, 2000, 2, true, 'linear', '')).toEqual({
+      effect: 'solid', color: '#000000', brightness: 0,
+    });
+    expect(effectPayload('color_cycle', '#FFFFFF', 70, 2000, .8, true, 'ease_in_out', '#0066FF, #8B00FF; #00FFFF')).toEqual({
+      effect: 'color_cycle', color: '#FFFFFF', brightness: 70, duration_ms: 2000,
+      speed: .8, repeat: true, easing: 'ease_in_out', colors: ['#0066FF', '#8B00FF', '#00FFFF'],
+    });
+    expect(lightingEffects).toHaveLength(13);
   });
 });
