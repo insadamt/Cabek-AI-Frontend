@@ -2,6 +2,7 @@
  * Routes category/dossier screens while retaining one cached studio across navigation.
  * Depends on navigation, route motion and BayRuntimeCacheProvider; page frames remain route-owned.
  */
+import { Settings } from './pages/Settings';
 import { Categories } from './pages/Categories';
 import { CreateDossier } from './pages/CreateDossier';
 import { parseWorkflowRoute } from './lib/workflows';
@@ -53,7 +54,11 @@ export default function App() {
       <TunnelCaptureProvider>
         <BayRuntimeCacheProvider>
           <div ref={routeRef} className="route-viewport">
-            {pathname === '/' ? (
+            {pathname === '/settings' ? (
+              <HomeFrame>
+                <Settings />
+              </HomeFrame>
+            ) : pathname === '/' ? (
               <Categories />
             ) : pathname === '/preview/expertise' ? (
               <ScannerPreview />

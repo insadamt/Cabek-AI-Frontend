@@ -19,6 +19,7 @@ import { CaptureIslandActivity } from './CaptureIslandActivity';
 import { captureAnalysisSession } from '../../lib/captureAnalysis';
 import { captureLabel } from '../../lib/tunnelCapture';
 import { IslandActivityText } from './IslandActivityText';
+import { useIslandSettingsGesture } from '../../hooks/useIslandSettingsGesture';
 import { useIslandErrorTimeout } from '../../hooks/useIslandErrorTimeout';
 
 const activityLabels = {
@@ -99,6 +100,7 @@ function AnalysisTimer({ session }: { session: HomeAnalysisSession }) {
 
 export function AnalysisIsland() {
   const { session: analysisSession, busy } = useHomeAnalysis();
+  const registerSettingsClick = useIslandSettingsGesture(() => navigate('/settings'));
   const { session: capture } = useTunnelCapture();
   const openingSession = useDossierOpening();
   const reportNotification = useReportDownloadNotification();
@@ -230,6 +232,19 @@ export function AnalysisIsland() {
   return (
     <div
       ref={islandRef}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const action = (event.target as Element).closest('a, button, input, select');
+        if (action && !action.classList.contains('island-brand')) return;
+        if (action) event.preventDefault();
+        registerSettingsClick(
+          action
+            ? () => {
+                if (!busy) navigate('/');
+              }
+            : undefined,
+        );
+      }}
       className={`ai-activity-island ${expanded ? 'is-expanded' : ''} ${success ? 'is-success' : ''} ${opening ? 'dossier-opening-island' : ''}`}
       data-phase={errorKey && !errorDismissed ? 'error' : phase}
       data-capture-presentation={
@@ -246,11 +261,6 @@ export function AnalysisIsland() {
           aria-label="CABEK AI — Accueil"
           tabIndex={expanded ? -1 : 0}
           aria-hidden={expanded}
-          onClick={(event) => {
-            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            event.preventDefault();
-            if (!busy) navigate('/');
-          }}
         >
           <Brand tone="light" />
         </a>

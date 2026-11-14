@@ -67,13 +67,26 @@ bodyless `POST /api/lights/off`. A single background HTTP worker keeps lighting
 outages outside capture requests. No readiness probe or lifecycle snapshot is sent
 to the lighting service. The 3D scene remains independent presentation.
 
-The frontend has no physical lighting page, client, timers or service URL.
-It sends its existing capture request to CABEK AI; that backend chooses and sends
-all lighting commands. Refreshing or closing the browser does not own the lighting
-sequence. Decorative 3D scene lighting remains presentation only.
+## Central settings
 
-Configure `CABEK_LIGHTS_ENABLED` and `CABEK_LIGHTS_API_URL` on the CABEK AI server.
-The independent lighting service remains on loopback port 8001 and is not proxied
-through Vite. CABEK AI exposes no browser lighting endpoints.
-See the [lighting API contract](../../cabek-esp32/docs/lighting-api.md) for direct
-local diagnostics and the [deployment guide](../../cabek-esp32/docs/lighting-deployment.md).
+Click the Dynamic Island five times, with less than 600 ms between clicks, to
+open `/settings`. A single brand click returns home after that window; modified
+link clicks and activity buttons keep their existing behavior. The settings page
+is the central place for application settings, currently with hardware light tests.
+
+Opening the page sends no hardware command. Use solid presets or choose any
+supported effect, brightness, duration, speed, easing, repeat and color palette.
+OFF stays available during a pending test. Accepted manual tests cancel the previous green
+completion countdown; a new capture still sends its normal automatic command.
+
+The browser uses only CABEK AI's configured `VITE_API_BASE_URL`:
+`POST /api/settings/lights/set` and bodyless `POST /api/settings/lights/off`.
+CABEK AI forwards commands to its server-side `CABEK_LIGHTS_API_URL`; the browser
+never knows that address. Upstream validation, firmware and delivery errors are
+shown on the page. A successful result confirms initial delivery, not visible
+LEDs or future frames. Repeating tests persist until replaced or switched off.
+
+Hardware settings require local access. Vite rejects LAN requests to the settings
+API before proxying, including encoded separators; the backend checks loopback
+clients too. Preserve that boundary in a production reverse proxy. Five clicks
+are a navigation shortcut, not an authentication mechanism.
