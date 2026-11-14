@@ -81,33 +81,13 @@ configuration or browser bundles.
 
 ## Lighting maintenance
 
-The opt-in `/maintenance/lights` route provides an operator-only controls panel.
-It uses existing surface/button styling and French labels, and requires a manually
-entered maintenance credential before displaying controls. The server reports the
-caller's `can_preview` permission and enforces maintenance authorization on every
-write. The credential lives only in component memory; refresh/logout clears it.
-No token belongs in `VITE_*`, local/session storage, a URL, or a saved bundle.
+Open `/maintenance/lights` directly. The panel reads the standalone API without
+login, bearer tokens or Authorization headers. It loads status and capabilities
+on mount; reads never start effects or replay startup events. Preview controls
+remain unavailable during captures and outside READY; the server enforces those
+same lifecycle rules. Simulation is labeled and unsupported hardware effects are disabled.
 
-The panel reads `/api/v1/lights/status`, `/capabilities` and `/effects`; opening,
-polling and refreshing never POST lifecycle/lighting changes. Polling is sequential
-with cancellation on unmount and a one-second gap between reads. Start submits
-only parameters advertised for the selected effect; Stop returns to the backend's
-current lifecycle. Capture or unavailable readiness disables preview controls;
-the backend also rejects competing requests. Previews have a server-side timeout,
-so logout does not need to send an implicit hardware command.
-
-With negotiated RGB firmware, the backend now uses awakening, breathing, smooth
-white transitions, Target Lock/red pulses, success/green hold, amber warning and
-shutdown fade. The capture requests and server-owned 10-second deadline remain
-unchanged. Unsupported zone effects are disabled for the global RGB decoder;
-explicit simulated pixels appear as colored logical-zone swatches marked as
-simulation. No simulated frame or serial confirmation establishes visible LEDs.
-
-Use the [updated effects API and curl examples](../../cabek-esp32/docs/lighting-api.md)
-and [firmware/manual checklist](../../cabek-esp32/docs/lighting-effects.md).
-
-Lighting endpoints now run independently in `cabek-esp32` on port 8001. Set
-`VITE_LIGHTS_API_BASE_URL` for that server; Vite routes `/api/v1/lights` there
-before its general CABEK `/api` proxy. Production needs an explicit lighting URL
-or authenticated reverse proxy, with the frontend origin allowed by the lighting service.
-CABEK sends lifecycle snapshots as an HTTP client and owns no lighting routes or USB port.
+Set `VITE_LIGHTS_API_BASE_URL` independently of the main application API URL.
+Vite proxies `/api/v1/lights` to the standalone server, normally port 8001.
+See the [API contract](../../cabek-esp32/docs/lighting-api.md) and
+[deployment guide](../../cabek-esp32/docs/lighting-deployment.md).

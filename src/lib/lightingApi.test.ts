@@ -1,37 +1,35 @@
-/** Verify credentials stay in headers and effect payloads honor server schemas.
+/** Verify token-free requests and effect payloads honor server schemas.
  * Depends on a mocked fetch transport; no browser automation or hardware access. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { lightingRequest, loadLightingSession, previewPayload } from './lightingApi';
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('protected lighting requests', () => {
-  it('uses a bearer header without storing a token in the URL', async () => {
+describe('lighting requests', () => {
+  it('sends no authorization header', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ state: 'READY' }) });
     vi.stubGlobal('fetch', fetcher);
-    await lightingRequest('private-key', '/stop', {});
+    await lightingRequest('/stop', {});
     const [url, options] = fetcher.mock.calls[0];
     expect(url).not.toContain('private-key');
-    expect(options.headers.Authorization).toBe('Bearer private-key');
+    expect(options.headers).not.toHaveProperty('Authorization');
     expect(options.method).toBe('POST');
     expect(options.redirect).toBe('error');
   });
-  it('propagates a server authorization or scan conflict', async () => {
+  it('propagates a server scan conflict', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          json: async () => ({ error: { message: 'Capture owns lights' } }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: { message: 'Capture owns lights' } }),
+      }),
     );
-    await expect(lightingRequest('key', '/effects', {})).rejects.toThrow('Capture owns lights');
+    await expect(lightingRequest('/effects', {})).rejects.toThrow('Capture owns lights');
   });
   it('only reads state when opening the panel', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
     vi.stubGlobal('fetch', fetcher);
-    await loadLightingSession('key');
+    await loadLightingSession();
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(fetcher.mock.calls.every(([, options]) => options.method === 'GET')).toBe(true);
   });

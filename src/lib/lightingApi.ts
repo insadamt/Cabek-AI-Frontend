@@ -1,8 +1,10 @@
 /**
- * Call protected lighting maintenance endpoints using a session-only credential.
- * Depends on the existing API base/proxy; tokens never enter storage or URLs.
+ * Call the standalone lighting API without authentication headers.
+ * Depends on the standalone lighting URL and development proxy.
  */
-const lightsApiBaseUrl = (import.meta.env.VITE_LIGHTS_API_BASE_URL ?? 'http://127.0.0.1:8001').trim().replace(/\/+$/, '');
+const lightsApiBaseUrl = (import.meta.env.VITE_LIGHTS_API_BASE_URL ?? 'http://127.0.0.1:8001')
+  .trim()
+  .replace(/\/+$/, '');
 
 export type LightingCapabilities = {
   driver: string;
@@ -38,36 +40,34 @@ export type LightingSession = {
 };
 
 export async function lightingRequest<T>(
-  token: string,
   path: string,
   payload?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(`${import.meta.env.DEV ? '' : lightsApiBaseUrl}/api/v1/lights${path}`, {
-    method: payload === undefined ? 'GET' : 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }),
+  const response = await fetch(
+    `${import.meta.env.DEV ? '' : lightsApiBaseUrl}/api/v1/lights${path}`,
+    {
+      method: payload === undefined ? 'GET' : 'POST',
+      headers: {
+        ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }),
+      },
+      ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
+      signal,
+      cache: 'no-store',
+      credentials: 'omit',
+      redirect: 'error',
     },
-    ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
-    signal,
-    cache: 'no-store',
-    credentials: 'omit',
-    redirect: 'error',
-  });
+  );
   const result = await response.json();
   if (!response.ok) throw new Error(result.error?.message ?? `Erreur ${response.status}`);
   return result as T;
 }
 
-export async function loadLightingSession(
-  token: string,
-  signal?: AbortSignal,
-): Promise<LightingSession> {
+export async function loadLightingSession(signal?: AbortSignal): Promise<LightingSession> {
   const [status, capabilities, effects] = await Promise.all([
-    lightingRequest<LightingStatus>(token, '/status', undefined, signal),
-    lightingRequest<LightingCapabilities>(token, '/capabilities', undefined, signal),
-    lightingRequest<LightingEffect[]>(token, '/effects', undefined, signal),
+    lightingRequest<LightingStatus>('/status', undefined, signal),
+    lightingRequest<LightingCapabilities>('/capabilities', undefined, signal),
+    lightingRequest<LightingEffect[]>('/effects', undefined, signal),
   ]);
   return { status, capabilities, effects };
 }

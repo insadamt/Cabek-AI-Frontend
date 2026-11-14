@@ -8,7 +8,23 @@ export default defineConfig(({ mode }) => {
   // Same-origin requests let local development work with an API that has no CORS allowlist.
 
   return {
-    plugins: [react()],
+    plugins: [react(), {
+      name: 'local-lighting-proxy',
+      configureServer(server) {
+        server.middlewares.use((request, response, next) => {
+          // Token-free hardware controls remain local even when the app serves the LAN.
+          const localAddresses = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+          const pathname = (request.url ?? '').split('?')[0];
+          if ((pathname === '/api/v1/lights' || pathname.startsWith('/api/v1/lights/')) &&
+              !localAddresses.includes(request.socket.remoteAddress ?? '')) {
+            response.statusCode = 403;
+            response.end('Lighting controls are available on this machine.');
+            return;
+          }
+          next();
+        });
+      },
+    }],
     server: {
       port: 5173,
       strictPort: true,
