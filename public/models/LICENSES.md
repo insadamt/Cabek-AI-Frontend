@@ -20,10 +20,12 @@ compression. Reproduce with
 The original `.blend` is read without modification. Asset dimensions and export
 details are recorded in [`vehicle-manifest.json`](studio-v2/vehicle-manifest.json).
 
-The current tunnel is original CABEK procedural geometry from
-[`bayGeometry.ts`](../../src/components/scanner/bayGeometry.ts) and its sibling
-modules. Its exported copy and editable composition live alongside the v2 sedan
-and under `assets/blender/cabek-studio-v2/` respectively.
+## CABEK inspection tunnel
+
+The active tunnel is an original Blender model of the photographed installation.
+The CABEK panel lettering is reproduced as geometry. The runtime model uses
+embedded materials. The source, export instructions and reference assumptions
+are in the [studio v3 guide](../../scripts/scanner/README.md).
 
 The editable v2 Blender studio packs `studiolights/world/studio.exr` from Blender
 5.2's bundled studio lights. Its accompanying `license.txt` credits Greg Zaal /

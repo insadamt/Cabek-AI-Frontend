@@ -3,6 +3,8 @@
  * Depends on a lazy bayRuntime and DOM hosts; leases pause detached scenes, retry replaces failed resources, app teardown disposes them.
  */
 import type { createBayRuntime } from './bayRuntime';
+import { standbyLight, type BayCaptureLight } from './bayCaptureLight';
+import { defaultBayVisualSettings, type BayVisualSettings } from './bayControls';
 import type { BayPalette } from './bayChoreography';
 
 type BayRuntime = ReturnType<typeof createBayRuntime>;
@@ -34,7 +36,8 @@ interface CacheEntry {
   palette: BayPalette;
   reducedMotion: boolean;
   disposed: boolean;
-  capturing: boolean;
+  captureLight: BayCaptureLight;
+  visualSettings: BayVisualSettings;
 }
 
 export function createBayRuntimeCache(
@@ -57,7 +60,8 @@ export function createBayRuntimeCache(
       palette: options.palette,
       reducedMotion: options.reducedMotion,
       disposed: false,
-      capturing: false,
+      captureLight: standbyLight,
+      visualSettings: defaultBayVisualSettings,
     };
   }
 
@@ -89,7 +93,8 @@ export function createBayRuntimeCache(
             cached.view?.onIntroComplete();
           },
         });
-        cached.runtime.setCapturing?.(cached.capturing);
+        cached.runtime.setCaptureLight(cached.captureLight);
+        cached.runtime.setVisualSettings(cached.visualSettings);
         cached.runtime.setCameraInteractive?.(cached.view?.cameraInteractive ?? false);
       })
       .catch(() => publishStatus(cached, 'failed'));
@@ -108,6 +113,9 @@ export function createBayRuntimeCache(
   }
 
   return {
+    getVisualSettings() {
+      return entry?.visualSettings ?? defaultBayVisualSettings;
+    },
     getSnapshot() {
       return { status: entry?.status ?? 'loading', introComplete: entry?.introComplete ?? false };
     },
@@ -161,10 +169,15 @@ export function createBayRuntimeCache(
         setPalette(palette: BayPalette) {
           if (isConnected()) setPalette(cached, palette);
         },
-        setCapturing(capturing: boolean) {
+        setVisualSettings(settings: BayVisualSettings) {
           if (!isConnected()) return;
-          cached.capturing = capturing;
-          cached.runtime?.setCapturing?.(capturing);
+          cached.visualSettings = settings;
+          cached.runtime?.setVisualSettings(settings);
+        },
+        setCaptureLight(light: BayCaptureLight) {
+          if (!isConnected()) return;
+          cached.captureLight = light;
+          cached.runtime?.setCaptureLight(light);
         },
         setReducedMotion(reducedMotion: boolean) {
           if (isConnected()) setReducedMotion(cached, reducedMotion);
@@ -179,8 +192,8 @@ export function createBayRuntimeCache(
           cached.initiallyParked = true;
           cached.introComplete = true;
           cached.runtime?.setActive(false);
-          cached.capturing = false;
-          cached.runtime?.setCapturing?.(false);
+          cached.captureLight = standbyLight;
+          cached.runtime?.setCaptureLight(standbyLight);
           cached.canvas.remove();
         },
       };

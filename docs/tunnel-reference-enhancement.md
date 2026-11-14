@@ -1,5 +1,7 @@
 # Reference tunnel, lighting and materials
 
+This page describes the historical v2 study. The live scanner now uses the [Blender v3 scene and export workflow](../scripts/scanner/README.md).
+
 This report explains the scanner's reference-image refinement, the editable
 Blender output and how to review the result. It depends on the procedural
 Three.js tunnel, supplied studio-v2 sedan, local GLTF exporter and Blender 5.2

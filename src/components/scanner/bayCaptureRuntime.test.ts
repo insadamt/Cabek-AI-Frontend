@@ -49,6 +49,7 @@ async function prepareRuntime() {
     scene: new Group(),
     camera: new PerspectiveCamera(),
     resize() {},
+    loadTunnel: vi.fn(async () => {}),
     prepare: async () => {},
     invalidateShadows() {},
     setVisualSettings() {},
@@ -102,32 +103,14 @@ it('retains the waiting vehicle outside across repeated cached route returns', a
   expect(adapters.choreography.park).not.toHaveBeenCalled();
 });
 
-it('runs frames only for active visible capture and settles when reduced motion is enabled', async () => {
-  const { page, frames, flush } = await prepareRuntime();
-  expect(frames.size).toBe(0);
-  runtime.setCapturing(true);
+it('renders a confirmed capture solid red once, then waits for another backend state', async () => {
+  const { frames, flush } = await prepareRuntime();
+  runtime.setCaptureLight({ status: 'capturing' });
   flush(16);
-  expect(frames.size).toBe(1);
-  expect(adapters.stage.render.mock.calls.at(-1)[1]).toMatchObject({
-    capturing: true,
-    reducedMotion: false,
-  });
-  page.hidden = true;
-  page.dispatchEvent(new Event('visibilitychange'));
   expect(frames.size).toBe(0);
-  page.hidden = false;
-  page.dispatchEvent(new Event('visibilitychange'));
-  flush(1000);
-  expect(frames.size).toBe(1);
-  runtime.setReducedMotion(true);
-  flush(1016);
+  expect(adapters.stage.render.mock.calls.at(-1)[1].color).toBe('#ff0000');
+  runtime.setCaptureLight({ status: 'failed' });
+  flush(32);
+  expect(adapters.stage.render.mock.calls.at(-1)[1].color).toBe('#ff9800');
   expect(frames.size).toBe(0);
-  expect(adapters.stage.render.mock.calls.at(-1)[1]).toMatchObject({
-    capturing: true,
-    reducedMotion: true,
-  });
-  runtime.setCapturing(false);
-  flush(1032);
-  expect(frames.size).toBe(0);
-  expect(adapters.stage.render.mock.calls.at(-1)[1].capturing).toBe(false);
 });

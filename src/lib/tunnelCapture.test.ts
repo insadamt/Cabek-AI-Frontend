@@ -96,6 +96,33 @@ afterEach(() => {
 });
 
 describe('persistent tunnel lifecycle', () => {
+  it('dates the first witnessed completion once and keeps restored successes neutral', async () => {
+    const { service, store } = setup();
+    const active = capture({ capture_id: 'CAP-1', status: 'capturing' });
+    service.readCapture.mockResolvedValue(active);
+    await store.start('chiffrage_rapide');
+    const completed = { ...active, status: 'completed' as const };
+    service.readCapture.mockResolvedValue(completed);
+    vi.setSystemTime(56_000);
+    await store.refresh();
+    expect(store.getSnapshot()?.captureChangedAt).toBe(56_000);
+    vi.setSystemTime(69_000);
+    await store.refresh();
+    expect(store.getSnapshot()?.captureChangedAt).toBe(56_000);
+    const restored = setup();
+    restored.service.readCapture.mockResolvedValue(completed);
+    await restored.store.start('chiffrage_rapide');
+    expect(restored.store.getSnapshot()?.captureChangedAt).toBeUndefined();
+  });
+  it('recognizes a fast new capture completed by the time the admission response arrives', async () => {
+    const { service, store } = setup();
+    const done = capture({ status: 'completed', capture_id: 'FAST' });
+    service.readCapture.mockResolvedValueOnce(capture()).mockResolvedValue(done);
+    service.startCapture.mockResolvedValue(done);
+    vi.setSystemTime(15_000);
+    await store.start('chiffrage_rapide');
+    expect(store.getSnapshot()?.captureChangedAt).toBe(15_000);
+  });
   it('saves the vehicle sheet before capture and retains the same draft identity', async () => {
     const { service, store, storage } = setup();
     await store.save('chiffrage_rapide', undefined, {

@@ -5,7 +5,10 @@ import { CategoryStageVisual } from './CategoryStageVisual';
 import { categories } from '../../lib/workflows';
 
 vi.mock('./BayRuntimeCacheProvider', () => ({
-  useBayRuntimeCache: () => ({ getSnapshot: () => ({ status: 'ready', introComplete: true }) }),
+  useBayRuntimeCache: () => ({
+    getVisualSettings: () => ({ illumination: 0.75, sensorsVisible: true, canopyVisible: true }),
+    getSnapshot: () => ({ status: 'ready', introComplete: true }),
+  }),
 }));
 
 it('shows an explicit locked rotation button beside Reset before scanning', () => {

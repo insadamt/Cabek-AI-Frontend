@@ -1,21 +1,36 @@
 /**
  * Guards complete vehicle and tunnel projection inside the scene area reserved above capture controls.
- * Depends on Three.js CPU matrices, bayGeometry and bayPresentation; requires no GPU or browser automation.
+ * Depends on Three.js CPU matrices, the shipped GLB header and bayPresentation; requires no GPU or browser automation.
  */
-import { afterAll, describe, expect, it } from 'vitest';
-import { Box3, Mesh, PerspectiveCamera, Vector3 } from 'three';
-import { buildScanningBay } from './bayGeometry';
+import { describe, expect, it } from 'vitest';
+import { Box3, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three';
+import { readFileSync } from 'node:fs';
 import { applyCinematicBayCamera, vehicleApproachDistance } from './bayPresentation';
 
-const bay = buildScanningBay();
+// Accessor bounds are available before Draco decode, including local transforms for lettering.
+const bytes = readFileSync('public/models/studio-v3/cabek-tunnel.glb');
+const model = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
 const equipmentCorners: Vector3[] = [];
-bay.root.updateMatrixWorld(true);
-bay.root.traverse((object) => {
-  if (!(object instanceof Mesh) || object.name === 'Studio floor') return;
-  const bounds = new Box3().setFromObject(object);
-  equipmentCorners.push(...boxCorners(bounds));
-});
-afterAll(() => bay.dispose());
+function includeNode(index: number, parent: Matrix4) {
+  const node = model.nodes[index];
+  if (node.name === 'FLOOR') return;
+  const world = parent
+    .clone()
+    .multiply(
+      new Matrix4().compose(
+        new Vector3().fromArray(node.translation ?? [0, 0, 0]),
+        new Quaternion().fromArray(node.rotation ?? [0, 0, 0, 1]),
+        new Vector3().fromArray(node.scale ?? [1, 1, 1]),
+      ),
+    );
+  for (const primitive of model.meshes[node.mesh]?.primitives ?? []) {
+    const { min, max } = model.accessors[primitive.attributes.POSITION];
+    const bounds = new Box3(new Vector3().fromArray(min), new Vector3().fromArray(max));
+    equipmentCorners.push(...boxCorners(bounds).map((point) => point.applyMatrix4(world)));
+  }
+  for (const child of node.children ?? []) includeNode(child, world);
+}
+for (const root of model.scenes[model.scene].nodes) includeNode(root, new Matrix4());
 
 function boxCorners(bounds: Box3) {
   const corners: Vector3[] = [];

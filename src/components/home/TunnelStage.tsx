@@ -243,7 +243,8 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
           playIntro={ready}
           onStatusChange={entrance.setSceneStatus}
           onParked={setParked}
-          capturing={capture?.status === 'capturing'}
+          captureStatus={capture?.status}
+          captureChangedAt={current?.captureChangedAt}
           finishing={finale || analysisStage}
         />
       </div>

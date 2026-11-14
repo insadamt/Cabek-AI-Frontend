@@ -64,8 +64,10 @@ startup completes, and around captures. It sends red repeating pulses during
 capture, green `mission_complete` on success, then solid white ten seconds later.
 A new capture cancels that countdown. Failure selects `warning`; shutdown sends
 bodyless `POST /api/lights/off`. A single background HTTP worker keeps lighting
-outages outside capture requests. No readiness probe or lifecycle snapshot is sent
-to the lighting service. The 3D scene remains independent presentation.
+outages outside capture requests. The Blender twin uses confirmed capture status to display solid red, green on
+success and amber on failure. Its standby tint, RGB brightness and inspection
+brightness are local presentation settings. Hardware commands remain owned by
+CABEK AI. See the [studio guide](../scripts/scanner/README.md).
 
 ## Central settings
 

@@ -2,6 +2,8 @@
  * Attaches the application's cached studio canvas so returning routes reuse decoded meshes, shaders and camera state.
  * Depends on BayRuntimeCacheProvider, the page cue and motion preferences; route cleanup pauses rather than disposes GPU resources.
  */
+import type { CaptureStatus } from '../../captureTypes';
+import { BayVisualControls } from './BayVisualControls';
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
 import {
   useEffect,
@@ -61,7 +63,8 @@ interface CategoryStageVisualProps {
   initiallyParked: boolean;
   playIntro: boolean;
   onStatusChange: (status: StageSceneStatus) => void;
-  capturing?: boolean;
+  captureStatus?: CaptureStatus['status'];
+  captureChangedAt?: number;
   finishing?: boolean;
   onParked?: (parked: boolean) => void;
 }
@@ -74,7 +77,8 @@ export function CategoryStageVisual({
   initiallyParked,
   playIntro,
   onStatusChange,
-  capturing = false,
+  captureStatus = 'not_started',
+  captureChangedAt,
   finishing = false,
   onParked,
 }: CategoryStageVisualProps) {
@@ -103,6 +107,8 @@ export function CategoryStageVisual({
   const [status, setStatus] = useState<StageSceneStatus>(() => cache.getSnapshot().status);
   const [attempt, setAttempt] = useState(0);
   const [rotationLocked, setRotationLocked] = useState(true);
+  const [visualSettings, setVisualSettings] = useState(() => cache.getVisualSettings());
+  const capturing = captureStatus === 'capturing';
   const controlsAvailable = status === 'ready' && playIntro && !entering;
   const cameraInteractive = controlsAvailable && !rotationLocked;
   useEffect(() => {
@@ -146,9 +152,11 @@ export function CategoryStageVisual({
   }, [cameraInteractive, attempt]);
 
   useEffect(() => {
-    connectionRef.current?.setCapturing(capturing);
-    return () => connectionRef.current?.setCapturing(false);
-  }, [capturing, attempt]);
+    connectionRef.current?.setCaptureLight({ status: captureStatus, changedAt: captureChangedAt });
+  }, [captureStatus, captureChangedAt, attempt]);
+  useEffect(() => {
+    connectionRef.current?.setVisualSettings(visualSettings);
+  }, [visualSettings, attempt]);
   useEffect(() => {
     connectionRef.current?.setPalette(
       finishing
@@ -194,6 +202,13 @@ export function CategoryStageVisual({
     >
       <div ref={canvasHostRef} className="scanning-bay-canvas-host" />
       <div className="bay-camera-toolbar">
+        {controlsAvailable && (
+          <BayVisualControls
+            settings={visualSettings}
+            onChange={setVisualSettings}
+            disabled={false}
+          />
+        )}
         {controlsAvailable && (
           <button
             type="button"

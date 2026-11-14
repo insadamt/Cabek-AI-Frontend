@@ -3,8 +3,8 @@
  * Depends on Three.js GLTF/Draco loaders and the studio-v2 GLB; owns decoded and enhanced GPU resources.
  */
 import * as THREE from 'three';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import { createResourceOwner } from './bayModelResources';
+import { loadBayModel } from './bayModelLoader';
 
 const vehicleAssetDirectory = '/models/studio-v2/';
 const vehicleModelUrl = `${vehicleAssetDirectory}cabek-vehicle.glb`;
@@ -13,90 +13,6 @@ export interface BayVehicle {
   root: THREE.Group;
   wheels: THREE.Object3D[];
   dispose: () => void;
-}
-
-function abortError() {
-  return new DOMException('Vehicle loading was cancelled.', 'AbortError');
-}
-
-function throwIfAborted(signal: AbortSignal) {
-  if (signal.aborted) throw abortError();
-}
-
-function createResourceOwner() {
-  const geometries = new Set<THREE.BufferGeometry>();
-  const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
-  let disposed = false;
-
-  function rememberMaterial(material: THREE.Material) {
-    materials.add(material);
-    for (const value of Object.values(material)) {
-      if (value instanceof THREE.Texture) textures.add(value);
-    }
-  }
-
-  function capture(root: THREE.Object3D) {
-    root.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      geometries.add(object.geometry);
-      const meshMaterials = Array.isArray(object.material) ? object.material : [object.material];
-      meshMaterials.forEach(rememberMaterial);
-    });
-  }
-
-  return {
-    capture,
-    rememberMaterial,
-    dispose() {
-      if (disposed) return;
-      disposed = true;
-      geometries.forEach((geometry) => geometry.dispose());
-      materials.forEach((material) => material.dispose());
-      textures.forEach((texture) => texture.dispose());
-      geometries.clear();
-      materials.clear();
-      textures.clear();
-    },
-  };
-}
-
-function releaseDecodedScene(scene: THREE.Group) {
-  const resources = createResourceOwner();
-  resources.capture(scene);
-  resources.dispose();
-}
-
-function decodeVehicle(buffer: ArrayBuffer, signal: AbortSignal): Promise<GLTF> {
-  throwIfAborted(signal);
-  const decoder = new DRACOLoader().setDecoderPath('/models/draco/').setWorkerLimit(2);
-  const loader = new GLTFLoader().setDRACOLoader(decoder);
-
-  return new Promise((resolve, reject) => {
-    const rejectCancelledLoad = () => reject(abortError());
-    signal.addEventListener('abort', rejectCancelledLoad, { once: true });
-
-    //
-    // Terminating a busy Draco worker leaves parsing pending, so late scenes must be released after decoding.
-    //
-    loader.parseAsync(buffer, vehicleAssetDirectory).then(
-      (gltf) => {
-        signal.removeEventListener('abort', rejectCancelledLoad);
-        decoder.dispose();
-        if (signal.aborted) {
-          releaseDecodedScene(gltf.scene);
-          reject(abortError());
-          return;
-        }
-        resolve(gltf);
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', rejectCancelledLoad);
-        decoder.dispose();
-        reject(signal.aborted ? abortError() : error);
-      },
-    );
-  });
 }
 
 // ============================================================
@@ -169,7 +85,7 @@ function prepareVehicle(scene: THREE.Group, signal: AbortSignal): BayVehicle {
   root.add(scene);
 
   try {
-    throwIfAborted(signal);
+    signal.throwIfAborted();
     const replacements = new Map<THREE.Material, THREE.Material>();
     scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
@@ -202,7 +118,7 @@ function prepareVehicle(scene: THREE.Group, signal: AbortSignal): BayVehicle {
     const wheels = ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr']
       .map((name) => scene.getObjectByName(name))
       .filter((wheel): wheel is THREE.Object3D => Boolean(wheel));
-    throwIfAborted(signal);
+    signal.throwIfAborted();
 
     return {
       root,
@@ -221,11 +137,6 @@ function prepareVehicle(scene: THREE.Group, signal: AbortSignal): BayVehicle {
 }
 
 export async function loadBayVehicle(signal: AbortSignal): Promise<BayVehicle> {
-  throwIfAborted(signal);
-  const response = await fetch(vehicleModelUrl, { signal });
-  if (!response.ok) throw new Error(`The vehicle model could not be loaded (${response.status}).`);
-  const buffer = await response.arrayBuffer();
-  throwIfAborted(signal);
-  const gltf = await decodeVehicle(buffer, signal);
+  const gltf = await loadBayModel(vehicleModelUrl, signal);
   return prepareVehicle(gltf.scene, signal);
 }

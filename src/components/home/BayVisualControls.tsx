@@ -1,5 +1,5 @@
 /**
- * Offers keyboard-accessible visual settings alongside the physical tunnel console.
+ * Provides keyboard-accessible Blender model visibility and inspection brightness.
  * Depends on the shared settings DTO; changes only scene presentation and sends no scan command.
  */
 import { SlidersHorizontal } from 'lucide-react';
@@ -26,7 +26,7 @@ export function BayVisualControls({ settings, disabled, onChange }: BayVisualCon
       <fieldset disabled={disabled}>
         <legend className="visually-hidden">Présentation de la scène 3D</legend>
         <div className="bay-visual-illumination">
-          <label htmlFor={illuminationId}>Éclairage</label>
+          <label htmlFor={illuminationId}>Éclairage d’inspection</label>
           <output htmlFor={illuminationId}>{Math.round(settings.illumination * 100)} %</output>
           <input
             id={illuminationId}
@@ -41,6 +41,28 @@ export function BayVisualControls({ settings, disabled, onChange }: BayVisualCon
             }
           />
         </div>
+        <label className="bay-visual-switch">
+          <span>RGB au repos · simulation</span>
+          <input
+            type="color"
+            value={settings.exteriorColor ?? '#ffffff'}
+            onChange={(event) => onChange({ ...settings, exteriorColor: event.target.value })}
+          />
+        </label>
+        <label className="bay-visual-illumination">
+          <span>Intensité RGB</span>
+          <span>{Math.round((settings.exteriorBrightness ?? 1) * 100)} %</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={Math.round((settings.exteriorBrightness ?? 1) * 100)}
+            onChange={(event) =>
+              onChange({ ...settings, exteriorBrightness: Number(event.target.value) / 100 })
+            }
+          />
+        </label>
         <label className="bay-visual-switch">
           <span>Capteurs visibles</span>
           <input

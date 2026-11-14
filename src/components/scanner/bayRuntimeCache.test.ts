@@ -35,6 +35,8 @@ class HostAdapter {
 function createRuntimeAdapter() {
   return {
     enter: vi.fn(),
+    setCaptureLight: vi.fn(),
+    setVisualSettings: vi.fn(),
     skipIntro: vi.fn(),
     resetCamera: vi.fn(),
     setWaitingOutside: vi.fn(),

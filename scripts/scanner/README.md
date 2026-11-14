@@ -1,65 +1,69 @@
-# CABEK scanner model source
+# CABEK inspection tunnel
 
-This directory exports the active frontend tunnel and its exact camera poses for
-an editable Blender composition and bounded visual review. It depends on the
-Three.js scene builders, Blender 5 and the exported supplied sedan. The older
-scanner-generation scripts below remain available as historical sources.
+The editable Blender scene is the source for the scanner shown on the category stage. It depends on Blender 5.2 with the glTF/Draco exporter. The frontend loads the exported tunnel and the existing studio-v2 sedan independently.
 
-The active scene builds real bay meshes in `src/components/scanner/bayGeometry.ts`.
-Export these meshes and camera endpoints with `node scripts/scanner/export_runtime_qa.mjs`.
-Run `ALSOFT_DRIVERS=null blender -b -setaudio None -t 4 --python scripts/scanner/render_runtime_qa.py`
-for three bounded desktop/portrait checks. The command saves the packed editable
-scene and previews in `assets/blender/cabek-studio-v2/`; the exporter also saves
-`public/models/studio-v2/cabek-tunnel.glb`. These do not verify browser WebGL lighting.
-See [the current reference-tunnel report](../../docs/tunnel-reference-enhancement.md).
-Use `CABEK_REVIEW_POSE=desktop-parked` to refresh just one bounded preview.
-Use `CABEK_REVIEW_POSE=reference-study` for the lower reference-image study camera;
-it is saved alongside the three runtime-review endpoints and only renders on request.
+## Edit, export and review
 
-The exporter retains the older full-equipment QA camera poses. Current premium
-homepage framing uses `applyCinematicBayCamera` and is protected by
-`bayComposition.test.ts`; see [the polish report](../../docs/premium-homepage-polish.md).
-Historical Blender stills do not verify the current camera or browser shading.
-
-This directory contains the reproducible Blender source for the category page's
-custom scan tunnel. It keeps the equipment grounded in CABEK's industrial scan
-workflow while matching the app's graphite, white and lime materials. Generation
-depends on Blender 5 and its bundled Python; no Python packages are required.
-
-Run from the repository root:
+Open `assets/blender/cabek-studio-v3/cabek-studio.blend` to edit the installation. From the repository root, export the saved edits and render the three review views with these commands.
 
 ```sh
-blender --background --python scripts/scanner/build_scanner.py
+blender -b assets/blender/cabek-studio-v3/cabek-studio.blend --python-exit-code 1 --python scripts/scanner/studio_v3/export_tunnel.py
+blender -b assets/blender/cabek-studio-v3/cabek-studio.blend -t 6 --python-exit-code 1 --python scripts/scanner/studio_v3/render_reviews.py
 ```
 
-The generated asset is `public/models/cabek-scanner.glb`. It contains geometry and
-PBR materials, with no external textures, scene cameras or lights. Blender's
-native glTF importer decodes its Draco mesh compression for the offline
-[category film renderer](../cinematic/README.md). The converted fascia text
-travels with the GLB, so rendered footage needs no separate font asset.
+The export writes `public/models/studio-v3/cabek-tunnel.glb`. The Cycles stills are saved beside the source as `exterior.png`, `inspection.png` and `service.png`. To reconstruct the original geometry from the photo study, use the following command in a clean checkout. It rewrites both the scene and export.
 
-## Coordinates and integration
+```sh
+blender -b --factory-startup --python-exit-code 1 --python scripts/scanner/studio_v3/build_tunnel.py
+```
 
-- Units: metres; glTF Y is up and floor Y is zero.
-- Front: positive Z; a car drives through toward negative Z.
-- Deck extent: Z -3.25 to +3.25; deck driving surface Y 0.096.
-- Overall extent: X -2.126 to +2.353, Y 0 to 3.725, Z -3.25 to +3.25.
-- Optical clearance: approximately 3.4 wide by 3.0 high above the driving deck.
-- `CabekScanner` is the common root. Meshes are merged by purpose and material,
-  retaining separate white, front lime, floor lime and camera status light meshes.
-- `Light_White` and `Light_Lime` use emissive PBR materials. These materials can be
-  dimmed independently during the approach and inspection demonstration.
+## Scene and runtime contract
 
-The open frame deliberately leaves the car visible from a front three-quarter
-camera. Seven illuminated ribs and twenty camera pods describe the real scan
-equipment without adding opaque walls or a detailed marketing backdrop.
+Blender uses metres and Z up, with the entrance on the negative Y end. glTF uses Y up, the entrance is at positive Z, and the floor is at zero. The root `CABEK_TUNNEL` has nine collections and corresponding named parent objects for export.
 
-## Manual model checklist
+| Collection | Contents and control |
+| --- | --- |
+| STRUCTURE | Three portal frames, spliced longitudinal ties, fasteners and casters |
+| EXTERIOR_PANELS | Graphite side sheets on the three separated modules |
+| ROOF | Folded angular canopy sections and inner reflectors |
+| FLOOR | A seamless studio slab representing the continuous workshop floor |
+| INSPECTION_LIGHTS | A/B fixture banks at each module, with split vertical bars, shoulder bars and split overhead bars |
+| RGB_LIGHTS | Single exterior analog zone and its carrier |
+| CAMERAS | Individually named bullet camera assemblies and articulated brackets |
+| TECHNICAL_EQUIPMENT | Open slotted service rack, shelf equipment and signal looms |
+| BRANDING | Concentric C strokes and editable CABEK IA lettering |
 
-- [ ] Open the category stage and inspect the entrance wordmark at normal zoom.
-- [ ] Check the car clears the portal, camera pods and deck throughout its travel.
-- [ ] Inspect white strips, lime inlays and optical lenses in the rendered footage.
-- [ ] Check front three-quarter and mobile camera crops for structural clipping.
-- [ ] Confirm changing emissive materials does not recolor the graphite frame.
+Preserve the `light_group` custom property on the diffusers. All twelve `Inspection_01_A_vertical` through `Inspection_03_B_crown` meshes use `inspection.white`. The `Exterior_RGB_diffusers` mesh uses `exterior.rgb`. Canopy-mounted luminaires and channels have `canopy_mount=true`, so the roof switch hides them together. Review cameras and area lights sit outside the exported root.
 
-Suggested commit: `feat(home): add custom CABEK scanner model and selection stage`
+The shared loader fetches both GLBs with cancellation and the local Draco decoder. The retained runtime waits for both, compiles their shaders, then reports the first rendered frame. A failed load follows the existing retry path. Materials use constant PBR values, geometric lettering, UVs and bevel normals. Fixed parts are batched by assembly. The export has 55 meshes, 61,430 triangles, 17 materials and no external textures. The scanner uses the existing reflection environment and one shadow-casting light.
+
+## Capture and lighting
+
+The visual settings control inspection brightness, standby RGB tint, RGB brightness, roof visibility and camera visibility. They change the loaded scene without hardware traffic. The exterior strip uses one material across its full length.
+
+| Confirmed capture state | Exterior visualization |
+| --- | --- |
+| Standby | White by default, with optional operator preview tint |
+| Capturing | Solid red, including throughout a long capture |
+| Completed | A brief synchronized green brightness effect, green hold, then white |
+| Failed | A brief synchronized amber brightness effect, then steady amber until the state changes |
+
+The capture store dates the first confirmed completion of an observed attempt, including a new admission that finishes before the first poll. The API exposes no completion timestamp, so the ten-second hold begins at confirmation by the client. Polls and route changes preserve the deadline. Reopening an old completed dossier starts in white. Reduced motion uses steady colors and the scheduler sleeps between state changes.
+
+Manual hardware tests on the settings page already use the trusted CABEK AI settings proxy. It forwards supported effects and parameters to `POST /api/lights/set` and sends bodyless `POST /api/lights/off`. CABEK AI owns physical capture transitions even when the browser is closed. The sibling backend currently requests a repeating red pulse during capture. Matching the solid-red visualization on the physical strip requires a change to that backend preset.
+
+## Reference and dimensional assumptions
+
+The study used all five workshop images: side elevation (20261109_123912), occupied entrance (20261109_135408), panel lettering (20261113_141110), open rack (20261114_164614) and empty inspection lane (IMG-20261107-WA0000). The originals remain outside the repository.
+
+Scale is estimated from the vehicle and the openings. Module centres are spaced 2.52 m apart, their sheet sections are 1.38 m deep, and the nominal crown height is 2.85 m. The photographed floor runs through the installation. Its workshop color bands, background, loose cables, ladder and temporary desk are omitted from the studio. The painted sign reads **CABEK IA** in the photographs. The lettering and finish are approximations.
+
+The four clearest bilateral low-camera positions inform eight simplified camera assemblies. Exact lens angles, opposite-side symmetry, hidden cameras and cable destinations need installation confirmation. No overhead cameras were added. The exterior strip follows the upper side carriers as a provisional route. Cabinet electronics, fastener sizes, panel gauges and caster diameters are estimates. Adjust the saved assemblies when measured dimensions become available.
+
+Both shipped GLBs were decoded together in Blender. The grounded sedan measures approximately 2.03 m wide, 4.80 m long and 1.44 m tall. A conservative swept body box along the 7.2 m entrance path clears the side equipment by at least 0.70 m and the overhead fixtures by 1.22 m. These are model clearances.
+
+The saved scene reopened in Blender 5.2.3. Chrome with software WebGL loaded both production GLBs on the category route. Orbit, reset, visibility switches, vehicle entry and the three simulated status colors were exercised. The timed entrance completed in a small viewport; software rendering exceeded the 40-second check at the larger review size. Measure frame timing on a CABEK PC. The frontend suite and production build passed. Hardware delivery and measured installation dimensions require an on-site check.
+
+## Historical assets
+
+The studio-v1 and studio-v2 files remain earlier studies. `build_scanner.py` and `render_preview.py` belong to the original scanner and cinematic assets. The historical [cinematic workflow](../cinematic/README.md) describes those outputs.

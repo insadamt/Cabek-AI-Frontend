@@ -29,6 +29,8 @@ export interface CaptureSession {
   identity: CaptureIdentity;
   response?: DossierResponse;
   capture?: CaptureStatus;
+  /** Wall time of a witnessed backend status change, stable across polls and route visits. */
+  captureChangedAt?: number;
   synchronized: boolean;
   pending: boolean;
   saving?: boolean;

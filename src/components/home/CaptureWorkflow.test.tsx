@@ -25,8 +25,8 @@ vi.mock('../../hooks/useResource', () => ({
   useResource: () => ({ data: [], loading: false, error: state.catalogueError, refresh: vi.fn() }),
 }));
 vi.mock('./CategoryStageVisual', () => ({
-  CategoryStageVisual: ({ capturing }: { capturing: boolean }) => (
-    <div data-capturing={capturing} />
+  CategoryStageVisual: ({ captureStatus }: { captureStatus: string }) => (
+    <div data-capturing={captureStatus === 'capturing'} />
   ),
 }));
 vi.mock('./CaptureFinale', () => ({

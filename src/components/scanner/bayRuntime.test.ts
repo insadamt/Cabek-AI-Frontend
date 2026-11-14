@@ -55,6 +55,7 @@ function createStageAdapter() {
     render: vi.fn(),
     invalidateShadows: vi.fn(),
     setVisualSettings: vi.fn(),
+    loadTunnel: vi.fn(async () => {}),
     prepare: vi.fn(async () => {}),
     dispose: vi.fn(),
   };
@@ -264,7 +265,7 @@ describe('3D bay runtime ownership', () => {
     await session.finishLoading();
     expect(mocks.stage.scene.children).toEqual([session.vehicle.root]);
     expect(mocks.stage.invalidateShadows).toHaveBeenCalledOnce();
-    expect(mocks.stage.prepare).toHaveBeenCalledWith(mocks.choreography.state);
+    expect(mocks.stage.prepare).toHaveBeenCalledOnce();
     expect(mocks.choreography.enter).not.toHaveBeenCalled();
     expect(session.ready).not.toHaveBeenCalled();
     session.flushFrame();

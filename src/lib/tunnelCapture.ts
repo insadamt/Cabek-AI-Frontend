@@ -166,8 +166,26 @@ export function createTunnelCaptureStore(
       update.response &&
       ['queued', 'processing'].includes(update.response.status) &&
       (!session.startedAt || session.response?.status === 'failed');
+    let captureChangedAt = session.captureChangedAt;
+    if (
+      update.capture &&
+      (update.capture.capture_id !== session.capture?.capture_id ||
+        update.capture.status !== session.capture?.status)
+    ) {
+      // A fast admission can finish before a poll sees red. Only a transition observed here starts green.
+      const witnessedCompletion =
+        !!update.capture.capture_id &&
+        !!session.capture &&
+        session.capture.status !== 'completed' &&
+        (session.capture.status === 'capturing'
+          ? update.capture.capture_id === session.capture.capture_id
+          : update.capture.capture_id !== session.capture.capture_id);
+      captureChangedAt =
+        update.capture.status === 'completed' && !witnessedCompletion ? undefined : Date.now();
+    }
     session = {
       ...session,
+      captureChangedAt,
       ...update,
       receivedAt,
       startedAt: newAnalysis ? receivedAt : session.startedAt,

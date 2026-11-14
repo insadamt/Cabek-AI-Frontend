@@ -35,9 +35,9 @@ export function fitBayCameraToSubject(
     }
   }
 
-  // Include the console and complete approach car so neither gets cropped by the closer framing.
-  includeBounds([-2.2, -0.14, -3.6], [2.2, 2.7, 3.6]);
-  includeBounds([1.65, 0, 1.1], [2.9, 1.9, 2.6]);
+  // Include the side rack and complete approach car so neither gets cropped by the closer framing.
+  includeBounds([-2.09, 0, -3.22], [2.09, 2.86, 3.22]);
+  includeBounds([2.06, 0.14, -3.2], [2.55, 2.31, -1.85]);
   includeBounds([-1.1, 0, carDepth - 2.4], [1.1, 1.7, carDepth + 2.4]);
   function minimumDistanceForAxis(axis: 0 | 1, halfSpan: number) {
     let upper = -Infinity;
@@ -50,7 +50,7 @@ export function fitBayCameraToSubject(
   }
   const distance = Math.max(
     minimumDistanceForAxis(0, halfWidth * 0.92),
-    minimumDistanceForAxis(1, halfHeight * 0.92),
+    minimumDistanceForAxis(1, halfHeight * 0.88),
     ...subjectPoints.map((point) => point[2] + camera.near),
   );
   // Balance the visible bounds in perspective; a world-space midpoint leaves the near tunnel off-center.
