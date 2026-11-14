@@ -2,7 +2,7 @@
  * Call protected lighting maintenance endpoints using a session-only credential.
  * Depends on the existing API base/proxy; tokens never enter storage or URLs.
  */
-import { apiBaseUrl } from './api';
+const lightsApiBaseUrl = (import.meta.env.VITE_LIGHTS_API_BASE_URL ?? 'http://127.0.0.1:8001').trim().replace(/\/+$/, '');
 
 export type LightingCapabilities = {
   driver: string;
@@ -43,7 +43,7 @@ export async function lightingRequest<T>(
   payload?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(`${import.meta.env.DEV ? '' : apiBaseUrl}/api/v1/lights${path}`, {
+  const response = await fetch(`${import.meta.env.DEV ? '' : lightsApiBaseUrl}/api/v1/lights${path}`, {
     method: payload === undefined ? 'GET' : 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

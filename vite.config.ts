@@ -12,7 +12,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
-      proxy: apiBaseUrl ? { '/api': { target: apiBaseUrl, changeOrigin: true } } : undefined,
+      proxy: {
+        '/api/v1/lights': { target: environment.VITE_LIGHTS_API_BASE_URL || 'http://127.0.0.1:8001', changeOrigin: true },
+        ...(apiBaseUrl ? { '/api': { target: apiBaseUrl, changeOrigin: true } } : {}),
+      },
     },
   };
 });

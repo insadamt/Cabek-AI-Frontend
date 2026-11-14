@@ -72,7 +72,7 @@ capture services are ready. Failed/interrupted captures never trigger green. A n
 capture supersedes that interval, and lighting outages do not fail normal capture.
 Maintenance tests cannot replace an active capture's lights.
 
-See the [lighting API contract](../../cabek_ai_global/docs/lighting-api.md) and
+See the [lighting API contract](../../cabek-esp32/docs/lighting-api.md) and
 [Linux deployment/manual hardware checklist](../../cabek-esp32/docs/lighting-deployment.md).
 Use the existing capture UI for end-to-end acceptance; do not fabricate capture
 success through the maintenance API. No lighting token should appear in `VITE_*`
@@ -103,5 +103,11 @@ unchanged. Unsupported zone effects are disabled for the global RGB decoder;
 explicit simulated pixels appear as colored logical-zone swatches marked as
 simulation. No simulated frame or serial confirmation establishes visible LEDs.
 
-Use the [updated effects API and curl examples](../../cabek_ai_global/docs/lighting-api.md)
+Use the [updated effects API and curl examples](../../cabek-esp32/docs/lighting-api.md)
 and [firmware/manual checklist](../../cabek-esp32/docs/lighting-effects.md).
+
+Lighting endpoints now run independently in `cabek-esp32` on port 8001. Set
+`VITE_LIGHTS_API_BASE_URL` for that server; Vite routes `/api/v1/lights` there
+before its general CABEK `/api` proxy. Production needs an explicit lighting URL
+or authenticated reverse proxy, with the frontend origin allowed by the lighting service.
+CABEK sends lifecycle snapshots as an HTTP client and owns no lighting routes or USB port.
