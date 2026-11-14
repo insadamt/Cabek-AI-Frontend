@@ -24,13 +24,38 @@ describe('backend settings transport', () => {
   it('shows the backend firmware error', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          json: async () => ({ error: { message: 'RGB firmware required' } }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: { message: 'RGB firmware required' } }),
+      }),
     );
     await expect(testLights('/set', { effect: 'pulse' })).rejects.toThrow('RGB firmware required');
   });
 });
+
+it.each([500, 200])(
+  'handles an empty or non-JSON HTTP %s response without leaking the parser error',
+  async (status) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: status === 200,
+        status,
+        json: async () => {
+          throw new SyntaxError('Unexpected end of JSON input');
+        },
+      }),
+    );
+    await expect(testLights('/off')).rejects.toThrow(
+      `Réponse de CABEK AI vide ou invalide (HTTP ${status})`,
+    );
+  },
+);
+
+it.each([null, {}, { success: true }, { success: true, status: 'unknown' }])(
+  'rejects malformed successful results %j',
+  async (result) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => result }));
+    await expect(testLights('/off')).rejects.toThrow('la commande n’a pas été confirmée');
+  },
+);

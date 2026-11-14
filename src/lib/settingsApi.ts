@@ -51,7 +51,23 @@ export async function testLights(
       cache: 'no-store',
     },
   );
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error?.message ?? `Erreur ${response.status}`);
-  return result;
+  let result: (Partial<LightTestResult> & { error?: { message?: string } }) | null;
+  try {
+    result = await response.json();
+  } catch {
+    // Proxy failures can have an empty body; a parser error hides the actionable connection problem.
+
+    throw new Error(
+      `Réponse de CABEK AI vide ou invalide (HTTP ${response.status}). Vérifiez que l’API est démarrée à l’adresse configurée.`,
+    );
+  }
+  if (!response.ok)
+    throw new Error(
+      typeof result?.error?.message === 'string'
+        ? result.error.message
+        : `Erreur CABEK AI ${response.status}`,
+    );
+  if (result?.success !== true || !['active', 'running', 'off'].includes(result.status ?? ''))
+    throw new Error('Réponse de CABEK AI invalide : la commande n’a pas été confirmée.');
+  return result as LightTestResult;
 }
