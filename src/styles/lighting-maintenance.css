@@ -1,0 +1,46 @@
+/* Styles the protected operator panel using existing application surface tokens.
+ * Depends on base.css; zone swatches describe simulation, never physical LEDs. */
+.lighting-maintenance {
+  max-width: 900px;
+}
+.lighting-maintenance .page-heading {
+  margin-top: 32px;
+}
+.lighting-controls {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  margin-top: 20px;
+}
+.lighting-controls label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.lighting-controls input,
+.lighting-controls select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.lighting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lighting-zones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 20px;
+}
+.lighting-zones span {
+  width: 16px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
