@@ -1,5 +1,5 @@
 /**
- * Presents three shared glass folders, absorbing the chosen category into the island before entering its workflow.
+ * Presents workflow folders, opening expertise dossiers in the carousel before operators choose a scan.
  * Depends on DossierFolder, prepared collection navigation, GSAP category motion and persisted tunnel sessions.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -75,7 +75,7 @@ export function CategoryStage() {
         aria-label="Les parcours CABEK AI"
         data-category={selected?.type}
       >
-        {selected && selected.type !== 'forfait_expertise' ? (
+        {selected ? (
           <TunnelStage
             category={selected}
             onBack={() => {

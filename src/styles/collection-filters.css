@@ -1,0 +1,271 @@
+/* Shared collection filters use Cabek's quiet neutral surfaces, compact type and restrained lime accent.
+   Depends on category-workflows, interaction-polish and workspace-polish; loaded after them in main.tsx. */
+
+/* ============================================================
+   Filter disclosure and panel
+   ============================================================ */
+
+.category-browse-controls .segmented-control {
+  border-color: #e1e1e1;
+  background: #f0f0f0;
+}
+.category-filters summary {
+  min-height: 52px;
+  padding: 12px 16px;
+  border-color: #dedede;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 2px 4px #00000003;
+}
+.category-filters summary:hover,
+.category-filters[open] summary {
+  border-color: #b8b8b8;
+  background: #f4f4f4;
+}
+.category-filters summary:focus-visible {
+  outline-color: var(--ink);
+  outline-offset: 3px;
+}
+.category-filters summary::after {
+  margin-left: 2px;
+  color: #737373;
+  font-weight: 400;
+}
+.filter-active-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding-inline: 5px;
+  border-radius: 7px;
+  background: #dff0ce;
+  color: #304227;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.category-filter-fields {
+  width: min(460px, calc(100vw - 40px));
+  gap: 18px 14px;
+  top: calc(100% + 10px);
+  padding: 22px;
+  border: 1px solid #e2e2e2;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow:
+    0 6px 16px #00000005,
+    0 20px 48px #00000014;
+}
+.filter-panel-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ededed;
+}
+.filter-panel-heading h2 {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.35px;
+}
+.filter-panel-heading p {
+  margin-top: 5px;
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.filter-panel-heading > svg {
+  color: #858585;
+}
+.filter-select-field,
+.category-filter-fields .filter-date-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.filter-field-label {
+  color: #626262;
+  font-size: 11px;
+  font-weight: 550;
+}
+
+/* ============================================================
+   Select triggers and native date inputs share one field surface
+   ============================================================ */
+
+.filter-select-trigger,
+.category-filter-fields .filter-date-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid #e3e3e3;
+  border-radius: 11px;
+  background: #f8f8f8;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+  transition:
+    border-color 160ms,
+    background-color 160ms,
+    box-shadow 160ms;
+}
+.filter-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: start;
+}
+.filter-select-trigger > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.filter-select-trigger > svg {
+  color: #777;
+  transition: rotate 160ms;
+}
+.filter-select-trigger[aria-expanded='true'] > svg {
+  rotate: 180deg;
+}
+.filter-select-trigger:hover,
+.category-filter-fields .filter-date-control input:hover {
+  border-color: #bcbcbc;
+  background: #f4f4f4;
+}
+.filter-select-trigger:focus-visible,
+.filter-select-trigger[aria-expanded='true'],
+.category-filter-fields .filter-date-control input:focus-visible {
+  outline: none;
+  border-color: #777;
+  background: #fff;
+  box-shadow: 0 0 0 3px #2020200d;
+}
+.category-filter-fields .filter-date-field:has(:focus-visible) {
+  color: var(--ink);
+}
+.filter-date-control {
+  position: relative;
+  min-width: 0;
+}
+.filter-date-control > svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  translate: 0 -50%;
+  color: #777;
+  pointer-events: none;
+}
+.category-filter-fields .filter-date-control input {
+  padding-left: 36px;
+  color-scheme: light;
+}
+.filter-date-control input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+}
+.filter-panel-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ededed;
+  color: var(--secondary);
+  font-size: 11px;
+}
+.filter-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: transparent;
+  color: #555;
+  font-size: 11px;
+  font-weight: 600;
+}
+.filter-reset:hover:not(:disabled) {
+  background: #f2f2f2;
+  color: var(--ink);
+}
+
+/* ============================================================
+   Top-layer option lists escape the mobile panel's scroll container
+   ============================================================ */
+
+.filter-select-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border: 1px solid #dedede;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow:
+    0 4px 12px #00000008,
+    0 16px 36px #00000014;
+}
+.filter-select-menu::backdrop {
+  background: transparent;
+}
+.filter-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.filter-select-option[aria-selected='true'] {
+  background: #f0f5eb;
+  color: #304227;
+  font-weight: 600;
+}
+.filter-select-option[data-active='true']:not([aria-disabled='true']) {
+  background: #eeeeee;
+  box-shadow: inset 0 0 0 1px #dedede;
+}
+.filter-select-option[aria-disabled='true'] {
+  color: #999;
+  cursor: not-allowed;
+}
+@media (max-width: 767px) {
+  .category-filters summary {
+    padding-inline: 12px;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .category-filter-fields {
+    width: min(400px, calc(100vw - 32px));
+    padding: 18px;
+    gap: 16px;
+    max-height: min(60dvh, 520px);
+    overscroll-behavior: contain;
+  }
+  .filter-select-trigger,
+  .category-filter-fields .filter-date-control input {
+    font-size: 16px;
+  }
+  .filter-select-option {
+    min-height: 46px;
+    font-size: 14px;
+  }
+}

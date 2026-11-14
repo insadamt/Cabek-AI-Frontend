@@ -313,3 +313,51 @@ it('blocks incomplete forms and explains catalogue failures before scanning', ()
   expect(markup).toMatch(/<select[^>]*required/);
   expect(markup).toMatch(/<input[^>]*type="date"[^>]*required/);
 });
+
+describe('expertise tunnel controls', () => {
+  function expertise() {
+    return renderToStaticMarkup(<TunnelStage category={categories[0]} onBack={() => {}} />);
+  }
+  it('requires choosing an imported dossier before presenting scan controls', () => {
+    state.session = null;
+    const markup = expertise();
+    expect(markup).toContain('CHOISIR UN DOSSIER');
+    expect(markup).not.toContain('FICHE VÉHICULE');
+    expect(markup).not.toContain('Nouveau dossier');
+  });
+  it('shows the imported reference and enables scanning with legacy vehicle metadata', () => {
+    state.session!.identity = {
+      type: 'forfait_expertise',
+      dossierId: 'REAL-42',
+      creationKey: 'stable',
+    };
+    state.session!.response!.type = 'forfait_expertise';
+    state.session!.response!.vehicle = {
+      marque: 'Dacia',
+      modele: 'Sandero',
+      matricule: '84654-ب-454',
+    };
+    state.session!.response!.workflow_status = 'awaiting_photos';
+    state.session!.capture!.status = 'not_started';
+    const markup = expertise();
+    expect(markup).toContain('Dossier REAL-42');
+    expect(markup).toContain('84654-ب-454');
+    expect(markup).toContain('Changer de dossier');
+    expect(markup).not.toContain('Modifier la fiche');
+    expect(markup).not.toContain('Nouveau dossier');
+    expect(markup).toMatch(/class="capture-scanner"[^>]*>.*SCANNER/);
+    expect(markup).not.toMatch(/class="capture-scanner"[^>]*disabled/);
+  });
+  it('keeps selection locked while the tunnel is receiving photos', () => {
+    state.session!.identity = {
+      type: 'forfait_expertise',
+      dossierId: 'REAL-42',
+      creationKey: 'stable',
+    };
+    state.session!.response!.type = 'forfait_expertise';
+    const markup = expertise();
+    expect(markup).toMatch(/class="capture-metadata-toggle"[^>]*disabled[^>]*>Changer de dossier/);
+    expect(markup).toMatch(/class="capture-scanner"[^>]*disabled/);
+    expect(markup).not.toContain('Modifier la fiche');
+  });
+});

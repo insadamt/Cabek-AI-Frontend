@@ -83,9 +83,16 @@ describe('category-first application routes', () => {
     expect(markup).toContain('data-entrance-phase="ready"');
     expect(markup).not.toContain('stage-loading-screen');
   });
-  it('keeps unknown and expertise scene links on category navigation', () => {
+  it('keeps unknown scene links on category navigation', () => {
     expect(render('/', 'parcours=unknown&scene=1')).toContain('category-folder-grid');
-    expect(render('/', 'parcours=forfait-expertise&scene=1')).toContain('category-folder-grid');
+  });
+  it('opens expertise capture with dossier selection and no creation or metadata form', () => {
+    const markup = render('/', 'parcours=forfait-expertise&scene=1');
+    expect(markup).toContain('CHOISIR UN DOSSIER');
+    expect(markup).toContain('href="/categories/forfait-expertise"');
+    expect(markup).not.toContain('FICHE VÉHICULE');
+    expect(markup).not.toContain('Nouveau dossier');
+    expect(markup).not.toContain('category-folder-grid');
   });
   it('keeps the existing preview URL available with the new selector', () => {
     expect(render('/preview/expertise')).toContain('category-stage');

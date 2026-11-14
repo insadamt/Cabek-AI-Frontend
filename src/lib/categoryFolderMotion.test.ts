@@ -2,7 +2,7 @@
 import gsap from 'gsap';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const flights = vi.hoisted(() => ({ create: vi.fn() }));
-vi.mock('./folderFlight', () => ({ createFolderFlight: flights.create }));
+vi.mock('./folderFlight', () => ({ createIslandFolderFlight: flights.create }));
 import { absorbCategoryFolder } from './categoryFolderMotion';
 
 function fixture(reduced = false) {
@@ -15,10 +15,10 @@ function fixture(reduced = false) {
   };
   const island = {
     scale: 1,
-    getBoundingClientRect: () => ({ left: 350, top: 0, width: 300, height: 44 }),
+    getBoundingClientRect: () => ({ left: 350, top: 0, bottom: 44, width: 300, height: 44 }),
   };
   const flight = { scale: 1, opacity: 1, x: 0, y: 0, remove: vi.fn() };
-  flights.create.mockReturnValue(flight);
+  flights.create.mockReturnValue({ flight, remove: flight.remove });
   const complete = vi.fn();
   const cancelled = vi.fn();
   const start = () =>
@@ -45,6 +45,7 @@ describe('category to island motion', () => {
   it('uses the frozen copy, keeps the source in layout, and reaches the island before disappearing', () => {
     const view = fixture();
     const cancel = view.start();
+    expect(flights.create).toHaveBeenCalledWith(view.folder, view.folder, 44);
     expect(view.folder.style.visibility).toBe('hidden');
     const timeline = activeTimeline();
     timeline.time(0.8, false);

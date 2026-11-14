@@ -38,7 +38,7 @@ vi.mock('./DossierFolder', () => ({
   },
 }));
 vi.mock('../../lib/folderFlight', () => ({
-  createFolderRelease: (...args: unknown[]) => {
+  createIslandFolderFlight: (...args: unknown[]) => {
     lifecycle.releaseFolder(...args);
     return { flight: lifecycle.flight, remove: lifecycle.removeFlight };
   },
@@ -66,8 +66,12 @@ vi.mock('../../lib/journeyMotion', () => ({
     return lifecycle.cancel;
   },
 }));
+import type { DossierResponse } from '../../types';
 import { CaptureFinale } from './CaptureFinale';
-const response = getPreviewResult(previewDossiers[0].dossier_id);
+const response: DossierResponse = {
+  ...getPreviewResult(previewDossiers[1].dossier_id),
+  type: 'forfait_expertise' as const,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -4,9 +4,10 @@
  */
 import * as api from './api';
 import { validDate } from './workflows';
+import { canCaptureExpertise } from './expertiseCapture';
 import type { CaptureIdentity, CaptureSession, MetadataPatch } from '../captureTypes';
 import type { DossierResponse } from '../types';
-import type { CreatableDossierType, PhotoPhase } from '../workflowTypes';
+import type { CreatableDossierType, DossierType, PhotoPhase } from '../workflowTypes';
 
 export const captureStorageKey = 'cabek.tunnel-session.v1';
 
@@ -51,10 +52,13 @@ export function captureReady(session: CaptureSession | null) {
     !session?.synchronized ||
     session.pending ||
     session.capture?.status !== 'completed' ||
-    !hasVehicleMetadata(session.response)
+    !session.response ||
+    (session.identity.type !== 'forfait_expertise' && !hasVehicleMetadata(session.response))
   )
     return false;
   const response = session.response!;
+  if (session.identity.type === 'forfait_expertise')
+    return capturePhotosReady(session) && response.status === 'completed' && !!response.result;
   if (session.identity.type === 'chiffrage_rapide')
     return (
       response.status === 'completed' &&
@@ -72,15 +76,21 @@ export function captureLabel(session: CaptureSession) {
     return session.identity.dossierId ? 'Connexion au tunnel…' : 'Création du brouillon…';
   if (session.error) return 'Reconnexion nécessaire';
   if (!session.synchronized) return 'Restauration du dossier…';
-  if (session.capture?.status === 'failed') return 'Capture interrompue';
+  if (session.capture?.status === 'failed')
+    return session.identity.type === 'forfait_expertise'
+      ? 'Capture échouée · Recommencez le scan'
+      : 'Capture interrompue';
   if (session.capture?.status === 'capturing') return 'Réception des photographies';
   if (session.capture?.status !== 'completed')
-    return hasVehicleMetadata(session.response) ? 'Prêt à scanner' : 'Fiche véhicule à compléter';
+    return session.identity.type === 'forfait_expertise' || hasVehicleMetadata(session.response)
+      ? 'Prêt à scanner'
+      : 'Fiche véhicule à compléter';
   if (session.capture.analysis_error || session.response?.status === 'failed')
     return 'Analyse à relancer';
   if (session.response?.progress?.stage === 'awaiting_metadata')
     return 'Estimation en attente : complétez la fiche véhicule';
   if (
+    session.identity.type !== 'forfait_expertise' &&
     !hasVehicleMetadata(session.response) &&
     !['queued', 'processing'].includes(session.response?.status ?? '')
   )
@@ -107,12 +117,14 @@ export function readCaptureIdentity(
     const value = JSON.parse(storage?.getItem(storageKey) ?? 'null');
     if (
       !value ||
-      !['chiffrage_rapide', 'verification'].includes(value.type) ||
+      !['forfait_expertise', 'chiffrage_rapide', 'verification'].includes(value.type) ||
       typeof value.creationKey !== 'string' ||
       !value.creationKey.length ||
       (value.dossierId !== undefined && typeof value.dossierId !== 'string') ||
       (value.type === 'verification' && !['before', 'after'].includes(value.phase)) ||
-      (value.type === 'chiffrage_rapide' && value.phase !== undefined)
+      (value.type !== 'verification' && value.phase !== undefined) ||
+      (value.type === 'forfait_expertise' &&
+        (typeof value.dossierId !== 'string' || !value.dossierId.trim()))
     )
       return undefined;
     return value as CaptureIdentity;
@@ -171,7 +183,7 @@ export function createTunnelCaptureStore(
     storage.setItem(storageKey, JSON.stringify(identity));
   }
 
-  function select(type: CreatableDossierType, phase?: PhotoPhase, dossierId?: string) {
+  function select(type: DossierType, phase?: PhotoPhase, dossierId?: string) {
     if (session) {
       if (
         session.identity.type !== type ||
@@ -181,7 +193,12 @@ export function createTunnelCaptureStore(
         throw new Error('Reprenez le dossier actif avant de commencer une autre capture.');
       return;
     }
-    const identity = { type, phase, dossierId, creationKey: crypto.randomUUID() };
+    if (type === 'forfait_expertise' && (!dossierId?.trim() || phase !== undefined))
+      throw new api.ApiError('dossier_required', 422);
+    const identity: CaptureIdentity =
+      type === 'forfait_expertise'
+        ? { type, dossierId: dossierId!, creationKey: crypto.randomUUID() }
+        : { type, phase, dossierId, creationKey: crypto.randomUUID() };
     persist(identity);
     session = { identity, synchronized: false, pending: false, error: '' };
     listeners.forEach((listener) => listener());
@@ -190,6 +207,8 @@ export function createTunnelCaptureStore(
   async function ensureDraft() {
     if (!session) throw new Error('Choisissez un parcours.');
     if (session.identity.dossierId) return session.identity.dossierId;
+    if (session.identity.type === 'forfait_expertise')
+      throw new api.ApiError('dossier_required', 422);
     if (!creating) {
       const identity = session.identity;
       const controller = new AbortController();
@@ -230,6 +249,19 @@ export function createTunnelCaptureStore(
       )
         return;
       const [detail, capture] = results;
+      if (
+        identity.type === 'forfait_expertise' &&
+        detail.status === 'fulfilled' &&
+        (detail.value.dossier_id !== identity.dossierId ||
+          (detail.value.type ?? 'forfait_expertise') !== identity.type ||
+          (capture.status === 'fulfilled' && capture.value.dossier_id !== identity.dossierId))
+      ) {
+        publish({
+          synchronized: false,
+          error: new api.ApiError('invalid_capture_dossier', 409).message,
+        });
+        return;
+      }
       publish({
         ...(detail.status === 'fulfilled' ? { response: detail.value } : {}),
         ...(capture.status === 'fulfilled' ? { capture: capture.value } : {}),
@@ -259,7 +291,7 @@ export function createTunnelCaptureStore(
     );
   }
 
-  async function start(type: CreatableDossierType, phase?: PhotoPhase, dossierId?: string) {
+  async function start(type: DossierType, phase?: PhotoPhase, dossierId?: string) {
     if (starting) return;
     starting = true;
     const controller = new AbortController();
@@ -272,6 +304,13 @@ export function createTunnelCaptureStore(
       // Read before admission; mounting/restoring never performs this POST.
       const detail = await service.readDossier(id, controller.signal);
       const capture = await service.readCapture(id, phase, controller.signal);
+      if (
+        type === 'forfait_expertise' &&
+        (detail.dossier_id !== id ||
+          capture.dossier_id !== id ||
+          (detail.type ?? 'forfait_expertise') !== type)
+      )
+        throw new api.ApiError('invalid_capture_dossier', 409);
       revision++;
       publish({ response: detail, capture, synchronized: true });
       if (capture.status === 'capturing') return;
@@ -281,10 +320,25 @@ export function createTunnelCaptureStore(
       const alreadyRunning =
         capture.status === 'completed' &&
         ['queued', 'processing', 'completed'].includes(detail.status);
-      if (!alreadyRunning && !hasVehicleMetadata(detail))
+      if (
+        type === 'forfait_expertise' &&
+        capture.status !== 'completed' &&
+        !canCaptureExpertise(detail)
+      )
+        throw new api.ApiError('capture_not_allowed', 409);
+      if (type !== 'forfait_expertise' && !alreadyRunning && !hasVehicleMetadata(detail))
         throw new api.ApiError('incomplete_vehicle_metadata', 422);
       if (capture.status === 'completed') {
-        if (type === 'chiffrage_rapide' && ['failed', 'not_analyzed'].includes(detail.status))
+        if (type === 'forfait_expertise' && detail.status === 'not_analyzed') {
+          // Re-admit the saved capture so its prior admission error clears before expertise inputs freeze.
+
+          publish({
+            capture: await service.startCapture(id, phase, controller.signal),
+            synchronized: false,
+          });
+          return;
+        }
+        if (type !== 'verification' && ['failed', 'not_analyzed'].includes(detail.status))
           publish({ response: await service.startScan(id, controller.signal) });
         return;
       }
@@ -312,6 +366,8 @@ export function createTunnelCaptureStore(
     phase: PhotoPhase | undefined,
     patch: MetadataPatch,
   ) {
+    if (session?.identity.type === 'forfait_expertise')
+      throw new api.ApiError('externally_owned_dossier', 409);
     if (saving) return;
     saving = true;
     const controller = new AbortController();
@@ -354,12 +410,19 @@ export function createTunnelCaptureStore(
     start,
     save,
     refresh,
-    restoreExisting(type: CreatableDossierType, phase: PhotoPhase | undefined, dossierId: string) {
+    restoreExisting(type: DossierType, phase: PhotoPhase | undefined, dossierId: string) {
       select(type, phase, dossierId);
       void refresh().then(schedule);
     },
     clear() {
-      if (starting || saving) return false;
+      if (
+        starting ||
+        saving ||
+        (session?.identity.type === 'forfait_expertise' &&
+          (session.capture?.status === 'capturing' ||
+            ['queued', 'processing'].includes(session.response?.status ?? '')))
+      )
+        return false;
       storage?.removeItem(storageKey);
       revision++;
       reading?.abort();

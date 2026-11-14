@@ -11,6 +11,8 @@ import { CategoryStageVisual, type ScannerPlayback } from './CategoryStageVisual
 import { StageLoadingScreen } from './StageLoadingScreen';
 import { CaptureMetadataDrawer } from './CaptureMetadataDrawer';
 import { AfterCapturePicker } from './AfterCapturePicker';
+import { ExpertiseDossierPicker } from './ExpertiseDossierPicker';
+import { useExpertiseDossierSelection } from '../../hooks/useExpertiseDossierSelection';
 import { CaptureFinale } from './CaptureFinale';
 import { CapturePreparationHeader } from './CapturePreparationHeader';
 import { DossierActions } from '../dossier/DossierActions';
@@ -22,14 +24,14 @@ import { useNavigation } from '../../hooks/useNavigation';
 import { categoryPath, type Category } from '../../lib/workflows';
 import { captureLabel, captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
 import { describeError, failureMessage, isPreview } from '../../lib/api';
-import type { CreatableDossierType } from '../../workflowTypes';
 import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
 
-type LocalCategory = Category & { type: CreatableDossierType };
-
-export function TunnelStage({ category, onBack }: { category: LocalCategory; onBack: () => void }) {
+export function TunnelStage({ category, onBack }: { category: Category; onBack: () => void }) {
   const entrance = useStageEntrance();
   const { session, store } = useTunnelCapture(category.type);
+  const expertise = category.type === 'forfait_expertise';
+  const expertiseSelection = useExpertiseDossierSelection(expertise, store);
+  const [expertisePicker, setExpertisePicker] = useState(false);
   const { navigate } = useNavigation();
   const collectionNavigation = useCollectionNavigation();
   const page = useRef<HTMLDivElement>(null);
@@ -47,9 +49,13 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
   const presentedSession = drawer ? sessionBeforeEditing.current : session;
   const presentedDossier =
     presentedSession?.identity.type === category.type ? presentedSession.response : undefined;
-  const metadataShown = hasVehicleMetadata(presentedDossier);
+  const metadataShown = expertise ? !!presentedDossier : hasVehicleMetadata(presentedDossier);
 
   function openMetadata() {
+    if (expertise) {
+      setExpertisePicker(true);
+      return;
+    }
     // Keep the dock unchanged until the drawer's exit animation has finished.
 
     sessionBeforeEditing.current = session;
@@ -58,15 +64,18 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
   const phase =
     category.type === 'verification' ? (current?.identity.phase ?? 'before') : undefined;
   const capture = current?.capture;
+  const captureNeedsRestart =
+    expertise && capture?.status === 'completed' && current?.response?.photos.length === 0;
   // Keep saved identity visible while refresh temporarily blocks scan admission.
 
-  const metadataSaved = hasVehicleMetadata(current?.response);
+  const metadataSaved = expertise ? !!current?.response : hasVehicleMetadata(current?.response);
   const metadataReady = !!current?.synchronized && metadataSaved;
   const processing =
     current?.response?.status === 'processing' || current?.response?.status === 'queued';
-  const finale = captureReady(current) && !drawer && !afterPicker;
+  const finale = captureReady(current) && !drawer && !afterPicker && !expertisePicker;
   const analysisStage =
-    category.type === 'chiffrage_rapide' &&
+    category.type !== 'verification' &&
+    !captureNeedsRestart &&
     capture?.status === 'completed' &&
     !!current?.response &&
     ['queued', 'processing', 'completed', 'failed'].includes(current.response.status);
@@ -75,6 +84,8 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
   }, [analysisStage, entrance.setSceneStatus]);
   const blocked = !!session && !current;
   const disabled =
+    expertiseSelection.pending ||
+    (expertise && !!expertiseSelection.error) ||
     current?.pending ||
     current?.saving ||
     vehicleEntering ||
@@ -93,7 +104,8 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
         beforeNavigate: () => {
           // Keep the saved session visible until its page has finished leaving.
 
-          if (!store?.clear()) throw new Error('Attendez la fin de l’enregistrement en cours.');
+          if (!expertise && !store?.clear())
+            throw new Error('Attendez la fin de l’enregistrement en cours.');
           entryOperation.current?.abort();
           entryOperation.current = null;
         },
@@ -119,9 +131,14 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
     current?.capture?.analysis_error;
   const feedback =
     collectionNavigation.error ||
+    expertiseSelection.error ||
     error ||
     current?.error ||
-    (backendError ? failureMessage(backendError) : '');
+    (expertise && capture?.status === 'failed'
+      ? 'La capture a échoué. Relancez le scan pour reprendre toutes les photos depuis le début.'
+      : backendError
+        ? failureMessage(backendError)
+        : '');
 
   async function scan() {
     if (!metadataReady) {
@@ -133,7 +150,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
     entryOperation.current = controller;
     setError('');
     try {
-      if (capture?.status !== 'completed') {
+      if (capture?.status !== 'completed' || captureNeedsRestart) {
         // Metadata synchronization can be pending too; only this action authorizes vehicle entry.
 
         scanEntranceRequested.current = true;
@@ -141,7 +158,8 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
         await playbackRef.current?.playEntrance();
         controller.signal.throwIfAborted();
       }
-      await store.start(category.type, phase);
+      if (expertise) await store.start(category.type, phase, current?.identity.dossierId);
+      else await store.start(category.type, phase);
     } catch (failure) {
       if (!controller.signal.aborted) {
         scanEntranceRequested.current = false;
@@ -158,11 +176,19 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
       <button
         type="button"
         className="dossier-menu-item"
-        disabled={!!session?.pending || !!session?.saving || !session}
-        onClick={() => release(false)}
+        disabled={
+          !!session?.pending ||
+          !!session?.saving ||
+          !session ||
+          (expertise && (vehicleEntering || processing || capture?.status === 'capturing'))
+        }
+        onClick={() => {
+          if (expertise) setExpertisePicker(true);
+          else release(false);
+        }}
       >
         <Plus size={16} aria-hidden="true" />
-        Nouveau dossier
+        {expertise ? 'Changer de dossier' : 'Nouveau dossier'}
       </button>
       {session && (
         <button
@@ -264,6 +290,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
           <CapturePreparationHeader
             metadataReady={metadataShown}
             vehicle={presentedDossier?.vehicle}
+            dossierId={expertise ? presentedDossier?.dossier_id : undefined}
           />
           {blocked ? (
             <p role="status">
@@ -280,11 +307,16 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                     ref={scannerRef}
                     className="capture-scanner"
                     type="button"
-                    disabled={isPreview || !!current?.pending || !!current?.saving}
+                    disabled={
+                      isPreview ||
+                      expertiseSelection.pending ||
+                      !!current?.pending ||
+                      !!current?.saving
+                    }
                     onClick={openMetadata}
-                    aria-label="FICHE VÉHICULE"
+                    aria-label={expertise ? 'Choisir un dossier' : 'FICHE VÉHICULE'}
                   >
-                    <AnimatedText text="FICHE VÉHICULE" />
+                    <AnimatedText text={expertise ? 'CHOISIR UN DOSSIER' : 'FICHE VÉHICULE'} />
                   </button>
                 ) : (
                   <button
@@ -307,11 +339,15 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                               : processing
                                 ? 'ANALYSE EN COURS'
                                 : capture?.status === 'failed'
-                                  ? 'RÉESSAYER LA CAPTURE'
+                                  ? expertise
+                                    ? 'RECOMMENCER LE SCAN'
+                                    : 'RÉESSAYER LA CAPTURE'
                                   : capture?.status === 'completed'
-                                    ? category.type === 'verification'
-                                      ? 'SYNCHRONISATION…'
-                                      : 'RELANCER L’ANALYSE'
+                                    ? captureNeedsRestart
+                                      ? 'SCANNER'
+                                      : category.type === 'verification'
+                                        ? 'SYNCHRONISATION…'
+                                        : 'RELANCER L’ANALYSE'
                                     : 'SCANNER'
                       }
                     />
@@ -322,14 +358,31 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
                   inert={!metadataShown}
                   aria-hidden={!metadataShown}
                 >
-                  <button
-                    className="capture-metadata-toggle"
-                    type="button"
-                    disabled={!current?.identity.dossierId}
-                    onClick={openMetadata}
-                  >
-                    Modifier la fiche ↗
-                  </button>
+                  {expertise ? (
+                    <button
+                      className="capture-metadata-toggle"
+                      type="button"
+                      disabled={
+                        expertiseSelection.pending ||
+                        !!current?.pending ||
+                        vehicleEntering ||
+                        processing ||
+                        capture?.status === 'capturing'
+                      }
+                      onClick={() => setExpertisePicker(true)}
+                    >
+                      Changer de dossier
+                    </button>
+                  ) : (
+                    <button
+                      className="capture-metadata-toggle"
+                      type="button"
+                      disabled={!current?.identity.dossierId}
+                      onClick={openMetadata}
+                    >
+                      Modifier la fiche ↗
+                    </button>
+                  )}
                   {current?.response && (
                     <DossierActions
                       dossier={current.response}
@@ -372,7 +425,7 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
           {isPreview && <p>Connectez l’API CABEK pour scanner et enregistrer des photographies.</p>}
         </div>
       </>
-      {drawer && (
+      {drawer && category.type !== 'forfait_expertise' && (
         <CaptureMetadataDrawer
           type={category.type}
           phase={phase}
@@ -384,6 +437,15 @@ export function TunnelStage({ category, onBack }: { category: LocalCategory; onB
             }
           }}
           onClose={() => setDrawer(false)}
+        />
+      )}
+      {expertisePicker && (
+        <ExpertiseDossierPicker
+          onClose={() => setExpertisePicker(false)}
+          onSelect={(dossier) => {
+            setExpertisePicker(false);
+            expertiseSelection.selectDossier(dossier.dossier_id);
+          }}
         />
       )}
       {afterPicker && (

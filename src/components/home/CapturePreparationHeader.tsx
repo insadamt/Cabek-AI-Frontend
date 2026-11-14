@@ -9,11 +9,13 @@ import type { Vehicle } from '../../types';
 interface CapturePreparationHeaderProps {
   metadataReady: boolean;
   vehicle?: Vehicle;
+  dossierId?: string;
 }
 
 export function CapturePreparationHeader({
   metadataReady,
   vehicle,
+  dossierId,
 }: CapturePreparationHeaderProps) {
   return (
     <header className="capture-preparation-header">
@@ -24,7 +26,8 @@ export function CapturePreparationHeader({
           </span>
           <div>
             <strong>{vehicleName(vehicle)}</strong>
-            <bdi>{vehicle.matricule}</bdi>
+            <bdi>{vehicle.matricule || 'Matricule non renseigné'}</bdi>
+            {dossierId && <span className="capture-selected-reference">Dossier {dossierId}</span>}
           </div>
         </div>
       )}

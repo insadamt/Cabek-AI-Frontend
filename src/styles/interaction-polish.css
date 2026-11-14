@@ -1,0 +1,159 @@
+/* Refines shared control feedback without moving measured folders, images or scanner surfaces.
+   Depends on base controls, motion tokens and route styles; load after the feature styles. */
+
+/* ============================================================
+   Keyboard focus and form feedback
+   ============================================================ */
+
+:root {
+  --control-focus: #536e58;
+  --control-focus-halo: #647e681a;
+}
+:is(.workflow-fields, .category-filter-fields) label {
+  transition: color var(--motion-feedback) ease;
+}
+:is(.workflow-fields, .category-filter-fields) label:has(:focus-visible) {
+  color: #36543b;
+}
+:is(.workflow-fields, .category-filter-fields) :is(input, select),
+.select-wrapper select {
+  --field-focus: var(--control-focus);
+  --field-halo: var(--control-focus-halo);
+  color: var(--ink);
+  transition:
+    border-color var(--motion-feedback) ease,
+    background-color var(--motion-feedback) ease,
+    box-shadow var(--motion-feedback) ease,
+    color var(--motion-feedback) ease;
+}
+:is(.workflow-fields, .category-filter-fields) :is(input, select):focus-visible,
+.select-wrapper select:focus-visible {
+  outline: 2px solid var(--field-focus);
+  outline-offset: 2px;
+  border-color: var(--field-focus);
+  background-color: var(--surface);
+  box-shadow: 0 0 0 5px var(--field-halo);
+}
+/* Native validation waits for interaction, keeping untouched required fields quiet. */
+
+.workflow-fields :is(input, select):user-invalid {
+  --field-focus: #9b443b;
+  --field-halo: #9b443b14;
+  border-color: #aa655d;
+}
+:is(.workflow-fields, .category-filter-fields) :is(input, select):disabled {
+  background-color: #f2f3f1;
+  color: var(--secondary);
+  cursor: not-allowed;
+}
+.workflow-fields input::placeholder {
+  color: #858b85;
+}
+:is(.button, .icon-button, .text-link, .back-link, .segmented-control button):focus-visible,
+:is(.capture-after-option, .source-photo-button, .dossier-menu-item):focus-visible {
+  outline-color: var(--control-focus);
+}
+/* Inset focus stays visible inside clipped tab strips and native action popovers. */
+
+.segmented-control button:focus-visible,
+.capture-picker-filters button:focus-visible,
+.dossier-menu-item:focus-visible {
+  outline-offset: -3px;
+}
+.workflow-file-label {
+  transition:
+    background-color var(--motion-feedback) ease,
+    border-color var(--motion-feedback) ease,
+    box-shadow var(--motion-feedback) ease;
+}
+.workflow-file-label:has(input:focus-visible) {
+  outline-color: var(--control-focus);
+  box-shadow: 0 0 0 5px var(--control-focus-halo);
+}
+.workflow-form-footer .button,
+.capture-metadata-form > .button {
+  white-space: normal;
+  text-align: center;
+}
+
+/* ============================================================
+   Hover cues stay local to controls and respect touch input
+   ============================================================ */
+
+.part-card-arrow,
+.capture-after-option > .lucide-chevron-right,
+.inspection-photo-navigation .icon-button > svg,
+.viewer-navigation .button > svg {
+  transition: translate var(--motion-feedback) var(--motion-ease);
+}
+.estimate-part-card:focus-visible .part-card-arrow {
+  translate: 2px 0;
+}
+.capture-after-option:focus-visible > .lucide-chevron-right {
+  translate: 2px 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(.workflow-fields, .category-filter-fields)
+    :is(input, select):not(:disabled):not(:focus):not(:user-invalid):hover {
+    border-color: #a6b2a5;
+  }
+  .button-primary:hover:not(:disabled) {
+    box-shadow: 0 3px 10px #00000016;
+  }
+  .workflow-primary:hover:not(:disabled) {
+    box-shadow: 0 3px 12px #203b161a;
+  }
+  .segmented-control button:not(.selected):not(:disabled):hover,
+  .capture-picker-filters button:not([aria-pressed='true']):hover {
+    color: var(--ink);
+    background-color: #ffffff80;
+  }
+  .estimate-part-card:hover .part-card-arrow,
+  .capture-after-option:not(:disabled):hover > .lucide-chevron-right {
+    translate: 2px 0;
+  }
+  .inspection-thumbnail:not([aria-pressed='true']):hover {
+    border-color: #8b9c8b;
+    box-shadow: 0 0 0 1px #8b9c8b;
+  }
+  :is(.inspection-photo-navigation, .viewer-navigation)
+    button:not(:disabled):hover
+    > .lucide-chevron-left {
+    translate: -2px 0;
+  }
+  :is(.inspection-photo-navigation, .viewer-navigation)
+    button:not(:disabled):hover
+    > .lucide-chevron-right {
+    translate: 2px 0;
+  }
+}
+
+/* ============================================================
+   Phone input and touch comfort
+   ============================================================ */
+
+@media (pointer: coarse) {
+  .modal-header .icon-button,
+  .viewer-navigation .button,
+  .form-footer .button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 767px) {
+  /* Readable native inputs also avoid browser zoom displacing the active mobile workspace. */
+
+  :is(.workflow-fields, .category-filter-fields) :is(input, select),
+  .select-wrapper select,
+  .home-folder-search input {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .part-card-arrow,
+  .capture-after-option > .lucide-chevron-right,
+  .inspection-photo-navigation .icon-button > svg,
+  .viewer-navigation .button > svg {
+    translate: none !important;
+  }
+}

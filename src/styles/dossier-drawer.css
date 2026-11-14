@@ -1,11 +1,14 @@
+/* Readable part and estimate details in a desktop panel or mobile bottom sheet.
+   Depends on shared theme tokens, financial cards, and the native dialog lifecycle. */
+
 /* ============================================================
-   One details drawer: desktop side panel and mobile bottom sheet
+   Keep the title and close control outside the scrolling content
    ============================================================ */
 
 .details-drawer {
   position: fixed;
   inset: 0 0 0 auto;
-  width: min(520px, 100vw);
+  width: min(620px, 100vw);
   max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
@@ -41,7 +44,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: max(18px, env(safe-area-inset-top)) 20px 16px;
+  padding: max(24px, env(safe-area-inset-top)) 28px 22px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   max-height: 35%;
@@ -51,7 +54,7 @@
   min-width: 0;
 }
 .details-drawer-header h2 {
-  font-size: 23px;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.7px;
   line-height: 1.35;
@@ -59,8 +62,9 @@
   overflow-wrap: anywhere;
 }
 .details-drawer-header .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
   background: #f3f3f3;
   border-radius: 50%;
 }
@@ -70,36 +74,47 @@
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
-  padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  padding: 24px 28px max(28px, env(safe-area-inset-bottom));
 }
 .drawer-part-art {
-  padding: 10px;
-  background: #f4f4f4;
+  padding: 16px;
+  background: #f6f7f5;
   border-radius: 12px;
   text-align: center;
 }
 .drawer-part-art .part-reference-art {
   width: 100%;
-  height: 120px;
+  height: 144px;
 }
 .drawer-part-art > span:last-child {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--secondary);
 }
+.drawer-damage-row .damage-badge {
+  gap: 7px;
+  padding: 7px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.details-drawer-header .eyebrow {
+  font-size: 12px;
+  line-height: 1.5;
+}
 .drawer-section {
-  margin-top: 20px;
+  margin-top: 28px;
 }
 .drawer-section h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 650;
-  margin-bottom: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
 }
 .drawer-section > p {
   color: var(--secondary);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .drawer-damage-row {
@@ -107,61 +122,74 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--border);
 }
 .drawer-damage-row > span:last-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 12px;
+  font-size: 14px;
   text-align: right;
 }
 .drawer-damage-row small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--secondary);
 }
 .drawer-financial-total {
-  padding: 16px;
-  background: #f6f6f6;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  padding: 24px;
+  border: 1px solid #dfe5dc;
+  background: #f2f5ef;
+  border-radius: 16px;
+  margin-bottom: 28px;
 }
 .drawer-financial-total > span {
   display: block;
-  font-size: 11px;
-  color: #646464;
-  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #52604f;
+  margin-bottom: 10px;
 }
 .drawer-financial-total strong {
-  font-size: 26px;
-  font-weight: 550;
+  font-size: clamp(28px, 5vw, 38px);
+  font-weight: 650;
+  line-height: 1.2;
   letter-spacing: -0.6px;
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
 .drawer-financial-total small {
-  font-size: 11px;
-  color: var(--secondary);
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #52604f;
   letter-spacing: 0;
 }
 .drawer-financial-total p {
-  font-size: 11px;
-  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 10px;
   color: #795016;
 }
-.drawer-financial-details .financial-breakdown > div {
-  padding: 10px 0;
-  margin: 0;
-  border-bottom: 1px solid var(--border);
+.drawer-financial-total.is-incomplete {
+  border-color: #e9ddc7;
+  background: #fbf7ef;
 }
-.drawer-financial-details .financial-breakdown dd {
-  white-space: normal;
-  text-align: right;
-  overflow-wrap: anywhere;
+.drawer-financial-total.is-incomplete > span {
+  color: #79561f;
 }
 .drawer-financial-details .estimate-missing-prices {
-  margin-top: 16px;
+  padding: 16px;
+  margin-top: 24px;
+  border: 1px solid #e9ddc7;
+  border-radius: 12px;
+  background: #fbf7ef;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.drawer-financial-details .estimate-missing-prices ul {
+  padding-left: 20px;
+  margin-top: 8px;
 }
 .estimate-missing-prices > strong {
   display: flex;
@@ -173,7 +201,9 @@
   flex-shrink: 0;
 }
 .drawer-provisional-note {
-  font-size: 11px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
   color: var(--secondary);
   line-height: 1.7;
   margin-top: 16px;
@@ -186,14 +216,15 @@
 .source-photo-button {
   display: grid;
   place-items: center;
-  grid-template-rows: 72px auto;
+  grid-template-rows: 112px auto;
   min-width: 0;
   gap: 8px;
-  padding: 6px 6px 10px;
+  padding: 8px 8px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #f5f5f5;
-  font-size: 11px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .source-photo-button > svg,
 .source-photo-button img {
@@ -201,7 +232,7 @@
 }
 .source-photo-button img {
   width: 100%;
-  height: 72px;
+  height: 112px;
   object-fit: cover;
   border-radius: 6px;
 }
@@ -210,7 +241,7 @@
   border-color: #ccc;
 }
 .drawer-section .unresolved-source {
-  font-size: 11px;
+  font-size: 13px;
   margin-top: 12px;
 }
 .drawer-show-more-photos {
@@ -226,8 +257,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 48px;
-  font-size: 11px;
+  min-height: 52px;
+  font-size: 14px;
   color: #646464;
 }
 .drawer-detection-info[data-expanded='true'] .details-chevron {
@@ -237,8 +268,8 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding-block: 8px;
-  font-size: 11px;
+  padding-block: 12px;
+  font-size: 13px;
 }
 .drawer-detection-info dt {
   color: var(--secondary);
@@ -263,14 +294,23 @@
     padding: 20px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
   }
   .details-drawer-header h2 {
-    font-size: 21px;
+    font-size: 24px;
   }
   .details-drawer-content {
     padding: 16px max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
       max(16px, env(safe-area-inset-left));
   }
   .drawer-part-art .part-reference-art {
-    height: 96px;
+    height: 120px;
+  }
+  .drawer-financial-total {
+    padding: 20px;
+  }
+  .source-photo-button {
+    grid-template-rows: 88px auto;
+  }
+  .source-photo-button img {
+    height: 88px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

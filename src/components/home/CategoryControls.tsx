@@ -1,14 +1,16 @@
 /** Minimal collection heading and disclosed server filters; depends on category rules and existing control motion. */
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Camera, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { useNavigation } from '../../hooks/useNavigation';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
-import { categoryPath, collectionUrl, workflowLabels, type Category } from '../../lib/workflows';
+import { categoryPath, collectionUrl, type Category } from '../../lib/workflows';
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
-import { brandSortAvailable, describeError } from '../../lib/api';
+import { expertiseTunnelPath } from '../../lib/expertiseCapture';
+import { describeError } from '../../lib/api';
 import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
 import { transitionHomeView } from '../../lib/homeViewTransition';
+import { CollectionFilters } from './CollectionFilters';
 
 export function CategoryControls({ category }: { category: Category }) {
   const { pathname, searchParams, navigate } = useNavigation();
@@ -18,9 +20,6 @@ export function CategoryControls({ category }: { category: Category }) {
   const [error, setError] = useState('');
   const grid = searchParams.has('search');
   const indicator = useSelectionIndicator(grid);
-  function filter(changes: Record<string, string | null>) {
-    navigate(collectionUrl(pathname, searchParams, { offset: null, slide: null, ...changes }));
-  }
 
   function switchView(showGrid: boolean, collection: HTMLElement | null) {
     if (showGrid === grid) return;
@@ -60,6 +59,20 @@ export function CategoryControls({ category }: { category: Category }) {
           <ArrowLeft size={15} /> Accueil
         </button>
         <h1>{category.title}</h1>
+        {category.type === 'forfait_expertise' && (
+          <button
+            className="button workflow-primary"
+            type="button"
+            onClick={(event) =>
+              collectionNavigation.leavePage(
+                event.currentTarget.closest('.category-collection'),
+                () => navigate(expertiseTunnelPath()),
+              )
+            }
+          >
+            <Camera size={16} aria-hidden="true" /> Scanner un véhicule
+          </button>
+        )}
         {category.type !== 'forfait_expertise' && (
           <button
             className="button workflow-primary"
@@ -106,74 +119,7 @@ export function CategoryControls({ category }: { category: Category }) {
             Grille
           </button>
         </div>
-        <details
-          className="category-filters"
-          open={
-            searchParams.has('workflow_status') ||
-            searchParams.has('created_from') ||
-            searchParams.has('created_to') ||
-            searchParams.has('sort') ||
-            undefined
-          }
-        >
-          <summary>Filtrer et trier</summary>
-          <div className="category-filter-fields">
-            <label>
-              État du dossier
-              <select
-                value={searchParams.get('workflow_status') ?? ''}
-                onChange={(event) => filter({ workflow_status: event.target.value || null })}
-              >
-                <option value="">Tous</option>
-                {category.statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {workflowLabels[status]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Créé à partir du
-              <input
-                type="date"
-                value={searchParams.get('created_from') ?? ''}
-                max={searchParams.get('created_to') ?? undefined}
-                onChange={(event) => filter({ created_from: event.target.value || null })}
-              />
-            </label>
-            <label>
-              Créé jusqu’au
-              <input
-                type="date"
-                value={searchParams.get('created_to') ?? ''}
-                min={searchParams.get('created_from') ?? undefined}
-                onChange={(event) => filter({ created_to: event.target.value || null })}
-              />
-            </label>
-            <label>
-              Trier par
-              <select
-                value={searchParams.get('sort') ?? 'created_at_desc'}
-                onChange={(event) => filter({ sort: event.target.value })}
-              >
-                <option value="created_at_desc">Plus récents</option>
-                <option value="created_at_asc">Plus anciens</option>
-                <option value="updated_at_desc">Dernière modification</option>
-                <option value="brand_asc" disabled={!brandSortAvailable}>
-                  {brandSortAvailable ? 'Marque' : 'Marque · indisponible'}
-                </option>
-              </select>
-            </label>
-            <button
-              className="text-link"
-              onClick={() =>
-                filter({ workflow_status: null, created_from: null, created_to: null, sort: null })
-              }
-            >
-              Réinitialiser les filtres
-            </button>
-          </div>
-        </details>
+        <CollectionFilters category={category} />
       </div>
     </div>
   );

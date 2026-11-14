@@ -10,7 +10,16 @@ export const categories = [
     title: 'Forfait / Devis d’expertise',
     description: 'Vos expertises, de la photographie au rapport.',
     number: '01',
-    statuses: ['not_analyzed', 'queued', 'processing', 'completed', 'failed'],
+    statuses: [
+      'awaiting_photos',
+      'capturing',
+      'ready_to_scan',
+      'not_analyzed',
+      'queued',
+      'processing',
+      'completed',
+      'failed',
+    ],
   },
   {
     type: 'chiffrage_rapide',
@@ -169,10 +178,14 @@ export function savedPhaseSideCount(response: DossierResponse, phase: PhotoPhase
   return phaseSideCount(response.photos, phase);
 }
 export function canAnalyzeDossier(
-  dossier: Pick<DossierSummary, 'type' | 'vehicle' | 'photo_count'>,
+  dossier: Pick<DossierSummary, 'type' | 'vehicle' | 'photo_count' | 'workflow_status'>,
 ) {
   if (dossier.type === 'verification') return false;
-  if (dossier.type !== 'chiffrage_rapide') return true;
+  if (
+    (dossier.type ?? 'forfait_expertise') === 'forfait_expertise' &&
+    ['awaiting_photos', 'capturing', 'capture_failed'].includes(dossier.workflow_status ?? '')
+  )
+    return false;
   // Detection accepts saved photographs; validated vehicle details are required later for pricing.
 
   return dossier.photo_count > 0;

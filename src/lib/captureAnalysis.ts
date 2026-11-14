@@ -7,7 +7,7 @@ export function captureAnalysisSession(capture: CaptureSession | null): HomeAnal
   const response = capture?.response;
   if (
     !capture ||
-    capture.identity.type !== 'chiffrage_rapide' ||
+    capture.identity.type === 'verification' ||
     capture.capture?.status !== 'completed' ||
     !response ||
     !['queued', 'processing', 'completed', 'failed'].includes(response.status)

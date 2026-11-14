@@ -1,0 +1,484 @@
+/* Gives all three dossier types a monochrome identity rail and a spacious inspection surface.
+   Depends on dossier layout, workflow panels and comparison styles; load after their responsive rules. */
+
+/* ============================================================
+   Shared dossier identity and workspace surface
+   ============================================================ */
+
+.dossier-shell {
+  --ink: #282828;
+  --secondary: #666666;
+  --border: #e4e4e4;
+  --inspection-canvas: #282828;
+  --dossier-selected-ink: #333333;
+  --control-focus: #333333;
+  --control-focus-halo: #0000001a;
+  background: #f6f6f6;
+  color: var(--ink);
+}
+.dossier-shell .home-header {
+  background: #f6f6f6;
+  border-bottom-color: var(--border);
+}
+.dossier-shell :is(.status-badge, .damage-badge) {
+  color: #444;
+  background: #f1f1f1;
+  border-color: #ddd;
+}
+.dossier-shell .workflow-primary {
+  background: #222;
+  color: #fff;
+}
+.dossier-shell .workflow-primary:hover:not(:disabled) {
+  background: #3b3b3b;
+  box-shadow: 0 3px 12px #0000001a;
+}
+.dossier-shell .inspection-thumbnail:not([aria-pressed='true']):hover {
+  border-color: #888;
+  box-shadow: 0 0 0 1px #888;
+}
+.dossier-shell .dossier-page {
+  gap: 8px;
+  padding: 10px 24px max(20px, env(safe-area-inset-bottom));
+}
+.dossier-overview .back-link {
+  min-height: 44px;
+  color: var(--secondary);
+}
+.dossier-overview-layout {
+  grid-template-columns: minmax(0, 248px) minmax(0, 1fr);
+  gap: 24px;
+}
+.dossier-overview-sidebar {
+  padding: 6px 12px 12px 2px;
+}
+.dossier-overview-folder {
+  width: min(100%, clamp(90px, 18dvh, 164px));
+  margin-bottom: 18px;
+}
+.dossier-overview-identity .eyebrow {
+  color: var(--secondary);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.dossier-overview-identity h1 {
+  font-size: clamp(21px, 2.5dvh, 27px);
+  font-weight: 650;
+  margin-block: 8px;
+  overflow: visible;
+}
+.dossier-registration {
+  color: #484848;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dossier-information {
+  margin-top: 20px;
+}
+.dossier-information-heading {
+  padding-block: 10px;
+  color: #404040;
+}
+.dossier-information .dossier-metadata > div {
+  padding-block: 9px;
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+.dossier-information .dossier-metadata dt {
+  color: var(--secondary);
+  font-size: 11px;
+}
+.dossier-information .dossier-metadata dd {
+  color: var(--ink);
+  font-size: 12px;
+  overflow: visible;
+}
+.dossier-information .dossier-metadata > div:first-child {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+.dossier-information .dossier-metadata > div:first-child dd {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: start;
+  color: var(--secondary);
+}
+.dossier-inspection {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 4px 24px #00000004;
+}
+.dossier-inspection :is(.inspection-workspace, .estimate-workspace, .workflow-capture) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.dossier-inspection .eyebrow {
+  color: var(--secondary);
+}
+
+/* ============================================================
+   One navigation row and compact workflow actions
+   ============================================================ */
+
+.dossier-inspection .workflow-workspace {
+  overflow: hidden;
+  padding: 0;
+}
+.workflow-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.workflow-workspace-header .quick-analysis-status {
+  flex: 1 1 240px;
+  padding: 0;
+  color: var(--secondary);
+  font-size: 11px;
+}
+.workflow-workspace-header .workflow-view-switch {
+  min-height: 44px;
+  gap: 8px;
+  margin: 0;
+}
+.workflow-workspace-header .workflow-view-switch .text-link {
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+.verification-evidence-status {
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.verification-evidence-status > span {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+.workflow-capture-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.dossier-inspection .dossier-result-workspace {
+  gap: 14px;
+}
+.dossier-inspection .workflow-workspace > .dossier-result-workspace {
+  height: auto;
+}
+.dossier-inspection .dossier-result-tabs {
+  width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: #fff;
+  gap: 4px;
+}
+.dossier-inspection .dossier-result-tabs button {
+  min-width: 120px;
+  color: var(--secondary);
+  font-weight: 600;
+  border-radius: 9px;
+}
+.dossier-inspection .segmented-control button.selected {
+  color: var(--dossier-selected-ink);
+  box-shadow: none;
+}
+.dossier-inspection .selection-indicator {
+  background: #ededed;
+  box-shadow: none;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   Photo canvas, nearby controls and measured thumbnails
+   ============================================================ */
+
+.dossier-inspection .inspection-heading {
+  margin-bottom: 10px;
+}
+.dossier-inspection .inspection-heading > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  width: 100%;
+}
+.dossier-inspection .inspection-heading h2,
+.dossier-inspection .workflow-capture-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+.inspection-hint {
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.dossier-inspection .inspection-toolbar {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.dossier-inspection .inspection-toolbar .segmented-control {
+  width: auto;
+  padding: 0;
+  background: #f5f5f5;
+  border-color: var(--border);
+}
+.dossier-inspection .inspection-toolbar .segmented-control button {
+  flex: none;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 12px;
+}
+.dossier-inspection .inspection-original-label {
+  display: inline;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.dossier-inspection .inspection-photo-navigation {
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin-left: auto;
+  padding: 0;
+}
+.dossier-inspection .inspection-photo-navigation p {
+  white-space: nowrap;
+}
+.dossier-inspection .inspection-photo-navigation > div {
+  gap: 6px;
+}
+.dossier-inspection .inspection-photo-navigation .icon-button {
+  border-radius: 9px;
+  background: #f7f7f7;
+}
+/* Both image layers need the same canvas color to keep the comparison seam invisible. */
+
+.dossier-inspection :is(.comparison, .annotation-layer) {
+  background: var(--inspection-canvas);
+}
+.dossier-inspection .comparison {
+  border: 1px solid #363636;
+  border-radius: 12px;
+}
+.dossier-inspection .comparison .image-loading {
+  color: #e5e5e5;
+}
+.dossier-inspection .comparison-label {
+  padding: 6px 10px;
+  border-color: #ffffff30;
+  background: #202020db;
+  color: #fff;
+  font-size: 11px;
+}
+.dossier-inspection .inspection-thumbnails {
+  --inspection-thumbnail-width: 104px;
+  gap: 8px;
+  padding: 12px 3px 3px;
+}
+.dossier-inspection .inspection-thumbnail {
+  flex: 0 0 var(--inspection-thumbnail-width);
+  max-width: none;
+  height: clamp(48px, 7.5dvh, 76px);
+  border-radius: 9px;
+  background: #efefef;
+}
+.dossier-inspection .inspection-thumbnail[aria-pressed='true'] {
+  border-color: var(--dossier-selected-ink);
+  box-shadow: 0 0 0 2px var(--dossier-selected-ink);
+}
+.dossier-inspection .inspection-thumbnail[aria-pressed='true'] span {
+  background: #ededed;
+  color: #333333;
+}
+.dossier-inspection .inspection-thumbnail:focus-visible {
+  outline-offset: -5px;
+}
+
+/* ============================================================
+   Estimation, capture and independent repair evidence
+   ============================================================ */
+
+.dossier-inspection .estimate-summary {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8f8f8;
+}
+.dossier-inspection .estimate-scroll-region {
+  padding: 0 2px 8px;
+}
+.dossier-inspection .estimate-part-card {
+  border-color: var(--border);
+  border-radius: 12px;
+}
+.dossier-inspection .workflow-capture-heading {
+  margin-bottom: 16px;
+}
+.dossier-inspection .workflow-capture-heading h2 {
+  margin-top: 6px;
+}
+.dossier-inspection .workflow-saved-side > .comparison {
+  height: clamp(240px, 44dvh, 500px);
+}
+.dossier-inspection .repair-comparison {
+  height: 100%;
+  min-height: 0;
+}
+.dossier-inspection .repair-comparison .eyebrow {
+  font-size: 9px;
+}
+.dossier-inspection .repair-comparison .inspection-heading > div {
+  display: block;
+}
+.dossier-inspection .repair-comparison .inspection-heading h2 {
+  margin-top: 6px;
+}
+.dossier-inspection .repair-comparison-pair {
+  min-height: 0;
+}
+.dossier-inspection .repair-comparison-pair figure {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.dossier-inspection .repair-comparison-pair figcaption {
+  flex-shrink: 0;
+  color: #484848;
+  font-weight: 600;
+}
+.dossier-inspection .repair-comparison-pair .comparison {
+  flex: 1;
+  height: 0;
+}
+
+/* ============================================================
+   Responsive reading keeps one scroll area on phones
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .dossier-overview-layout {
+    grid-template-columns: minmax(0, 216px) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .dossier-inspection {
+    padding: 16px;
+  }
+}
+@media (max-height: 650px) and (min-width: 951px) {
+  .dossier-overview-folder {
+    width: 80px;
+    margin-bottom: 10px;
+  }
+  .dossier-inspection {
+    padding-block: 12px;
+  }
+  .dossier-inspection .inspection-heading {
+    display: none;
+  }
+  .dossier-inspection .repair-comparison .inspection-heading {
+    display: flex;
+  }
+  .workflow-workspace-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+}
+@media (max-width: 767px), (max-width: 950px) and (max-height: 520px) {
+  .dossier-shell .dossier-page {
+    padding: 8px max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+  .dossier-overview-sidebar {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 12px;
+    padding: 4px 2px 12px;
+  }
+  .dossier-overview-folder {
+    width: 80px;
+    margin: 0;
+  }
+  .dossier-information {
+    margin-top: 8px;
+  }
+  .dossier-inspection {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+  .dossier-inspection .workflow-workspace,
+  .workflow-capture-scroll {
+    overflow: visible;
+  }
+  .dossier-inspection .dossier-result-workspace {
+    height: auto;
+  }
+  .dossier-inspection .dossier-result-tabs {
+    padding-top: 4px;
+  }
+  .dossier-inspection .dossier-result-tabs button {
+    min-width: 0;
+  }
+  .dossier-inspection .inspection-workspace {
+    height: auto;
+  }
+  .dossier-inspection .inspection-heading h2,
+  .dossier-inspection .workflow-capture-heading h2 {
+    font-size: 18px;
+  }
+  .dossier-inspection .inspection-hint {
+    display: none;
+  }
+  .dossier-inspection .inspection-thumbnails {
+    --inspection-thumbnail-width: 72px;
+  }
+  .dossier-inspection .inspection-thumbnail {
+    height: 56px;
+  }
+  .dossier-inspection .repair-comparison-pair {
+    flex: none;
+  }
+  .dossier-inspection .repair-comparison-pair .comparison {
+    flex: none;
+    height: auto;
+    min-height: 240px;
+    aspect-ratio: 4 / 3;
+  }
+  .dossier-inspection .estimate-summary {
+    padding: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .dossier-inspection .inspection-toolbar .segmented-control {
+    flex: 1 1 100%;
+  }
+  .dossier-inspection .inspection-toolbar .segmented-control button {
+    flex: 1;
+  }
+  .dossier-inspection .inspection-photo-navigation {
+    flex: 1 1 100%;
+    margin: 0;
+  }
+  .dossier-inspection .inspection-original-label {
+    display: none;
+  }
+}

@@ -2,7 +2,7 @@
 import gsap from 'gsap';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const flights = vi.hoisted(() => ({ create: vi.fn() }));
-vi.mock('./folderFlight', () => ({ createFolderRelease: flights.create }));
+vi.mock('./folderFlight', () => ({ createIslandFolderFlight: flights.create }));
 import { ejectCollectionFolders } from './collectionEjectionMotion';
 
 function fixture(count = 3, reduced = false) {

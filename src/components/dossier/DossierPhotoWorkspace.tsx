@@ -1,3 +1,4 @@
+/** Inspect photos with a complete horizontal gallery; depends on decoded comparisons and native scrolling. */
 import { ChevronLeft, ChevronRight, Images, RefreshCw } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
@@ -55,31 +56,28 @@ export function DossierPhotoWorkspace({
     setSelection({ photoIndex: evidenceSelection.photoIndex, mode: 'damages', split: 50 });
   }, [evidenceSelection]);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
-  const [thumbnailLimit, setThumbnailLimit] = useState(5);
   const selectedIndex = Math.min(selection.photoIndex, Math.max(0, photos.length - 1));
   const photo = photos[selectedIndex];
   const annotatedPhoto =
     photo && 'parts_url' in photo && 'damages_url' in photo ? photo : undefined;
   const modeRef = useSelectionIndicator(`${selection.mode}-${!!annotatedPhoto}`);
 
-  const thumbnailStart = Math.min(
-    Math.max(0, selectedIndex - Math.floor(thumbnailLimit / 2)),
-    Math.max(0, photos.length - thumbnailLimit),
-  );
-  const visiblePhotos = photos.slice(thumbnailStart, thumbnailStart + thumbnailLimit);
-
   useLayoutEffect(() => {
     const strip = thumbnailsRef.current;
-    if (!strip) return;
-    // Page the thumbnails to the available width so browsing never requires a scrollbar.
+    const selectedThumbnail = strip?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');
+    if (!strip || !selectedThumbnail) return;
 
-    const fitThumbnails = () =>
-      setThumbnailLimit(Math.max(1, Math.min(7, Math.floor((strip.clientWidth + 6) / 50))));
-    fitThumbnails();
-    const observer = new ResizeObserver(fitThumbnails);
-    observer.observe(strip);
-    return () => observer.disconnect();
-  }, [photos.length]);
+    // Scroll only the gallery so navigating photos does not move the dossier page.
+
+    const thumbnailStart = selectedThumbnail.offsetLeft;
+    const thumbnailEnd = thumbnailStart + selectedThumbnail.offsetWidth;
+    const edgePadding = 4;
+    if (thumbnailStart < strip.scrollLeft + edgePadding) {
+      strip.scrollLeft = Math.max(0, thumbnailStart - edgePadding);
+    } else if (thumbnailEnd > strip.scrollLeft + strip.clientWidth - edgePadding) {
+      strip.scrollLeft = thumbnailEnd - strip.clientWidth + edgePadding;
+    }
+  }, [selectedIndex, photos.length, evidenceSelection?.requestId]);
 
   function selectPhoto(photoIndex: number) {
     if (photoIndex < 0 || photoIndex >= photos.length || photoIndex === selectedIndex) return;
@@ -101,8 +99,8 @@ export function DossierPhotoWorkspace({
     >
       <header className="inspection-heading">
         <div>
-          <p className="eyebrow">INSPECTION VISUELLE</p>
-          <h2>Les photos, en détail.</h2>
+          <h2>Photos du véhicule</h2>
+          {annotatedPhoto && <p className="inspection-hint">Glissez la séparation pour comparer</p>}
         </div>
       </header>
       {error != null && (
@@ -118,8 +116,8 @@ export function DossierPhotoWorkspace({
       )}
       {photo ? (
         <>
-          {annotatedPhoto && (
-            <div className="viewer-toolbar inspection-toolbar">
+          <div className="viewer-toolbar inspection-toolbar">
+            {annotatedPhoto ? (
               <div
                 ref={modeRef}
                 className="segmented-control"
@@ -142,9 +140,34 @@ export function DossierPhotoWorkspace({
                   Dommages
                 </button>
               </div>
-              <span>Glissez la séparation pour comparer</span>
+            ) : (
+              <span className="inspection-original-label">Photographies originales</span>
+            )}
+            <div className="inspection-photo-navigation">
+              <p role="status">
+                Photo <strong>{String(selectedIndex + 1).padStart(2, '0')}</strong>
+                <span> / {String(photos.length).padStart(2, '0')}</span>
+              </p>
+              <div>
+                <button
+                  className="icon-button"
+                  disabled={selectedIndex === 0}
+                  aria-label="Photo précédente"
+                  onClick={() => selectPhoto(selectedIndex - 1)}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  className="icon-button"
+                  disabled={selectedIndex === photos.length - 1}
+                  aria-label="Photo suivante"
+                  onClick={() => selectPhoto(selectedIndex + 1)}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
             </div>
-          )}
+          </div>
           {annotatedPhoto ? (
             <PhotoComparison
               photo={annotatedPhoto}
@@ -155,59 +178,32 @@ export function DossierPhotoWorkspace({
           ) : (
             <OriginalPhotoPreview key={getOriginalPhotoDisplayUrl(photo)} photo={photo} />
           )}
-          <div className="inspection-photo-navigation">
-            <p role="status">
-              Photo <strong>{String(selectedIndex + 1).padStart(2, '0')}</strong>
-              <span> / {String(photos.length).padStart(2, '0')}</span>
-            </p>
-            <div>
-              <button
-                className="icon-button"
-                disabled={selectedIndex === 0}
-                aria-label="Photo précédente"
-                onClick={() => selectPhoto(selectedIndex - 1)}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                className="icon-button"
-                disabled={selectedIndex === photos.length - 1}
-                aria-label="Photo suivante"
-                onClick={() => selectPhoto(selectedIndex + 1)}
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          </div>
           <div
             ref={thumbnailsRef}
             className="inspection-thumbnails"
             role="group"
             aria-label="Choisir une photographie"
           >
-            {visiblePhotos.map((item, visibleIndex) => {
-              const index = thumbnailStart + visibleIndex;
-              return (
-                <button
-                  key={item.photo_id}
-                  className="inspection-thumbnail"
-                  aria-label={`Afficher la photo ${index + 1}`}
-                  aria-pressed={index === selectedIndex}
-                  onClick={() => selectPhoto(index)}
-                >
-                  <Images size={20} aria-hidden="true" />
-                  <img
-                    src={resolveMediaUrl(getOriginalPhotoDisplayUrl(item))}
-                    alt=""
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.hidden = true;
-                    }}
-                  />
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                </button>
-              );
-            })}
+            {photos.map((item, index) => (
+              <button
+                key={item.photo_id}
+                className="inspection-thumbnail"
+                aria-label={`Afficher la photo ${index + 1}`}
+                aria-pressed={index === selectedIndex}
+                onClick={() => selectPhoto(index)}
+              >
+                <Images size={20} aria-hidden="true" />
+                <img
+                  src={resolveMediaUrl(getOriginalPhotoDisplayUrl(item))}
+                  alt=""
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.hidden = true;
+                  }}
+                />
+                <span>{String(index + 1).padStart(2, '0')}</span>
+              </button>
+            ))}
           </div>
         </>
       ) : loading ? (

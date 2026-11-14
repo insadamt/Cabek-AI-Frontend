@@ -1,5 +1,9 @@
 /** French API feedback shared by requests, capture forms and the activity island. */
 const errorMessages: Record<string, string> = {
+  dossier_required: 'Choisissez un dossier d’expertise existant avant de scanner.',
+  invalid_capture_dossier: 'Le dossier sélectionné ne correspond pas au parcours d’expertise.',
+  capture_not_allowed:
+    'Ce dossier possède déjà des photographies. Choisissez un dossier en attente de photos.',
   tunnel_unavailable: 'Le tunnel est indisponible. Activez le mode de capture sur le serveur.',
   tunnel_busy: 'Le tunnel est occupé par un autre véhicule. Réessayez dans un instant.',
   capture_in_progress: 'Une capture est déjà active pour ce dossier.',

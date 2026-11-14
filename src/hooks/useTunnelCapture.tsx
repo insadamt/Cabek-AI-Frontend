@@ -9,11 +9,11 @@ import {
 } from 'react';
 import { createWorkflowCaptureStores } from '../lib/workflowCaptureStores';
 import { useNavigation } from './useNavigation';
-import type { CreatableDossierType, DossierType } from '../workflowTypes';
+import type { DossierType } from '../workflowTypes';
 
 const CaptureContext = createContext<ReturnType<typeof createWorkflowCaptureStores> | null>(null);
 
-const CaptureRouteContext = createContext<CreatableDossierType | undefined>(undefined);
+const CaptureRouteContext = createContext<DossierType | undefined>(undefined);
 
 export function TunnelCaptureProvider({ children }: { children: ReactNode }) {
   const { pathname, searchParams } = useNavigation();
@@ -24,7 +24,10 @@ export function TunnelCaptureProvider({ children }: { children: ReactNode }) {
       : pathname.startsWith('/categories/chiffrage-rapide') ||
           searchParams.get('parcours') === 'chiffrage-rapide'
         ? 'chiffrage_rapide'
-        : undefined;
+        : pathname.startsWith('/categories/forfait-expertise') ||
+            searchParams.get('parcours') === 'forfait-expertise'
+          ? 'forfait_expertise'
+          : undefined;
   const [store] = useState(() => {
     let storage: Storage | undefined;
     try {
@@ -53,8 +56,7 @@ export function useTunnelCapture(type?: DossierType) {
     registry?.getActiveType ?? (() => 'chiffrage_rapide' as const),
     () => 'chiffrage_rapide' as const,
   );
-  const selectedType =
-    type === 'verification' || type === 'chiffrage_rapide' ? type : (routeType ?? activeType);
+  const selectedType = type ?? routeType ?? activeType;
   const store = registry?.stores[selectedType] ?? null;
   const session = useSyncExternalStore(
     store?.subscribe ?? (() => () => {}),

@@ -21,12 +21,9 @@ export type MetadataPatch = Partial<
   >
 >;
 
-export interface CaptureIdentity {
-  type: CreatableDossierType;
-  phase?: PhotoPhase;
-  creationKey: string;
-  dossierId?: string;
-}
+export type CaptureIdentity =
+  | { type: 'forfait_expertise'; dossierId: string; phase?: never; creationKey: string }
+  | { type: CreatableDossierType; dossierId?: string; phase?: PhotoPhase; creationKey: string };
 
 export interface CaptureSession {
   identity: CaptureIdentity;

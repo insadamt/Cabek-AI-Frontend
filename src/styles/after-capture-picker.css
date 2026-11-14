@@ -1,5 +1,5 @@
-/* Styles the after-capture dossier selector with clear vehicle identity and compact filters.
-   Depends on DetailsDrawer, shared neutral tokens and server-filtered picker states. */
+/* Styles expertise and after-capture dossier selectors with clear vehicle identity and compact filters.
+   Depends on DetailsDrawer, shared neutral tokens, selection motion and server-filtered picker states. */
 .capture-after-picker {
   display: flex;
   flex-direction: column;
@@ -30,6 +30,8 @@
   line-height: 1.7;
 }
 .capture-picker-filters {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
@@ -51,6 +53,16 @@
   background: var(--surface);
   color: var(--ink);
   box-shadow: 0 2px 5px #20202008;
+}
+.capture-picker-filters .selection-indicator {
+  border: 1px solid #e2e5dd;
+  border-radius: 11px;
+  box-shadow: 0 2px 5px #20202008;
+}
+.capture-picker-filters.has-selection-indicator button[aria-pressed='true'] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 .capture-picker-results {
   display: flex;
@@ -170,4 +182,30 @@
   .capture-after-option .capture-picker-icon {
     display: none;
   }
+}
+
+.capture-picker-search {
+  display: grid;
+  gap: 8px;
+  margin-block: 20px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.capture-picker-search > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-inline: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+.capture-picker-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
 }

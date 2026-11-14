@@ -1,6 +1,8 @@
-/** Category-aware dossier action; preserves expertise scans and opens capture-only dossiers safely. */
+/** Route imported dossiers without photos to tunnel capture and saved photos to analysis.
+ * Depends on dossier eligibility, persisted scan state, and shared opening/navigation services. */
+import { canCaptureExpertise, expertiseTunnelPath } from '../../lib/expertiseCapture';
 import { canAnalyzeDossier } from '../../lib/workflows';
-import { ArrowUpRight, Check, LoaderCircle, Sparkles, Upload } from 'lucide-react';
+import { ArrowUpRight, Camera, Check, LoaderCircle, Sparkles, Upload } from 'lucide-react';
 import { useHomeAnalysis } from '../../hooks/useHomeAnalysis';
 import { useDossierOpening } from '../../hooks/useDossierOpening';
 import { navigate } from '../../hooks/useNavigation';
@@ -32,8 +34,9 @@ export function AnalysisAction({
 
   const supportsAnalysis =
     !!dossier && dossier.type !== 'chiffrage_rapide' && canAnalyzeDossier(dossier);
+  const captureAvailable = !!dossier && canCaptureExpertise(dossier);
   const canAnalyze = supportsAnalysis && (status === 'not_analyzed' || status === 'failed');
-  const complete = session?.phase === 'done' && !opening;
+  const complete = session?.phase === 'done' && !opening && !captureAvailable;
   const uploading = session?.phase === 'uploading';
   const working = (!!session && analysis.busy) || openingThisDossier;
   const label = openingThisDossier
@@ -44,18 +47,38 @@ export function AnalysisAction({
         ? 'Envoi…'
         : working
           ? 'Analyse…'
-          : canAnalyze
-            ? 'Analyser'
-            : supportsAnalysis && (status === 'queued' || status === 'processing')
-              ? 'Suivre'
-              : 'Ouvrir';
+          : captureAvailable
+            ? dossier?.workflow_status === 'capturing'
+              ? 'Suivre la capture'
+              : 'Scanner'
+            : canAnalyze
+              ? 'Analyser'
+              : supportsAnalysis && (status === 'queued' || status === 'processing')
+                ? 'Suivre'
+                : 'Ouvrir';
   const unavailable = !dossier || analysis.busy || openingBusy || disabled;
   return (
     <a
       className={className}
       data-flip-id="home-action"
-      data-action={complete ? 'done' : working ? 'working' : canAnalyze ? 'analyze' : 'open'}
-      href={dossier ? `/dossiers/${encodeURIComponent(dossier.dossier_id)}` : undefined}
+      data-action={
+        complete
+          ? 'done'
+          : working
+            ? 'working'
+            : captureAvailable
+              ? 'capture'
+              : canAnalyze
+                ? 'analyze'
+                : 'open'
+      }
+      href={
+        dossier
+          ? captureAvailable
+            ? expertiseTunnelPath(dossier.dossier_id)
+            : `/dossiers/${encodeURIComponent(dossier.dossier_id)}`
+          : undefined
+      }
       aria-disabled={unavailable || undefined}
       aria-busy={working || undefined}
       aria-label={dossier ? `${label} le dossier ${dossier.dossier_id}` : 'Dossier indisponible'}
@@ -68,6 +91,10 @@ export function AnalysisAction({
           scope?.querySelectorAll<HTMLElement>('.dossier-folder') ?? [],
         ).find((element) => element.dataset.dossierId === dossier.dossier_id);
         beforeActivate?.();
+        if (captureAvailable) {
+          navigate(expertiseTunnelPath(dossier.dossier_id));
+          return;
+        }
         if (supportsAnalysis && (canAnalyze || status === 'queued' || status === 'processing')) {
           if (folder) analysis.beginAnalysis({ ...dossier, status: status! }, folder);
         } else {
@@ -84,6 +111,8 @@ export function AnalysisAction({
           <Upload className="analysis-upload-icon" size={18} aria-hidden="true" />
         ) : working ? (
           <LoaderCircle className="spin" size={18} aria-hidden="true" />
+        ) : captureAvailable ? (
+          <Camera size={18} aria-hidden="true" />
         ) : canAnalyze ? (
           <Sparkles size={18} aria-hidden="true" />
         ) : (

@@ -1,3 +1,6 @@
+/** Format API values and status messages for the French dossier UI.
+ * Depends on shared DTOs and Intl; unknown amounts and hours remain explicit.
+ */
 import type { FilterStatus, FinancialResult, ScanProgress, Vehicle } from '../types';
 
 export const statusLabels: Record<FilterStatus, string> = {
@@ -25,6 +28,14 @@ export function formatMoney(amount: number | null | undefined): string {
   return amount == null || !Number.isFinite(amount)
     ? 'Indisponible'
     : moneyFormatter.format(amount);
+}
+
+const laborHoursFormatter = new Intl.NumberFormat('fr-MA', { maximumFractionDigits: 2 });
+
+export function formatLaborHours(hours: number | null | undefined): string {
+  return hours == null || !Number.isFinite(hours) || hours < 0
+    ? 'Durée indisponible'
+    : `${laborHoursFormatter.format(hours)} h`;
 }
 
 export function displayTotal(financial: FinancialResult): string {

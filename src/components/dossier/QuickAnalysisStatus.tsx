@@ -11,7 +11,7 @@ export function QuickAnalysisStatus({ response }: { response: DossierResponse })
     analyzing_photos: 'Analyse IA des photographies',
     awaiting_metadata: 'Détection terminée · chiffrage en attente de la fiche véhicule',
     finalizing: 'Chiffrage et rapport en cours',
-    completed: 'Analyse et estimation enregistrées',
+    completed: 'Analyse terminée',
     failed: 'Analyse interrompue · photographies conservées',
   };
   const label =
@@ -25,8 +25,11 @@ export function QuickAnalysisStatus({ response }: { response: DossierResponse })
   return (
     <div className="quick-analysis-status">
       <p role="status" aria-live="polite">
-        {response.photos.length} photos enregistrées · {label}
-        {progress &&
+        {label}
+        {' · '}
+        {response.photos.length} photos enregistrées
+        {response.status !== 'completed' &&
+          progress &&
           progress.photos_total > 0 &&
           ` · ${progress.photos_completed}/${progress.photos_total} photos analysées`}
       </p>

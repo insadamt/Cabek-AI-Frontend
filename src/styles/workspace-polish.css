@@ -1,0 +1,118 @@
+/* Adds short, local transitions to previously abrupt menus and evidence states.
+   Depends on native popovers, category filters, verification panels and shared motion tokens. */
+
+/* ============================================================
+   Secondary actions and filter disclosures
+   ============================================================ */
+
+.dossier-action-popover {
+  opacity: 0;
+  scale: 0.98;
+  transform-origin: top right;
+  transition:
+    opacity 140ms ease,
+    scale 180ms var(--motion-ease),
+    display 180ms allow-discrete,
+    overlay 180ms allow-discrete;
+}
+.dossier-action-popover[data-placement='above'] {
+  transform-origin: bottom right;
+}
+.dossier-action-popover:popover-open {
+  opacity: 1;
+  scale: 1;
+}
+@starting-style {
+  .dossier-action-popover:popover-open {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+.category-filters summary::after {
+  transition: rotate var(--motion-feedback) var(--motion-ease);
+}
+.category-filters[open] summary::after {
+  content: '+';
+  rotate: 45deg;
+}
+.category-filters[open] .category-filter-fields {
+  animation: filter-panel-arrive 180ms var(--motion-ease);
+}
+.category-filter-fields {
+  border-color: #dce2d9;
+  background: #fdfefc;
+  box-shadow:
+    0 4px 8px #17241b05,
+    0 16px 36px #17241b12;
+}
+.category-filter-fields .text-link {
+  justify-self: start;
+  min-height: 44px;
+  font-size: 12px;
+}
+
+/* ============================================================
+   Evidence changes preserve native layout and scroll positions
+   ============================================================ */
+
+/* The standard result tabs already own a fade; only repair verification needs this addition. */
+
+.verification-workspace .dossier-result-panels > [role='tabpanel']:not([hidden]) {
+  animation: workspace-fade-in 140ms ease-out;
+}
+.workflow-file-list li,
+.capture-after-option {
+  animation: workspace-fade-in 180ms ease-out;
+}
+.details-drawer-content,
+.modal,
+.workflow-workspace,
+.category-filter-fields {
+  scroll-padding-block: 20px;
+}
+.capture-metadata-form > [role='status']:not(:empty) {
+  padding: 12px 14px;
+  border: 1px solid #dbe6d3;
+  border-radius: 10px;
+  color: #36543b;
+  background: #f4f8ef;
+  line-height: 1.7;
+  animation: workspace-fade-in var(--motion-text) ease-out;
+}
+.capture-metadata-form > [role='status']:empty {
+  margin: 0;
+}
+@keyframes filter-panel-arrive {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes workspace-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dossier-action-popover,
+  .category-filters summary::after {
+    transition: none;
+  }
+  .dossier-action-popover {
+    scale: 1;
+  }
+  .category-filters[open] .category-filter-fields,
+  .verification-workspace .dossier-result-panels > [role='tabpanel'],
+  .workflow-file-list li,
+  .capture-after-option,
+  .capture-metadata-form > [role='status'] {
+    animation: none;
+  }
+}

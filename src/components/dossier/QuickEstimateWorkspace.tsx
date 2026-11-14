@@ -1,4 +1,4 @@
-/** Quick estimates add capture to the existing result viewer and island scan lifecycle. */
+/** Quick estimates share compact dossier navigation; depends on capture, the result viewer and island scan lifecycle. */
 import { useState } from 'react';
 import type { DossierResponse, DossierSummary } from '../../types';
 import { canAnalyzeDossier } from '../../lib/workflows';
@@ -33,40 +33,42 @@ export function QuickEstimateWorkspace({
   const canFollow = ['queued', 'processing'].includes(response.status);
   return (
     <div className="workflow-workspace quick-estimate-workspace">
-      <QuickAnalysisStatus response={response} />
-      <div className="workflow-view-switch">
-        <button
-          type="button"
-          className="text-link"
-          disabled={response.status === 'completed' || response.progress?.stage === 'finalizing'}
-          onClick={() => setMetadataOpen(true)}
-        >
-          Fiche véhicule ↗
-        </button>
-        <button
-          className="text-link"
-          disabled={analysis.busy || uploading}
-          onClick={() => setShowCapture(!showCapture)}
-        >
-          {showCapture ? 'Voir les photos et l’estimation' : 'Collection des photos'}
-        </button>
-        {(canLaunch || canFollow) && (
+      <header className="workflow-workspace-header">
+        <QuickAnalysisStatus response={response} />
+        <div className="workflow-view-switch">
           <button
-            className="button workflow-primary"
-            disabled={analysis.busy || uploading}
-            onClick={(event) => {
-              const folder = event.currentTarget
-                .closest('.dossier-page')
-                ?.querySelector<HTMLElement>('.dossier-overview-folder .dossier-folder');
-              if (folder) analysis.beginAnalysis(dossier, folder);
-            }}
+            type="button"
+            className="text-link"
+            disabled={response.status === 'completed' || response.progress?.stage === 'finalizing'}
+            onClick={() => setMetadataOpen(true)}
           >
-            {canFollow ? 'Suivre l’analyse' : 'Analyser'}
+            Fiche véhicule ↗
           </button>
-        )}
-      </div>
+          <button
+            className="text-link"
+            disabled={analysis.busy || uploading}
+            onClick={() => setShowCapture(!showCapture)}
+          >
+            {showCapture ? 'Voir les photos et l’estimation' : 'Collection des photos'}
+          </button>
+          {(canLaunch || canFollow) && (
+            <button
+              className="button workflow-primary"
+              disabled={analysis.busy || uploading}
+              onClick={(event) => {
+                const folder = event.currentTarget
+                  .closest('.dossier-page')
+                  ?.querySelector<HTMLElement>('.dossier-overview-folder .dossier-folder');
+                if (folder) analysis.beginAnalysis(dossier, folder);
+              }}
+            >
+              {canFollow ? 'Suivre l’analyse' : 'Analyser'}
+            </button>
+          )}
+        </div>
+      </header>
       {showCapture ? (
-        <div inert={analysis.busy}>
+        <div className="workflow-capture-scroll" inert={analysis.busy}>
           <WorkflowPhotoCapture
             response={response}
             onSaved={onSaved}

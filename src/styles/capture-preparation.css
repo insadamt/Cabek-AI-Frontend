@@ -369,3 +369,11 @@
     transition: none;
   }
 }
+
+.capture-vehicle-summary .capture-selected-reference {
+  flex-basis: 100%;
+  color: #536050;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}

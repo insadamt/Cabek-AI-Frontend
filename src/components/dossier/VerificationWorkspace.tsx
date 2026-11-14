@@ -43,50 +43,58 @@ export function VerificationWorkspace(props: VerificationProps) {
   }
   return (
     <div className="workflow-workspace verification-workspace">
-      <div className="workflow-view-switch">
-        <button
-          className="text-link"
-          type="button"
-          onClick={() => {
-            setShowCapture(!showCapture);
-            setCompare(false);
-          }}
-        >
-          {showCapture ? (
-            <Images size={16} aria-hidden="true" />
-          ) : (
-            <Upload size={16} aria-hidden="true" />
-          )}
-          {showCapture ? 'Voir les photos' : 'Collection des photos'}
-        </button>
-        {savedPhaseSideCount(props.response, 'before') === 4 &&
-          !props.response.comparison?.finalized && (
-            <div>
-              <button
-                className="button button-secondary workflow-tunnel-action"
-                type="button"
-                onClick={() => {
-                  try {
-                    if (
-                      captureReady(session) &&
-                      session?.identity.dossierId === props.response.dossier_id
-                    )
-                      store?.clear();
-                    store?.restoreExisting('verification', 'after', props.response.dossier_id);
-                    navigate('/?reprendre=1');
-                  } catch (error) {
-                    setCaptureError(describeError(error));
-                  }
-                }}
-              >
-                <Camera size={16} aria-hidden="true" />
-                Capture après au tunnel
-                <ArrowUpRight size={15} aria-hidden="true" />
-              </button>
-              {captureError && <p role="alert">{captureError}</p>}
-            </div>
-          )}
-      </div>
+      <header className="workflow-workspace-header">
+        <p className="verification-evidence-status" role="status">
+          <span>Suivi des réparations</span>
+          {savedPhaseSideCount(props.response, 'before') +
+            savedPhaseSideCount(props.response, 'after')}
+          /8 photos enregistrées
+        </p>
+        <div className="workflow-view-switch">
+          <button
+            className="text-link"
+            type="button"
+            onClick={() => {
+              setShowCapture(!showCapture);
+              setCompare(false);
+            }}
+          >
+            {showCapture ? (
+              <Images size={16} aria-hidden="true" />
+            ) : (
+              <Upload size={16} aria-hidden="true" />
+            )}
+            {showCapture ? 'Voir les photos' : 'Collection des photos'}
+          </button>
+          {savedPhaseSideCount(props.response, 'before') === 4 &&
+            !props.response.comparison?.finalized && (
+              <div>
+                <button
+                  className="button button-secondary workflow-tunnel-action"
+                  type="button"
+                  onClick={() => {
+                    try {
+                      if (
+                        captureReady(session) &&
+                        session?.identity.dossierId === props.response.dossier_id
+                      )
+                        store?.clear();
+                      store?.restoreExisting('verification', 'after', props.response.dossier_id);
+                      navigate('/?reprendre=1');
+                    } catch (error) {
+                      setCaptureError(describeError(error));
+                    }
+                  }}
+                >
+                  <Camera size={16} aria-hidden="true" />
+                  Capture après au tunnel
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </button>
+                {captureError && <p role="alert">{captureError}</p>}
+              </div>
+            )}
+        </div>
+      </header>
       <div className="dossier-result-workspace">
         <div
           className="dossier-result-tabs segmented-control"
@@ -166,7 +174,7 @@ function RepairComparison({ response }: { response: DossierResponse }) {
       <header className="inspection-heading">
         <div>
           <p className="eyebrow">COMPARAISON · 8/8 PHOTOS ENREGISTRÉES</p>
-          <h2>La réparation, en regard.</h2>
+          <h2>Avant et après réparation</h2>
         </div>
       </header>
       <div className="segmented-control workflow-sides" ref={sides} aria-label="Côté à comparer">

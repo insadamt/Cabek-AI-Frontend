@@ -1,6 +1,6 @@
 /** Protects frozen artwork, unique SVG references and inaccessible viewport layers without launching a browser; depends on a minimal DOM fixture. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFolderFlight, createFolderRelease } from './folderFlight';
+import { createFolderFlight, createIslandFolderFlight } from './folderFlight';
 
 class ArtworkElement {
   attributesMap = new Map<string, string>();
@@ -120,9 +120,9 @@ describe('frozen folder layers', () => {
     ) as unknown as ArtworkElement;
     expect(first.children[0].children[0].id).not.toBe(second.children[0].children[0].id);
   });
-  it('clips release at a stationary island edge and removes both presentation layers once', () => {
+  it('clips both flight directions at a stationary island edge and removes both presentation layers once', () => {
     const { source, body } = fixture();
-    const release = createFolderRelease(
+    const release = createIslandFolderFlight(
       source as unknown as HTMLElement,
       source as unknown as HTMLElement,
       44,

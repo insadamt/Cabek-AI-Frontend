@@ -1,8 +1,9 @@
-/** Selects saved before/after dossiers with readable vehicle identity; depends on server pagination and the shared animated drawer. */
+/** Selects saved before/after dossiers with readable vehicle identity; depends on server pagination, the shared drawer and selection motion. */
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Camera, CarFront, ChevronRight, FolderOpen } from 'lucide-react';
 import { DetailsDrawer } from '../dossier/DetailsDrawer';
 import { useResource } from '../../hooks/useResource';
+import { useSelectionIndicator } from '../../hooks/useSelectionIndicator';
 import { describeError, listDossiers } from '../../lib/api';
 import type { DossierSummary } from '../../types';
 import '../../styles/after-capture-picker.css';
@@ -22,6 +23,7 @@ export function AfterCapturePicker({
 }) {
   const [offset, setOffset] = useState(0);
   const [workflow, setWorkflow] = useState<'awaiting_after' | 'after_incomplete'>('awaiting_after');
+  const filters = useSelectionIndicator(workflow, '[aria-pressed="true"]');
   const dossiers = useResource(`after-picker-${workflow}-${offset}`, (signal) =>
     listDossiers(
       {
@@ -54,7 +56,13 @@ export function AfterCapturePicker({
               Sélectionnez le véhicule photographié avant réparation pour ajouter ses photos après.
             </p>
           </div>
-          <div className="capture-picker-filters" role="group" aria-label="État des photos après">
+          <div
+            ref={filters}
+            className="capture-picker-filters"
+            role="group"
+            aria-label="État des photos après"
+          >
+            <span className="selection-indicator" aria-hidden="true" />
             {captureFilters.map((filter) => (
               <button
                 key={filter.value}

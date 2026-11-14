@@ -1,6 +1,6 @@
 /**
  * Freezes a folder's rendered appearance in a viewport layer without duplicating interactive content or SVG IDs.
- * Depends on computed browser styles; a matching perspective host preserves the carousel's native landing pose.
+ * Depends on computed browser styles; perspective preserves carousel poses and a stationary island aperture masks both flight directions.
  */
 let nextFlightId = 0;
 
@@ -65,7 +65,11 @@ export function createFolderFlight(source: HTMLElement, host: HTMLElement = sour
   return layer;
 }
 
-export function createFolderRelease(source: HTMLElement, host: HTMLElement, islandBottom: number) {
+export function createIslandFolderFlight(
+  source: HTMLElement,
+  host: HTMLElement,
+  islandBottom: number,
+) {
   const flight = createFolderFlight(source, host);
   const aperture = document.createElement('div');
 
@@ -73,7 +77,7 @@ export function createFolderRelease(source: HTMLElement, host: HTMLElement, isla
 
   flight.style.willChange = 'transform';
 
-  // The stationary aperture hides artwork inside the island while the flight moves beneath it.
+  // Clip in viewport space so moving artwork cannot cross the island's face or escape above the frame.
 
   Object.assign(aperture.style, {
     position: 'fixed',

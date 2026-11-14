@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { DossierFolder } from './DossierFolder';
 import { openDossierFromFolder } from '../../lib/dossierNavigation';
 import { categoryPath } from '../../lib/workflows';
-import { createFolderRelease } from '../../lib/folderFlight';
+import { createIslandFolderFlight } from '../../lib/folderFlight';
 import { runJourneyMotion } from '../../lib/journeyMotion';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
 import { useDossierOpening } from '../../hooks/useDossierOpening';
@@ -32,8 +32,7 @@ export function CaptureFinale({
   };
   const canOpen =
     ready &&
-    (response.type !== 'chiffrage_rapide' ||
-      (response.status === 'completed' && !!response.result));
+    (response.type === 'verification' || (response.status === 'completed' && !!response.result));
   const latest = useRef({ dossier, canOpen });
   latest.current = { dossier, canOpen };
   const emitted = useRef(false);
@@ -73,7 +72,7 @@ export function CaptureFinale({
     };
     const controller = new AbortController();
     const scene = container.parentElement?.querySelector('.category-stage-content');
-    const release = createFolderRelease(folder, folder, origin.bottom);
+    const release = createIslandFolderFlight(folder, folder, origin.bottom);
     const releaseScale = Math.min(0.24, (origin.width * 0.4) / target.width);
     const cancelMotion = runJourneyMotion({
       preserveLaunch: true,

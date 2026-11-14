@@ -1,3 +1,6 @@
+/* Sizes photo inspection and its horizontal gallery within the dossier viewport.
+   Depends on shared comparisons and mobile overrides; thumbnails retain their size while scrolling. */
+
 /* ============================================================
    Photo inspection workspace
    ============================================================ */
@@ -81,20 +84,29 @@
   gap: 8px;
 }
 .inspection-thumbnails {
+  --inspection-thumbnail-width: 104px;
   position: relative;
   display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
   padding: 5px 3px 10px;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #aeb5ab transparent;
 }
 .inspection-thumbnail {
   position: relative;
   display: grid;
   place-items: center;
-  flex: 1;
+  flex: 0 0 var(--inspection-thumbnail-width);
   min-width: 0;
-  max-width: 100px;
+  max-width: none;
   height: clamp(44px, 8dvh, 70px);
   padding: 3px;
   border: 1px solid var(--border);
@@ -252,38 +264,6 @@
   }
   .inspection-thumbnails {
     padding-block: 3px;
-  }
-}
-@media (max-height: 520px) and (min-width: 481px) {
-  /* Share the control rows on short screens so the photograph keeps usable height. */
-
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 6px 12px;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .inspection-heading {
-    grid-area: 1 / 1;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .inspection-toolbar {
-    grid-area: 1 / 2;
-    margin: 0;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .segmented-control button {
-    padding-inline: 10px;
-    font-size: 11px;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .comparison {
-    grid-area: 2 / 1 / 3 / -1;
-    height: 100%;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .inspection-photo-navigation {
-    grid-area: 3 / 2;
-    gap: 8px;
-  }
-  .inspection-workspace:has(.comparison):not(:has(.inspection-error)) .inspection-thumbnails {
-    grid-area: 3 / 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {

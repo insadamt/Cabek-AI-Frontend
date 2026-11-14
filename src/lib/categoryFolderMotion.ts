@@ -1,6 +1,6 @@
-/** Uniform viewport-layer absorption preserves the selected glass pocket; depends on journey ownership and frozen folder copies. */
+/** Uniform absorption feeds the selected glass pocket behind the island's lower edge; depends on journey ownership and masked folder flights. */
 import { cancelJourneyMotion, runJourneyMotion } from './journeyMotion';
-import { createFolderFlight } from './folderFlight';
+import { createIslandFolderFlight } from './folderFlight';
 import { addPageExit } from './pageJourneyMotion';
 
 export function absorbCategoryFolder(
@@ -14,7 +14,8 @@ export function absorbCategoryFolder(
   cancelJourneyMotion();
   const origin = folder.getBoundingClientRect();
   const target = island.getBoundingClientRect();
-  const flight = createFolderFlight(folder);
+  const presentation = createIslandFolderFlight(folder, folder, target.bottom);
+  const { flight } = presentation;
   const visibility = folder.style.visibility;
   folder.style.visibility = 'hidden';
   return runJourneyMotion({
@@ -40,7 +41,7 @@ export function absorbCategoryFolder(
         .to(island, { scale: 1, duration: 0.2 }, 0.86);
     },
     restore: () => {
-      flight.remove();
+      presentation.remove();
       folder.style.visibility = visibility;
     },
     onComplete,

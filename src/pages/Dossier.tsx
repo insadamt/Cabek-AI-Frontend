@@ -1,5 +1,6 @@
 /** Dossier identity and physical entrance shared by expertise, quick estimates and repair evidence. */
 import { categoryForType, categoryPath, workflowLabels } from '../lib/workflows';
+import { ExpertiseCaptureAction } from '../components/dossier/ExpertiseCaptureAction';
 import { DossierActions } from '../components/dossier/DossierActions';
 import { QuickEstimateWorkspace } from '../components/dossier/QuickEstimateWorkspace';
 import { VerificationWorkspace } from '../components/dossier/VerificationWorkspace';
@@ -118,7 +119,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                 <p className="dossier-registration">
                   <bdi>{dossier.vehicle.matricule || 'Immatriculation non renseignée'}</bdi>
                 </p>
-                {dossier.type && dossier.type !== 'forfait_expertise' && dossier.workflow_status ? (
+                {dossier.workflow_status ? (
                   <span className="status-badge">{workflowLabels[dossier.workflow_status]}</span>
                 ) : (
                   <StatusBadge status={dossier.status} />
@@ -177,6 +178,7 @@ export function Dossier({ dossierId }: { dossierId: string }) {
                   </div>
                 </dl>
               </div>
+              {response && <ExpertiseCaptureAction dossier={response} />}
               {response && (
                 <DossierActions
                   dossier={response}

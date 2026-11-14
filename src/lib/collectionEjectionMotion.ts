@@ -4,7 +4,7 @@
  */
 import gsap from 'gsap';
 import { cancelJourneyMotion, runJourneyMotion } from './journeyMotion';
-import { createFolderRelease } from './folderFlight';
+import { createIslandFolderFlight } from './folderFlight';
 import { addCollectionEntrance } from './pageJourneyMotion';
 
 export function ejectCollectionFolders(
@@ -31,7 +31,7 @@ export function ejectCollectionFolders(
   const previousInert = collection.inert;
   const flights = slots.map((slot) => {
     const bounds = slot.getBoundingClientRect();
-    const release = createFolderRelease(slot, stage, origin.bottom);
+    const release = createIslandFolderFlight(slot, stage, origin.bottom);
     const { flight } = release;
     flight.style.transformOrigin = `${bounds.left + bounds.width / 2 - stageBounds.left}px ${bounds.top + bounds.height / 2 - stageBounds.top}px`;
     const visibility = slot.style.visibility;

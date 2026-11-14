@@ -79,12 +79,15 @@ export const financialCategories = [
 
 export type FinancialCategory = (typeof financialCategories)[number][0];
 
+export type LaborCategory = Exclude<FinancialCategory, 'paint_materials' | 'parts_supply'>;
+
 export interface FinancialResult {
   status: 'complete' | 'incomplete';
   currency: 'MAD';
   estimated_total: number | null;
   known_subtotal: number;
   breakdown: Record<FinancialCategory, number | null>;
+  labor_hours?: Record<LaborCategory, number | null>;
   warnings: string[];
 }
 

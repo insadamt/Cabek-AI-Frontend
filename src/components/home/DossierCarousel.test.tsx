@@ -91,3 +91,57 @@ describe('visible folder action', () => {
     expect(markup).toContain('role="search"');
   });
 });
+
+it.each(['awaiting_photos', 'capture_failed', 'capturing'] as const)(
+  'routes expertise in %s to its selected tunnel instead of launching analysis',
+  (workflow_status) => {
+    motion.progress = 0;
+    const dossier = {
+      ...previewDossiers[0],
+      type: 'forfait_expertise' as const,
+      workflow_status,
+      status: 'not_analyzed' as const,
+      photo_count: workflow_status === 'awaiting_photos' ? 0 : 1,
+    };
+    const markup = renderToStaticMarkup(
+      <DossierCarousel
+        dossiers={[dossier]}
+        activeIndex={0}
+        total={1}
+        offset={0}
+        onSelect={() => {}}
+        onStep={() => {}}
+      />,
+    );
+    expect(markup).toContain('parcours=forfait-expertise');
+    expect(markup).toContain(`dossier=${dossier.dossier_id}`);
+    expect(markup).not.toContain(`Analyser le dossier ${dossier.dossier_id}`);
+  },
+);
+
+it.each(['not_analyzed', 'failed'] as const)(
+  'offers Scanner for an empty legacy dossier with %s status, including dossier 2',
+  (status) => {
+    motion.progress = 0;
+    const dossier = {
+      ...previewDossiers[0],
+      dossier_id: '2',
+      status,
+      photo_count: 0,
+      workflow_status: 'ready_to_scan' as const,
+    };
+    const markup = renderToStaticMarkup(
+      <DossierCarousel
+        dossiers={[dossier]}
+        activeIndex={0}
+        total={1}
+        offset={0}
+        onSelect={() => {}}
+        onStep={() => {}}
+      />,
+    );
+    expect(markup).toContain('Scanner le dossier 2');
+    expect(markup).toContain('dossier=2');
+    expect(markup).not.toContain('Ouvrir le dossier 2');
+  },
+);

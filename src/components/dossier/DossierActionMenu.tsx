@@ -59,6 +59,7 @@ export function DossierActionMenu({
     const spaceAbove = bounds.top - 16;
     const spaceBelow = window.innerHeight - bounds.bottom - 16;
     const openAbove = spaceAbove >= 180 || spaceAbove > spaceBelow;
+    popover.dataset.placement = openAbove ? 'above' : 'below';
     popover.style.maxHeight = `${Math.max(0, openAbove ? spaceAbove : spaceBelow)}px`;
     popover.style.top = openAbove ? 'auto' : `${bounds.bottom + 8}px`;
     popover.style.bottom = openAbove ? `${window.innerHeight - bounds.top + 8}px` : 'auto';
@@ -87,7 +88,17 @@ export function DossierActionMenu({
       >
         <EllipsisVertical size={20} aria-hidden="true" />
       </button>
-      <div ref={popoverRef} id={popoverId} popover="auto" className="dossier-action-popover">
+      <div
+        ref={popoverRef}
+        id={popoverId}
+        popover="auto"
+        className="dossier-action-popover"
+        onBeforeToggle={(event) => {
+          // The closing surface can remain painted briefly, but its actions must stop immediately.
+
+          event.currentTarget.inert = event.newState === 'closed';
+        }}
+      >
         {children && <div onClick={closePopover}>{children}</div>}
         {onNewBefore && (
           <button

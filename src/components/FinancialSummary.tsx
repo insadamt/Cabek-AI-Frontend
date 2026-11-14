@@ -1,21 +1,69 @@
-import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
+/** Display saved financial totals and labor durations without recalculating prices.
+ * Depends on shared API DTOs, formatters, and the accessible details component.
+ */
+import { ChevronDown, Clock3, Info, TriangleAlert } from 'lucide-react';
 import { financialCategories, type FinancialResult } from '../types';
-import { displayTotal, financialWarnings, formatMoney } from '../lib/format';
+import { displayTotal, financialWarnings, formatLaborHours, formatMoney } from '../lib/format';
 import { AnimatedDetails } from './AnimatedDetails';
 
 export function FinancialBreakdown({ financial }: { financial: FinancialResult }) {
   return (
-    <dl className="financial-breakdown">
-      {financialCategories.map(([category, label]) => (
-        <div key={category}>
-          <dt>{label}</dt>
-          <dd>
-            {formatMoney(financial.breakdown[category])}
-            {financial.breakdown[category] != null && <span> MAD</span>}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <div className="financial-breakdown-groups">
+      <section className="financial-breakdown-group" aria-label="Main-d’œuvre">
+        <h4 className="financial-breakdown-heading">Main-d’œuvre</h4>
+        <dl className="financial-breakdown financial-breakdown-labor">
+          {financialCategories.map(([category, label]) => {
+            if (category === 'paint_materials' || category === 'parts_supply') return null;
+            return (
+              <div key={category}>
+                <dt>{label}</dt>
+                <dd>
+                  <div className="financial-labor-duration">
+                    <span className="financial-metric-label">
+                      <Clock3 size={15} aria-hidden="true" />
+                      Durée totale
+                    </span>
+                    <strong
+                      className="financial-labor-hours"
+                      data-unavailable={financial.labor_hours?.[category] == null || undefined}
+                    >
+                      {formatLaborHours(financial.labor_hours?.[category])}
+                    </strong>
+                  </div>
+                  <div className="financial-labor-cost">
+                    <span className="financial-metric-label">Montant</span>
+                    <strong
+                      className="financial-line-amount"
+                      data-unavailable={financial.breakdown[category] == null || undefined}
+                    >
+                      {formatMoney(financial.breakdown[category])}
+                      {financial.breakdown[category] != null && <small> MAD</small>}
+                    </strong>
+                  </div>
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </section>
+      <section className="financial-breakdown-group" aria-label="Pièces et produits">
+        <h4 className="financial-breakdown-heading">Pièces et produits</h4>
+        <dl className="financial-breakdown financial-breakdown-supplies">
+          {financialCategories.map(([category, label]) => {
+            if (category !== 'paint_materials' && category !== 'parts_supply') return null;
+            return (
+              <div key={category}>
+                <dt>{label}</dt>
+                <dd>
+                  {formatMoney(financial.breakdown[category])}
+                  {financial.breakdown[category] != null && <span> MAD</span>}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </section>
+    </div>
   );
 }
 
