@@ -16,6 +16,7 @@ export const lightingEffects = [
   'mission_complete',
   'warning',
   'shutdown',
+  'police',
 ] as const;
 export type LightingEffect = (typeof lightingEffects)[number];
 export type LightTest = {

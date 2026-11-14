@@ -148,7 +148,7 @@ export function LightingSettings() {
               </label>
               <label>
                 Courbe
-                <select value={easing} onChange={(event) => setEasing(event.target.value)}>
+                <select disabled={effect === 'police'} value={easing} onChange={(event) => setEasing(event.target.value)}>
                   {['linear', 'ease_in', 'ease_out', 'ease_in_out'].map((name) => (
                     <option key={name} value={name}>
                       {name}
