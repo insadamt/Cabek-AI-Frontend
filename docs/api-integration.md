@@ -67,23 +67,13 @@ bodyless `POST /api/lights/off`. A single background HTTP worker keeps lighting
 outages outside capture requests. No readiness probe or lifecycle snapshot is sent
 to the lighting service. The 3D scene remains independent presentation.
 
-## Lighting maintenance
+The frontend has no physical lighting page, client, timers or service URL.
+It sends its existing capture request to CABEK AI; that backend chooses and sends
+all lighting commands. Refreshing or closing the browser does not own the lighting
+sequence. Decorative 3D scene lighting remains presentation only.
 
-Open `/maintenance/lights` on the tunnel PC. The panel sends only `/set` and `/off`
-and makes no requests on mount. Choose an effect, brightness, cycle duration,
-speed, repeat, easing and an optional color palette. Any command replaces the
-current effect, including automatic capture output. OFF remains available while
-SET is pending. Repeating effects persist until replaced or stopped; there is no
-preview expiry or capture lock in the lighting service.
-
-Responses confirm initial serial delivery, not physical appearance or future
-animation frames. Legacy firmware supports only full-strength red, blue, green,
-white and OFF; other outputs require the RGB extension and return a clear error
-when unsupported. No connection status is inferred from previous requests.
-
-Set `VITE_LIGHTS_API_BASE_URL` independently of the main application API URL.
-Vite proxies `/api/lights` to `127.0.0.1:8001` and rejects non-loopback clients for
-that proxy even when the rest of the app serves the LAN. Production access must
-retain a trusted local boundary. No hardware credentials belong in browser code.
-See the [API contract](../../cabek-esp32/docs/lighting-api.md) and
-[deployment guide](../../cabek-esp32/docs/lighting-deployment.md).
+Configure `CABEK_LIGHTS_ENABLED` and `CABEK_LIGHTS_API_URL` on the CABEK AI server.
+The independent lighting service remains on loopback port 8001 and is not proxied
+through Vite. CABEK AI exposes no browser lighting endpoints.
+See the [lighting API contract](../../cabek-esp32/docs/lighting-api.md) for direct
+local diagnostics and the [deployment guide](../../cabek-esp32/docs/lighting-deployment.md).
