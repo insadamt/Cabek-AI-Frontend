@@ -17,7 +17,7 @@ vi.mock('react', async (original) => ({
 vi.mock('../../hooks/useTunnelCapture', () => ({
   useTunnelCapture: () => ({
     session: state.session,
-    store: { start: state.start, clear: state.clear },
+    store: { start: state.start, clear: state.clear, getSnapshot: () => state.session },
   }),
 }));
 vi.mock('../../hooks/useNavigation', () => ({
@@ -29,7 +29,7 @@ vi.mock('../../hooks/useStageEntrance', () => ({
 }));
 import { TunnelStage } from './TunnelStage';
 import { CategoryStageVisual } from './CategoryStageVisual';
-import { categories } from '../../lib/workflows';
+import { categories, type Category } from '../../lib/workflows';
 import { getPreviewResult, previewDossiers } from '../../preview/data';
 
 function find(node: ReactNode, matches: (element: any) => boolean): any {
@@ -40,12 +40,12 @@ function find(node: ReactNode, matches: (element: any) => boolean): any {
     if (result) return result;
   }
 }
-function setup() {
+function setup(category: Category = categories[1]) {
   let arrive!: () => void;
   const entrance = new Promise<void>((resolve) => {
     arrive = resolve;
   });
-  const tree = TunnelStage({ category: categories[1], onBack: vi.fn() });
+  const tree = TunnelStage({ category, onBack: vi.fn() });
   const scene = find(tree, (element) => element.type === CategoryStageVisual);
   const playEntrance = vi.fn(() => entrance);
   scene.props.playbackRef.current = { playEntrance };
@@ -56,7 +56,7 @@ function setup() {
     scan: find(tree, (element) => element.props.className === 'capture-scanner').props.onClick,
     reset: find(tree, (element) =>
       Children.toArray(element.props.children).includes('Nouveau dossier'),
-    ).props.onClick,
+    )?.props.onClick,
   };
 }
 beforeEach(() => {
@@ -121,4 +121,39 @@ it('keeps the car outside while vehicle metadata is synchronizing before a scan 
   const tree = TunnelStage({ category: categories[1], onBack: vi.fn() });
   const scene = find(tree, (element) => element.type === CategoryStageVisual);
   expect(scene.props.waitingOutside).toBe(true);
+});
+
+it('drives in before retrying a failed capture restored from an earlier visit', async () => {
+  state.session!.capture = { status: 'failed' } as CaptureSession['capture'];
+  const playback = setup();
+  expect(playback.scene.props.waitingOutside).toBe(true);
+  playback.scan();
+  expect(state.start).not.toHaveBeenCalled();
+  playback.arrive();
+  await Promise.resolve();
+  expect(state.start).toHaveBeenCalledOnce();
+});
+
+it('waits for entry when expertise has a completed capture but no photographs', async () => {
+  const session = state.session!;
+  session.identity = { type: 'forfait_expertise', creationKey: 'imported', dossierId: 'IMPORT-1' };
+  session.response = { ...session.response!, type: 'forfait_expertise', photos: [] };
+  session.capture = {
+    dossier_id: 'IMPORT-1',
+    phase: null,
+    capture_id: 'previous',
+    status: 'completed',
+    photos: [],
+    expected_count: 8,
+    saved_count: 0,
+    error_code: null,
+    analysis_error: null,
+  };
+  const playback = setup(categories.find((category) => category.type === 'forfait_expertise')!);
+  expect(playback.scene.props.waitingOutside).toBe(true);
+  playback.scan();
+  expect(state.start).not.toHaveBeenCalled();
+  playback.arrive();
+  await Promise.resolve();
+  expect(state.start).toHaveBeenCalledExactlyOnceWith('forfait_expertise', undefined, 'IMPORT-1');
 });

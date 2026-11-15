@@ -14,7 +14,8 @@ PROJECT = HERE.parents[2]
 sys.path[:0] = [str(HERE), str(PROJECT/'scripts/blender_mcp')]
 from geometry import empty, material
 from fabrication import Assembly
-from installation import build_modules, build_lights, build_cameras
+from installation import build_modules, build_lights
+from inspection_cameras import build_cameras
 from service_bay import build_branding, build_cabinet
 from export_tunnel import export_tunnel
 
@@ -119,9 +120,9 @@ def build():
     m=make_palette()
     build_modules(emit,m)
     build_lights(emit,m)
-    build_cameras(emit,m)
     build_cabinet(emit,m)
-    build_branding(emit, SOURCE/'cabek-ai-logo.png')
+    artwork = build_branding(emit, SOURCE/'cabek-ai-logo.png')
+    build_cameras(emit, m, artwork)
     floor=Assembly()
     floor.box((0,0,-.014),(100,100,.026),m['slab'])
     emit(floor,'FLOOR','Studio_slab',0)

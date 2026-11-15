@@ -293,6 +293,8 @@ describe('3D bay runtime ownership', () => {
     session.runtime.setPalette(palette);
     expect(mocks.choreography.setPalette).toHaveBeenCalledWith(palette);
     expect(mocks.camera.setCategory).toHaveBeenCalledWith(2, false);
+    session.runtime.setPalette({ ...palette, focus: 1, sensorEmphasis: 1 });
+    expect(mocks.camera.setCategory).toHaveBeenCalledOnce();
   });
   it('preserves manual ownership during vehicle motion and reduced motion, then resets explicitly', async () => {
     const session = createSession();
@@ -384,7 +386,10 @@ describe('3D bay runtime ownership', () => {
     session.hide(true);
     const settings = { illumination: 0.4, sensorsVisible: false, canopyVisible: false };
     session.runtime.setVisualSettings(settings);
-    expect(mocks.stage.setVisualSettings).toHaveBeenLastCalledWith(settings);
+    expect(mocks.stage.setVisualSettings).toHaveBeenLastCalledWith({
+      ...defaultBayVisualSettings,
+      ...settings,
+    });
     expect(session.frames.size).toBe(0);
     session.hide(false);
     session.flushFrame();

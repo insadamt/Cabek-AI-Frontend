@@ -132,6 +132,19 @@ describe('cinematic bay choreography', () => {
     controller.dispose();
   });
 
+  it('turns a vehicle around from its displayed position when a new scan interrupts the return', () => {
+    const { controller } = setup({ parked: true });
+    controller.waitOutside(true);
+    expect(controller.state.entryProgress).toBe(1);
+    controller.state.entryProgress = 0.42;
+    const arrived = vi.fn();
+    controller.replayEntry(arrived);
+    expect(controller.state.entryProgress).toBe(0.42);
+    motion.timelines.at(-1)!.progress(1);
+    expect(arrived).toHaveBeenCalledOnce();
+    controller.dispose();
+  });
+
   it('drives from the waiting position before releasing capture admission', () => {
     const { controller } = setup({ parked: true });
     controller.waitOutside();

@@ -112,7 +112,7 @@ export function CategoryStageVisual({
   const controlsAvailable = status === 'ready' && playIntro && !entering;
   const cameraInteractive = controlsAvailable && !rotationLocked;
   useEffect(() => {
-    onParked?.((waitingOutside && status === 'ready') || introComplete || status === 'failed');
+    onParked?.((status === 'ready' && (waitingOutside || introComplete)) || status === 'failed');
   }, [introComplete, status, onParked, waitingOutside]);
 
   useLayoutEffect(() => {
@@ -182,7 +182,13 @@ export function CategoryStageVisual({
 
   useImperativeHandle(
     playbackRef,
-    () => ({ playEntrance: () => connectionRef.current?.replayEntrance() ?? Promise.resolve() }),
+    () => ({
+      async playEntrance() {
+        if (!connectionRef.current)
+          throw new Error('La scène 3D se prépare. Réessayez dans un instant.');
+        await connectionRef.current.replayEntrance();
+      },
+    }),
     [attempt],
   );
 

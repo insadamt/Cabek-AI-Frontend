@@ -35,7 +35,7 @@ Blender uses metres and Z up, with the entrance on the negative Y end. glTF uses
 
 Preserve the `light_group` custom property on the diffusers. All twelve `Inspection_01_A_vertical` through `Inspection_03_B_crown` meshes use `inspection.white`. The four `Exterior_RGB_Logo_L/R` and `Exterior_RGB_Entrance_L/R` diffusers share the `Exterior_RGB` material and the `exterior.rgb` light group. Canopy-mounted luminaires and channels have `canopy_mount=true`, so the roof switch hides them together. Review cameras and area lights sit outside the exported root.
 
-The shared loader fetches both GLBs with cancellation and the local Draco decoder. The retained runtime waits for both, compiles their shaders, then reports the first rendered frame. A failed load follows the existing retry path. The side decals and touchscreen splash share one packed logo texture. Fixed parts are batched by assembly. The export has 57 meshes, 59,878 triangles, 16 materials and no external textures. The scanner uses the existing reflection environment and one shadow-casting light.
+The shared loader fetches both GLBs with cancellation and the local Draco decoder. The retained runtime waits for both, compiles their shaders, then reports the first rendered frame. A failed load follows the existing retry path. The side decals, touchscreen splash and camera badges share one packed logo texture with smooth alpha, trilinear mipmaps and runtime anisotropic filtering. Fixed parts are batched by assembly. The export has 65 meshes, 91,206 triangles, 16 materials and no external textures. The scanner uses the existing reflection environment and one shadow-casting light.
 
 ## Capture and lighting
 
@@ -44,11 +44,11 @@ The visual settings control inspection brightness, standby RGB tint, RGB brightn
 | Confirmed capture state | Exterior visualization |
 | --- | --- |
 | Standby | White by default, with optional operator preview tint |
-| Capturing | Solid red, including throughout a long capture |
-| Completed | A brief synchronized green brightness effect, green hold, then white |
-| Failed | A brief synchronized amber brightness effect, then steady amber until the state changes |
+| Capturing | Red throughout capture, with a separate green sweep traveling along the vehicle |
+| Completed | Smooth transition to green, ten-second hold from confirmation, then a fade to white |
+| Failed | Smooth transition to amber, held until the state changes |
 
-The capture store dates the first confirmed completion of an observed attempt, including a new admission that finishes before the first poll. The API exposes no completion timestamp, so the ten-second hold begins at confirmation by the client. Polls and route changes preserve the deadline. Reopening an old completed dossier starts in white. Reduced motion uses steady colors and the scheduler sleeps between state changes.
+The capture store dates the first confirmed completion of an observed attempt, including a new admission that finishes before the first poll. The API exposes no completion timestamp, so the ten-second hold begins at confirmation by the client. Polls and route changes preserve the deadline. Reopening an old completed dossier starts in white. Reduced motion keeps a static green capture frame and steady colors. The scheduler sleeps once motion and fades settle.
 
 Manual hardware tests on the settings page already use the trusted CABEK AI settings proxy. It forwards supported effects and parameters to `POST /api/lights/set` and sends bodyless `POST /api/lights/off`. CABEK AI owns physical capture transitions even when the browser is closed. The sibling backend currently requests a repeating red pulse during capture. Matching the solid-red visualization on the physical strip requires a change to that backend preset.
 
@@ -58,7 +58,7 @@ The study used all five workshop images: side elevation (20261109_123912), occup
 
 Scale is estimated from the vehicle and the openings. Module centres are spaced 2.52 m apart, their sheet sections are 1.38 m deep, and the nominal crown height is 2.85 m. The photographed floor runs through the installation. Its workshop color bands, background, loose cables, ladder and temporary desk are omitted from the studio. The finished cabinet and the supplied **CABEK AI** logo follow the updated design. Keep `cabek-ai-logo.png` beside the editable scene when rebuilding it from Python.
 
-The four clearest bilateral low-camera positions inform eight simplified camera assemblies. Exact lens angles, opposite-side symmetry, hidden cameras and cable destinations need installation confirmation. No overhead cameras were added. The reference informed two estimated RGB lengths. The bars above the side logos run 0.90 m horizontally. Each entrance post carries a 1.32 m vertical bar. The screen center is 1.365 m above the floor. Touchscreen dimensions, fastener sizes, panel gauges and caster diameters are estimates. Adjust the saved assemblies when measured dimensions become available.
+The six inspection rings are numbered from the vehicle entrance. Rings 1, 3, 4 and 6 carry one low, inward-facing bullet camera on each side. The rounded white shells, black optical faces and swivel mounts follow the supplied camera photo and carry CABEK AI badges. Housing dimensions and lens angles are estimates. No overhead cameras were added. The reference informed two estimated RGB lengths. The bars above the side logos run 0.90 m horizontally. Each entrance post carries a 1.32 m vertical bar. The screen center is 1.365 m above the floor. Touchscreen dimensions, fastener sizes, panel gauges and caster diameters are estimates. Adjust the saved assemblies when measured dimensions become available.
 
 Both shipped GLBs were decoded together in Blender. The grounded sedan measures approximately 2.03 m wide, 4.80 m long and 1.44 m tall. A conservative swept body box along the 7.2 m entrance path clears the side equipment by at least 0.70 m and the overhead fixtures by 1.22 m. These are model clearances.
 

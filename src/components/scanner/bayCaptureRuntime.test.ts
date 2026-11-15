@@ -103,14 +103,63 @@ it('retains the waiting vehicle outside across repeated cached route returns', a
   expect(adapters.choreography.park).not.toHaveBeenCalled();
 });
 
-it('renders a confirmed capture solid red once, then waits for another backend state', async () => {
-  const { frames, flush } = await prepareRuntime();
+it('animates only while visible and lets the same scene settle after a capture', async () => {
+  const { page, frames, flush } = await prepareRuntime();
   runtime.setCaptureLight({ status: 'capturing' });
   flush(16);
+  expect(frames.size).toBe(1);
+  for (let time = 32; time < 1050; time += 16) flush(time);
+  const displayed = () => adapters.stage.render.mock.calls.at(-1)[1];
+  expect(displayed().color.getHexString()).toBe('ff0000');
+  const depth = displayed().sweepDepth;
+  page.hidden = true;
+  page.dispatchEvent(new Event('visibilitychange'));
   expect(frames.size).toBe(0);
-  expect(adapters.stage.render.mock.calls.at(-1)[1].color).toBe('#ff0000');
+  page.hidden = false;
+  page.dispatchEvent(new Event('visibilitychange'));
+  flush(5000);
+  expect(Math.abs(displayed().sweepDepth - depth)).toBeLessThan(0.1);
   runtime.setCaptureLight({ status: 'failed' });
-  flush(32);
-  expect(adapters.stage.render.mock.calls.at(-1)[1].color).toBe('#ff9800');
+  for (let time = 5016; time < 6000; time += 16) flush(time);
+  expect(displayed().color.getHexString()).toBe('ff9800');
+  expect(displayed().sweepOpacity).toBe(0);
   expect(frames.size).toBe(0);
+  expect(adapters.stage.loadTunnel).toHaveBeenCalledOnce();
+});
+
+it('releases capture only after rendering the parked car, even if the camera finishes early', async () => {
+  const { flush } = await prepareRuntime();
+  runtime.setWaitingOutside(true);
+  flush(16);
+  const vehicle = adapters.stage.scene.children[0];
+  expect(vehicle.position.z).toBe(7.2);
+  adapters.choreography.replayEntry = (notify: () => void) => {
+    adapters.choreography.state.introComplete = true;
+    notify();
+  };
+  const admitted = vi.fn();
+  const admission = runtime.replayEntrance().then(admitted);
+  adapters.choreography.state.entryProgress = 0.4;
+  flush(32);
+  await Promise.resolve();
+  expect(vehicle.position.z).toBeCloseTo(4.32);
+  expect(admitted).not.toHaveBeenCalled();
+  adapters.choreography.state.entryProgress = 1;
+  runtime.setCameraInteractive(false);
+  expect(admitted).not.toHaveBeenCalled();
+  flush(48);
+  await admission;
+  expect(vehicle.position.z).toBe(0);
+  expect(admitted).toHaveBeenCalledOnce();
+});
+
+it('places the car inside when an active backend scan is restored over a waiting scene', async () => {
+  const { flush } = await prepareRuntime();
+  runtime.setWaitingOutside(true);
+  flush(16);
+  runtime.setWaitingOutside(false);
+  runtime.setCaptureLight({ status: 'capturing' });
+  flush(32);
+  expect(adapters.stage.scene.children[0].position.z).toBe(0);
+  expect(adapters.stage.render.mock.lastCall[1].sweepOpacity).toBeGreaterThan(0);
 });

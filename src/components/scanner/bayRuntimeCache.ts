@@ -146,12 +146,17 @@ export function createBayRuntimeCache(
           view.playbackRequested = true;
           if (cached.status === 'ready') cached.runtime?.enter();
         },
-        replayEntrance() {
-          if (!isConnected() || cached.status !== 'ready') return Promise.resolve();
-          return cached.runtime?.replayEntrance() ?? Promise.resolve();
+        async replayEntrance() {
+          if (!isConnected()) throw new Error('La scène 3D a été fermée.');
+          // An explicitly failed renderer still supports the existing capture-only fallback.
+          if (cached.status === 'failed') return;
+          if (cached.status !== 'ready' || !cached.runtime)
+            throw new Error('La scène 3D se prépare. Réessayez dans un instant.');
+          await cached.runtime.replayEntrance();
         },
         setWaitingOutside(waiting: boolean) {
           if (!isConnected()) return;
+          if (!cached.runtime && view.waitingOutside && !waiting) cached.initiallyParked = true;
           view.waitingOutside = waiting;
           cached.runtime?.setWaitingOutside?.(waiting);
         },

@@ -1,13 +1,13 @@
-"""Model the three photographed CABEK sleeves, split inspection bars and side cameras.
+"""Model the three photographed CABEK sleeves, split inspection bars and exterior RGB fixtures.
 
 Uses fabrication.Assembly and shared Blender PBR materials. Dimensions are
 photo estimates in metres around the separate 4.8 m sedan. Blender -Y is entry.
 """
-import math
 from fabrication import Assembly
 
 STATIONS = (-2.52, 0, 2.52)
 HALF_SLEEVE = .69
+RING_OFFSET = .615
 SECTIONS = [(1.94, 2.36), (1.26, 2.74), (-1.26, 2.74), (-1.94, 2.36)]
 
 
@@ -60,7 +60,7 @@ def build_modules(emit, m):
 
 def build_lights(emit, m):
     for i,y in enumerate(STATIONS,1):
-        for edge,offset in [('A',-.615),('B',.615)]:
+        for edge,offset in [('A',-RING_OFFSET),('B',RING_OFFSET)]:
             yy = y+offset
             housings, white = Assembly(), Assembly()
             for side in (-1,1):
@@ -108,22 +108,3 @@ def build_exterior_lights(emit, m):
             obj = emit(diffuser, 'RGB_LIGHTS', f'Exterior_RGB_{position}_{label}', .002)
             obj['light_group'] = 'exterior.rgb'
     emit(channel,'RGB_LIGHTS','RGB_aluminium_channels',.002)
-
-
-def build_cameras(emit, m):
-    for side,side_name in [(-1,'L'),(1,'R')]:
-        for i,y in enumerate((-3.135,-1.905,-.615,1.905),1):
-            camera = Assembly()
-            x=side*1.916
-            z=.976
-            camera.tube([(x,y,z),(x-side*.026,y,z)],.054,m['cap'],18)
-            camera.tube([(x-side*.025,y,z),(x-side*.09,y,z+.01)],.024,m['zinc'],12)
-            # White bullet housings alternate their view towards the opposite end of the lane.
-            yaw = math.radians(48 if i%2 else -48)
-            d=(-side*math.cos(yaw), math.sin(yaw))
-            def axis(t):
-                return (x-side*.105+d[0]*t, y+d[1]*t, z+.012)
-            camera.tube([axis(-.035),axis(.095)],.043,m['cap'],12)
-            camera.tube([axis(.094),axis(.10)],.037,m['gasket'],18)
-            camera.tube([axis(.10),axis(.104)],.023,m['glass'],20)
-            emit(camera,'CAMERAS',f'Camera_{side_name}{i:02}',.0018)

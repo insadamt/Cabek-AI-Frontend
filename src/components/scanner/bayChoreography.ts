@@ -96,7 +96,7 @@ export function createBayChoreography(options: BayChoreographyOptions) {
 
   const controller = {
     state,
-    waitOutside() {
+    waitOutside(animate = false) {
       if (disposed) return;
       entrance?.kill();
       entrance = undefined;
@@ -107,9 +107,17 @@ export function createBayChoreography(options: BayChoreographyOptions) {
       waitingOutside = true;
       entranceRequested = false;
       completionReported = false;
-      state.entryProgress = 0;
       state.revealProgress = state.reframeProgress = 1;
       state.introComplete = true;
+      if (animate && visible && !reducedMotion && state.entryProgress > 0) {
+        entrance = gsap.timeline({ paused: true, onUpdate: notifyChange });
+        entrance.to(state, {
+          entryProgress: 0,
+          duration: 1.8 * state.entryProgress,
+          ease: 'power1.inOut',
+        });
+        entrance.play();
+      } else state.entryProgress = 0;
       notifyChange();
     },
     enter() {
@@ -146,12 +154,13 @@ export function createBayChoreography(options: BayChoreographyOptions) {
         return;
       }
       entrance?.kill();
+      const approachProgress = waitingOutside ? state.entryProgress : 0;
       waitingOutside = false;
       replayComplete?.();
       replayComplete = onComplete;
       completionReported = false;
       entranceRequested = false;
-      state.entryProgress = 0;
+      state.entryProgress = approachProgress;
       state.revealProgress = state.reframeProgress = 1;
       state.introComplete = false;
       notifyChange();
@@ -174,13 +183,17 @@ export function createBayChoreography(options: BayChoreographyOptions) {
     park() {
       if (
         disposed ||
-        (state.entryProgress === 1 && state.reframeProgress === 1 && state.revealProgress === 1)
+        (!waitingOutside &&
+          state.entryProgress === 1 &&
+          state.reframeProgress === 1 &&
+          state.revealProgress === 1)
       )
         return;
 
       //
       // Cache suspension must also finish a drive that continued after manual camera takeover.
       //
+      waitingOutside = false;
       settleEntrance();
     },
     setPalette(palette: BayPalette) {
@@ -233,7 +246,8 @@ export function createBayChoreography(options: BayChoreographyOptions) {
       lighting?.kill();
       lighting = undefined;
       settleLighting();
-      if (!waitingOutside) settleEntrance();
+      if (waitingOutside) controller.waitOutside();
+      else settleEntrance();
     },
     setVisible(nextVisible: boolean) {
       if (disposed || visible === nextVisible) return;

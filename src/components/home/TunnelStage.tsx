@@ -41,7 +41,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
   const [vehicleEntering, setVehicleEntering] = useState(false);
   const playbackRef = useRef<ScannerPlayback | null>(null);
   const entryOperation = useRef<AbortController | null>(null);
-  const scanEntranceRequested = useRef(false);
+  const enteredSession = useRef<string | null>(null);
   useEffect(() => () => entryOperation.current?.abort(), []);
   const [parked, setParked] = useState(entrance.restoreSettledView);
   const current = session?.identity.type === category.type ? session : null;
@@ -72,6 +72,13 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
   const metadataReady = !!current?.synchronized && metadataSaved;
   const processing =
     current?.response?.status === 'processing' || current?.response?.status === 'queued';
+  const waitingForScan =
+    (!current || enteredSession.current !== current.identity.creationKey) &&
+    (!capture ||
+      capture.status === 'not_started' ||
+      capture.status === 'failed' ||
+      captureNeedsRestart) &&
+    !processing;
   const finale = captureReady(current) && !drawer && !afterPicker && !expertisePicker;
   const analysisStage =
     category.type !== 'verification' &&
@@ -116,7 +123,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
       if (!store?.clear()) throw new Error('Attendez la fin de l’enregistrement en cours.');
       entryOperation.current?.abort();
       entryOperation.current = null;
-      scanEntranceRequested.current = false;
+      enteredSession.current = null;
       setVehicleEntering(false);
       setError('');
       setDrawer(false);
@@ -150,19 +157,21 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
     entryOperation.current = controller;
     setError('');
     try {
-      if (capture?.status !== 'completed' || captureNeedsRestart) {
+      if (waitingForScan && current) {
         // Metadata synchronization can be pending too; only this action authorizes vehicle entry.
 
-        scanEntranceRequested.current = true;
         setVehicleEntering(true);
-        await playbackRef.current?.playEntrance();
+        if (!playbackRef.current)
+          throw new Error('La scène 3D se prépare. Réessayez dans un instant.');
+        await playbackRef.current.playEntrance();
         controller.signal.throwIfAborted();
+        if (store.getSnapshot()?.identity.creationKey !== current.identity.creationKey) return;
+        enteredSession.current = current.identity.creationKey;
       }
       if (expertise) await store.start(category.type, phase, current?.identity.dossierId);
       else await store.start(category.type, phase);
     } catch (failure) {
       if (!controller.signal.aborted) {
-        scanEntranceRequested.current = false;
         setError(describeError(failure));
       }
     } finally {
@@ -233,12 +242,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
           category={category}
           playbackRef={playbackRef}
           entering={vehicleEntering}
-          waitingOutside={
-            !vehicleEntering &&
-            !scanEntranceRequested.current &&
-            (!capture || capture.status === 'not_started') &&
-            !processing
-          }
+          waitingOutside={!vehicleEntering && waitingForScan}
           initiallyParked={entrance.restoreSettledView || !!current}
           playIntro={ready}
           onStatusChange={entrance.setSceneStatus}

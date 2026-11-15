@@ -95,12 +95,10 @@ def build_branding(emit, source_image):
     texture = tree.nodes.new('ShaderNodeTexImage')
     texture.image = image
     texture.location = (-620, 240)
-    cutout = tree.nodes.new('ShaderNodeMath')
-    cutout.operation = 'ROUND'
-    cutout.location = (-330, 60)
+    # Preserve fractional coverage of the lettering when the texture is minified.
+    decal.surface_render_method = 'BLENDED'
     tree.links.new(texture.outputs['Color'], surface.inputs['Base Color'])
-    tree.links.new(texture.outputs['Alpha'], cutout.inputs[0])
-    tree.links.new(cutout.outputs[0], surface.inputs['Alpha'])
+    tree.links.new(texture.outputs['Alpha'], surface.inputs['Alpha'])
 
     def place_logo(name, group, x, y, z, size, side):
         half_width = size / 2
@@ -119,3 +117,4 @@ def build_branding(emit, source_image):
     for side, label in [(1, 'R'), (-1, 'L')]:
         place_logo('Panel_logo_' + label, 'BRANDING', side * 2.015, 0, 1.52, 1.26, side)
     place_logo('Touchscreen_splash', 'TECHNICAL_EQUIPMENT', 2.532, CABINET_Y, SCREEN_CENTER_Z, .28, 1)
+    return decal

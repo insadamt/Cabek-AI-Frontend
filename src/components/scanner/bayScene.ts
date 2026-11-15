@@ -3,13 +3,11 @@
  * Depends on Three.js, the Blender tunnel and automotive reflection cards; owns GPU stage resources.
  */
 import * as THREE from 'three';
+import { createBayCaptureSweep } from './bayCaptureSweep';
+import type { CapturePresentationFrame } from './bayCaptureLight';
 import { loadBayTunnel } from './bayTunnel';
 import type { BayChoreographyState } from './bayChoreography';
-import {
-  defaultBayVisualSettings,
-  normalizeBayVisualSettings,
-  type BayVisualSettings,
-} from './bayControls';
+import { defaultBayVisualSettings, type BayVisualSettings } from './bayControls';
 import { createBayStudioEnvironment } from './bayStudioEnvironment';
 
 export function createBayScene(canvas: HTMLCanvasElement) {
@@ -20,6 +18,9 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     powerPreference: 'high-performance',
   });
   const scene = new THREE.Scene();
+  const sweep = createBayCaptureSweep();
+  scene.add(sweep.root);
+  const drawingSize = new THREE.Vector2();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 120);
   let bay: Awaited<ReturnType<typeof loadBayTunnel>> | undefined;
   let settings: BayVisualSettings = defaultBayVisualSettings;
@@ -72,6 +73,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     scene.environment = reflectionMap.texture;
     scene.environmentIntensity = 1.05;
   } catch (error) {
+    sweep.dispose();
     reflectionMap?.dispose();
     key.shadow.dispose();
     renderer.dispose();
@@ -82,10 +84,19 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     const bounds = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(bounds.width));
     const height = Math.max(1, Math.round(bounds.height));
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, width < 650 ? 1.35 : 1.75));
-    renderer.setSize(width, height, false);
+    // Supersample fine silhouettes on 1× monitors while bounding fill cost on large displays.
+    const ratio = Math.min(
+      Math.max(1.4, window.devicePixelRatio || 1),
+      2.5,
+      Math.sqrt(5_000_000 / (width * height)),
+    );
+    renderer.getSize(drawingSize);
+    if (drawingSize.x === width && drawingSize.y === height && renderer.getPixelRatio() === ratio)
+      return false;
+    renderer.setDrawingBufferSize(width, height, ratio);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    return true;
   }
 
   return {
@@ -93,7 +104,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     camera,
     resize,
     async loadTunnel(signal: AbortSignal) {
-      const loaded = await loadBayTunnel(signal);
+      const loaded = await loadBayTunnel(signal, renderer.capabilities.getMaxAnisotropy());
       if (disposed || signal.aborted) {
         loaded.dispose();
         return;
@@ -116,19 +127,18 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     },
     setVisualSettings(next: BayVisualSettings) {
       if (disposed) return;
-      settings = normalizeBayVisualSettings(next);
+      if (
+        settings.sensorsVisible !== next.sensorsVisible ||
+        settings.canopyVisible !== next.canopyVisible
+      )
+        lastProgress = Number.NaN;
+      settings = next;
       bay?.applySettings(settings);
-      lastProgress = Number.NaN;
     },
-    render(
-      state: BayChoreographyState,
-      exterior: { color: string; brightness: number; standby: boolean },
-    ) {
+    render(state: BayChoreographyState, exterior: CapturePresentationFrame) {
       if (disposed) return;
-      bay?.setExteriorLight(
-        exterior.standby ? (settings.exteriorColor ?? exterior.color) : exterior.color,
-        exterior.brightness * (settings.exteriorBrightness ?? 1),
-      );
+      sweep.update(exterior);
+      bay?.setExteriorLight(exterior.color, exterior.brightness);
       key.intensity = 2.6 - state.focus * 0.2 + state.sensorEmphasis * 0.2;
       rim.intensity = 1.35 - state.focus * 0.15 + state.sensorEmphasis * 0.2;
       if (lastProgress !== state.entryProgress) {
@@ -140,6 +150,7 @@ export function createBayScene(canvas: HTMLCanvasElement) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      sweep.dispose();
       bay?.dispose();
       scene.environment = null;
       reflectionMap?.dispose();

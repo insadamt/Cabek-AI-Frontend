@@ -1,14 +1,21 @@
 /** Bind the authoritative Blender hierarchy to visibility and lighting controls.
  * Depends on studio-v3 node names, light_group extras and shared glTF resource ownership.
  */
-import { Color, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import {
+  Color,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  type ColorRepresentation,
+  type Object3D,
+} from 'three';
 import { loadBayModel } from './bayModelLoader';
 import { createResourceOwner } from './bayModelResources';
 import type { BayVisualSettings } from './bayControls';
 
 export const tunnelModelUrl = '/models/studio-v3/cabek-tunnel.glb';
 
-export function bindBayTunnel(root: Group) {
+export function bindBayTunnel(root: Group, maxAnisotropy = 1) {
   const resources = createResourceOwner();
   resources.capture(root);
   const canopyMounts: Object3D[] = [];
@@ -28,6 +35,20 @@ export function bindBayTunnel(root: Group) {
       if (object instanceof Mesh) {
         object.castShadow = object.name !== 'Studio_slab';
         object.receiveShadow = true;
+        for (const material of Array.isArray(object.material)
+          ? object.material
+          : [object.material]) {
+          if (
+            material instanceof MeshStandardMaterial &&
+            material.name === 'CABEK_AI_artwork' &&
+            material.map
+          ) {
+            // Trilinear mipmaps average the fine rings. Anisotropy preserves them at grazing angles.
+            material.map.anisotropy = Math.min(8, maxAnisotropy);
+            material.depthWrite = false;
+            object.castShadow = false;
+          }
+        }
       }
       const group = object.userData.light_group;
       if (typeof group !== 'string') return;
@@ -57,7 +78,7 @@ export function bindBayTunnel(root: Group) {
         for (const [material, intensity] of authoredWhite)
           material.emissiveIntensity = intensity * settings.illumination;
       },
-      setExteriorLight(color: string, brightness: number) {
+      setExteriorLight(color: ColorRepresentation, brightness: number) {
         tint.set(color);
         for (const material of rgb) {
           material.emissive.copy(tint);
@@ -77,9 +98,9 @@ export function bindBayTunnel(root: Group) {
   }
 }
 
-export async function loadBayTunnel(signal: AbortSignal) {
+export async function loadBayTunnel(signal: AbortSignal, maxAnisotropy: number) {
   const gltf = await loadBayModel(tunnelModelUrl, signal);
-  const tunnel = bindBayTunnel(gltf.scene);
+  const tunnel = bindBayTunnel(gltf.scene, maxAnisotropy);
   if (signal.aborted) {
     tunnel.dispose();
     signal.throwIfAborted();
