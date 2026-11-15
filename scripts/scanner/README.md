@@ -28,18 +28,18 @@ Blender uses metres and Z up, with the entrance on the negative Y end. glTF uses
 | ROOF | Folded angular canopy sections and inner reflectors |
 | FLOOR | A seamless studio slab representing the continuous workshop floor |
 | INSPECTION_LIGHTS | A/B fixture banks at each module, with split vertical bars, shoulder bars and split overhead bars |
-| RGB_LIGHTS | Single exterior analog zone and its carrier |
+| RGB_LIGHTS | Four short diffusers with local housings, wired as one exterior analog zone |
 | CAMERAS | Individually named bullet camera assemblies and articulated brackets |
-| TECHNICAL_EQUIPMENT | Open slotted service rack, shelf equipment and signal looms |
-| BRANDING | Concentric C strokes and editable CABEK IA lettering |
+| TECHNICAL_EQUIPMENT | Closed entrance cabinet with the original rack-style uprights, crossmembers and staggered slotted end panels around a horizontally centered, outward-facing touchscreen |
+| BRANDING | Two outward-facing decals using the supplied CABEK AI artwork |
 
-Preserve the `light_group` custom property on the diffusers. All twelve `Inspection_01_A_vertical` through `Inspection_03_B_crown` meshes use `inspection.white`. The `Exterior_RGB_diffusers` mesh uses `exterior.rgb`. Canopy-mounted luminaires and channels have `canopy_mount=true`, so the roof switch hides them together. Review cameras and area lights sit outside the exported root.
+Preserve the `light_group` custom property on the diffusers. All twelve `Inspection_01_A_vertical` through `Inspection_03_B_crown` meshes use `inspection.white`. The four `Exterior_RGB_Logo_L/R` and `Exterior_RGB_Entrance_L/R` diffusers share the `Exterior_RGB` material and the `exterior.rgb` light group. Canopy-mounted luminaires and channels have `canopy_mount=true`, so the roof switch hides them together. Review cameras and area lights sit outside the exported root.
 
-The shared loader fetches both GLBs with cancellation and the local Draco decoder. The retained runtime waits for both, compiles their shaders, then reports the first rendered frame. A failed load follows the existing retry path. Materials use constant PBR values, geometric lettering, UVs and bevel normals. Fixed parts are batched by assembly. The export has 55 meshes, 61,430 triangles, 17 materials and no external textures. The scanner uses the existing reflection environment and one shadow-casting light.
+The shared loader fetches both GLBs with cancellation and the local Draco decoder. The retained runtime waits for both, compiles their shaders, then reports the first rendered frame. A failed load follows the existing retry path. The side decals and touchscreen splash share one packed logo texture. Fixed parts are batched by assembly. The export has 57 meshes, 59,878 triangles, 16 materials and no external textures. The scanner uses the existing reflection environment and one shadow-casting light.
 
 ## Capture and lighting
 
-The visual settings control inspection brightness, standby RGB tint, RGB brightness, roof visibility and camera visibility. They change the loaded scene without hardware traffic. The exterior strip uses one material across its full length.
+The visual settings control inspection brightness, standby RGB tint, RGB brightness, roof visibility and camera visibility. They change the loaded scene without hardware traffic. One RGB command changes all four exterior fixtures together.
 
 | Confirmed capture state | Exterior visualization |
 | --- | --- |
@@ -56,9 +56,9 @@ Manual hardware tests on the settings page already use the trusted CABEK AI sett
 
 The study used all five workshop images: side elevation (20261109_123912), occupied entrance (20261109_135408), panel lettering (20261113_141110), open rack (20261114_164614) and empty inspection lane (IMG-20261107-WA0000). The originals remain outside the repository.
 
-Scale is estimated from the vehicle and the openings. Module centres are spaced 2.52 m apart, their sheet sections are 1.38 m deep, and the nominal crown height is 2.85 m. The photographed floor runs through the installation. Its workshop color bands, background, loose cables, ladder and temporary desk are omitted from the studio. The painted sign reads **CABEK IA** in the photographs. The lettering and finish are approximations.
+Scale is estimated from the vehicle and the openings. Module centres are spaced 2.52 m apart, their sheet sections are 1.38 m deep, and the nominal crown height is 2.85 m. The photographed floor runs through the installation. Its workshop color bands, background, loose cables, ladder and temporary desk are omitted from the studio. The finished cabinet and the supplied **CABEK AI** logo follow the updated design. Keep `cabek-ai-logo.png` beside the editable scene when rebuilding it from Python.
 
-The four clearest bilateral low-camera positions inform eight simplified camera assemblies. Exact lens angles, opposite-side symmetry, hidden cameras and cable destinations need installation confirmation. No overhead cameras were added. The exterior strip follows the upper side carriers as a provisional route. Cabinet electronics, fastener sizes, panel gauges and caster diameters are estimates. Adjust the saved assemblies when measured dimensions become available.
+The four clearest bilateral low-camera positions inform eight simplified camera assemblies. Exact lens angles, opposite-side symmetry, hidden cameras and cable destinations need installation confirmation. No overhead cameras were added. The reference informed two estimated RGB lengths. The bars above the side logos run 0.90 m horizontally. Each entrance post carries a 1.32 m vertical bar. The screen center is 1.365 m above the floor. Touchscreen dimensions, fastener sizes, panel gauges and caster diameters are estimates. Adjust the saved assemblies when measured dimensions become available.
 
 Both shipped GLBs were decoded together in Blender. The grounded sedan measures approximately 2.03 m wide, 4.80 m long and 1.44 m tall. A conservative swept body box along the 7.2 m entrance path clears the side equipment by at least 0.70 m and the overhead fixtures by 1.22 m. These are model clearances.
 

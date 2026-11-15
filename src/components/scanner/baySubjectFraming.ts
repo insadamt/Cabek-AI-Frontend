@@ -35,9 +35,9 @@ export function fitBayCameraToSubject(
     }
   }
 
-  // Include the side rack and complete approach car so neither gets cropped by the closer framing.
+  // Include the entrance cabinet and complete approach car so neither gets cropped by the closer framing.
   includeBounds([-2.09, 0, -3.22], [2.09, 2.86, 3.22]);
-  includeBounds([2.06, 0.14, -3.2], [2.55, 2.31, -1.85]);
+  includeBounds([2.01, 0, 1.85], [2.54, 2.30, 3.19]);
   includeBounds([-1.1, 0, carDepth - 2.4], [1.1, 1.7, carDepth + 2.4]);
   function minimumDistanceForAxis(axis: 0 | 1, halfSpan: number) {
     let upper = -Infinity;

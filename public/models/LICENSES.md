@@ -23,8 +23,8 @@ details are recorded in [`vehicle-manifest.json`](studio-v2/vehicle-manifest.jso
 ## CABEK inspection tunnel
 
 The active tunnel is an original Blender model of the photographed installation.
-The CABEK panel lettering is reproduced as geometry. The runtime model uses
-embedded materials. The source, export instructions and reference assumptions
+The side panels and touchscreen use the supplied CABEK AI logo. Its PNG is
+packed into the editable scene and embedded in the runtime model. The source, export instructions and reference assumptions
 are in the [studio v3 guide](../../scripts/scanner/README.md).
 
 The editable v2 Blender studio packs `studiolights/world/studio.exr` from Blender

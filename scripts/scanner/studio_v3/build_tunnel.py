@@ -38,14 +38,12 @@ def make_palette():
         'cap': ('Camera_and_endcap_polymer','EAEBE9',.02,.36),
         'white': ('Inspection_Opal','F3F6FA',.02,.29,2.5),
         'rgb': ('Exterior_RGB','FFFFFF',.0,.32,.8),
-        'lead': ('Signal_blue','7198A4',.03,.55),
-        'vinyl': ('Ivory_sign_vinyl','ECEBED',.04,.43),
-        'green': ('CABEK_IA_green','70C440',.03,.40),
+        'display': ('Touchscreen_LCD','172D38',.13,.24,.30),
         'slab': ('Neutral_studio_concrete','D4D5D3',.04,.66),
     }
     materials = {k:material(*spec) for k,spec in palette.items()}
     for key, surface in materials.items():
-        surface.use_backface_culling = key != 'vinyl'
+        surface.use_backface_culling = True
         shader = next(n for n in surface.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
         shader.inputs['Coat Roughness'].default_value = .03
         if key == 'white':
@@ -63,7 +61,7 @@ def setup_review(scene):
         obj.location=position
         obj.rotation_euler=(Vector(target)-obj.location).to_track_quat('-Z','Y').to_euler()
         return obj
-    for name,pos,power,size in [('Key',(-4,-5,7),920,5),('Rack fill',(5,1,5),780,4),
+    for name,pos,power,size in [('Key',(-4,-5,7),920,5),('Cabinet fill',(5,1,5),780,4),
                                 ('Roof softbox',(0,3,7),680,5)]:
         lamp=bpy.data.lights.new(name,'AREA')
         lamp.energy=power
@@ -73,7 +71,7 @@ def setup_review(scene):
     for name,pos,target,lens in [
         ('Review_Exterior',(8.8,-9.8,4.65),(0,.25,1.33),48),
         ('Review_Inspection',(.24,-8.0,1.48),(0,.1,1.30),35),
-        ('Review_Service',(5.9,5.2,2.85),(1.9,1.78,1.35),45)]:
+        ('Review_Service',(6.7,-4.85,2.45),(2.19,-1.90,1.22),44)]:
         lens_data=bpy.data.cameras.new(name)
         lens_data.lens=lens
         camera=positioned(name,lens_data,pos,target)
@@ -123,7 +121,7 @@ def build():
     build_lights(emit,m)
     build_cameras(emit,m)
     build_cabinet(emit,m)
-    build_branding(emit,groups,m)
+    build_branding(emit, SOURCE/'cabek-ai-logo.png')
     floor=Assembly()
     floor.box((0,0,-.014),(100,100,.026),m['slab'])
     emit(floor,'FLOOR','Studio_slab',0)

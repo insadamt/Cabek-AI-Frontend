@@ -59,7 +59,6 @@ def build_modules(emit, m):
 
 
 def build_lights(emit, m):
-    exterior, channel = Assembly(), Assembly()
     for i,y in enumerate(STATIONS,1):
         for edge,offset in [('A',-.615),('B',.615)]:
             yy = y+offset
@@ -89,12 +88,26 @@ def build_lights(emit, m):
                 obj['canopy_mount']=True
                 if part is white:
                     obj['light_group']='inspection.white'
-    # The unlit exterior carrier is indistinct in the references. Keep its single zone replaceable.
-    for side in (-1,1):
-        channel.box((side*2.066,0,2.324),(.018,6.40,.025),m['gasket'])
-        exterior.box((side*2.078,0,2.324),(.009,6.37,.013),m['rgb'])
+    build_exterior_lights(emit, m)
+
+
+def build_exterior_lights(emit, m):
+    channel = Assembly()
+    entry_face = STATIONS[0] - HALF_SLEEVE - .003
+    for side, label in [(-1, 'L'), (1, 'R')]:
+        logo_y = STATIONS[1]
+        channel.box((side*2.066, logo_y, 2.32), (.016, .936, .038), m['gasket'])
+        channel.box((side*2.005, entry_face-.007, 1.27), (.038, .016, 1.356), m['gasket'])
+
+        # Each fixture has its own mount; all four diffusers share the analog strip's RGB material.
+        above_logo = Assembly()
+        above_logo.box((side*2.077, logo_y, 2.32), (.008, .90, .025), m['rgb'])
+        entrance = Assembly()
+        entrance.box((side*2.005, entry_face-.018, 1.27), (.025, .008, 1.32), m['rgb'])
+        for position, diffuser in [('Logo', above_logo), ('Entrance', entrance)]:
+            obj = emit(diffuser, 'RGB_LIGHTS', f'Exterior_RGB_{position}_{label}', .002)
+            obj['light_group'] = 'exterior.rgb'
     emit(channel,'RGB_LIGHTS','RGB_aluminium_channels',.002)
-    emit(exterior,'RGB_LIGHTS','Exterior_RGB_diffusers',.002)['light_group']='exterior.rgb'
 
 
 def build_cameras(emit, m):
