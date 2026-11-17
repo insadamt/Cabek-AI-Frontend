@@ -61,6 +61,34 @@ describe('persistent island branding', () => {
 });
 
 describe('capture island visibility', () => {
+  it('keeps an empty imported capture idle instead of announcing AI at zero photos', () => {
+    const response = getPreviewResult(previewDossiers[0].dossier_id);
+    state.location = '/?parcours=forfait-expertise&scene=1';
+    state.capture = {
+      identity: { type: 'forfait_expertise', dossierId: response.dossier_id, creationKey: 'idle' },
+      synchronized: true,
+      pending: false,
+      error: '',
+      response: { ...response, type: 'forfait_expertise', status: 'not_analyzed', photos: [] },
+      capture: {
+        dossier_id: response.dossier_id,
+        phase: null,
+        capture_id: null,
+        status: 'completed',
+        expected_count: 4,
+        saved_count: 0,
+        photos: [],
+        error_code: null,
+        analysis_error: null,
+      },
+    };
+    const markup = renderToStaticMarkup(<AnalysisIsland />);
+    expect(markup).toContain('data-phase="idle"');
+    expect(markup).not.toContain('capture-island-activity');
+    expect(markup).not.toContain('Analyse IA en cours');
+    expect(markup).not.toContain('0/4');
+  });
+
   function restore() {
     state.capture = {
       identity: { type: 'chiffrage_rapide', creationKey: 'recovery', dossierId: 'SAVED' },

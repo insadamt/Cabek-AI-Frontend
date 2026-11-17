@@ -4,7 +4,7 @@
  */
 import * as api from './api';
 import { validDate } from './workflows';
-import { canCaptureExpertise } from './expertiseCapture';
+import { canCaptureExpertise, expertiseCaptureNeedsRestart } from './expertiseCapture';
 import type { CaptureIdentity, CaptureSession, MetadataPatch } from '../captureTypes';
 import type { DossierResponse } from '../types';
 import type { CreatableDossierType, DossierType, PhotoPhase } from '../workflowTypes';
@@ -76,6 +76,7 @@ export function captureLabel(session: CaptureSession) {
     return session.identity.dossierId ? 'Connexion au tunnel…' : 'Création du brouillon…';
   if (session.error) return 'Reconnexion nécessaire';
   if (!session.synchronized) return 'Restauration du dossier…';
+  if (expertiseCaptureNeedsRestart(session)) return 'Prêt à scanner';
   if (session.capture?.status === 'failed')
     return session.identity.type === 'forfait_expertise'
       ? 'Capture échouée · Recommencez le scan'
@@ -186,6 +187,14 @@ export function createTunnelCaptureStore(
     session = {
       ...session,
       captureChangedAt,
+      analysisCompletedAt:
+        update.response?.status === 'completed' &&
+        session.response &&
+        session.response.status !== 'completed'
+          ? Date.now()
+          : update.response && update.response.status !== 'completed'
+            ? undefined
+            : session.analysisCompletedAt,
       ...update,
       receivedAt,
       startedAt: newAnalysis ? receivedAt : session.startedAt,

@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/fonts.css';
 import App from './App';
+import { installBrowserLogging } from './lib/browserLogs';
 import './styles/base.css';
 import './styles/status.css';
 import './styles/brand.css';
@@ -40,6 +41,8 @@ import './styles/interaction-polish.css';
 import './styles/workspace-polish.css';
 import './styles/dossier-design.css';
 import './styles/collection-filters.css';
+
+installBrowserLogging();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

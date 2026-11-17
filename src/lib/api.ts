@@ -1,5 +1,6 @@
 /** Shared CABEK Global transport and preview adapters; components never contact AutoEstimate directly. */
 import axios from 'axios';
+import { recordBrowserLog } from './browserLogs';
 import type { CaptureStatus, MetadataPatch } from '../captureTypes';
 import type { CreatableDossierType, PhotoPhase } from '../workflowTypes';
 import type {
@@ -160,6 +161,10 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   } catch (error) {
     if (axios.isCancel(error)) throw error;
     if (axios.isAxiosError(error)) {
+      recordBrowserLog('api.http', error.response?.data?.error?.code ?? 'Connexion API interrompue', {
+        code: String(error.response?.status ?? 'network_error'),
+        request_id: error.response?.headers?.['x-request-id'],
+      });
       if (!error.response)
         throw new Error(
           'Connexion au service interrompue. Vérifiez votre connexion ou réessayez dans un instant.',

@@ -96,6 +96,22 @@ afterEach(() => {
 });
 
 describe('persistent tunnel lifecycle', () => {
+  it('starts the success hold at AI completion and keeps its timestamp stable across polls', async () => {
+    const { service, store } = setup();
+    await store.start('chiffrage_rapide');
+    service.readCapture.mockResolvedValue(capture({ capture_id: 'CAP-1', status: 'completed' }));
+    service.readDossier.mockResolvedValue(detail({ status: 'processing', vehicle }));
+    await store.refresh();
+    expect(store.getSnapshot()?.analysisCompletedAt).toBeUndefined();
+    service.readDossier.mockResolvedValue(detail({ status: 'completed', vehicle }));
+    vi.setSystemTime(75_000);
+    await store.refresh();
+    expect(store.getSnapshot()?.analysisCompletedAt).toBe(75_000);
+    vi.setSystemTime(80_000);
+    await store.refresh();
+    expect(store.getSnapshot()?.analysisCompletedAt).toBe(75_000);
+  });
+
   it('dates the first witnessed completion once and keeps restored successes neutral', async () => {
     const { service, store } = setup();
     const active = capture({ capture_id: 'CAP-1', status: 'capturing' });

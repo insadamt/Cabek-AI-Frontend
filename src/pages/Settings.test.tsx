@@ -9,6 +9,12 @@ it('renders settings and light controls without issuing hardware requests', () =
   vi.stubGlobal('fetch', fetcher);
   const markup = renderToStaticMarkup(<Settings />);
   expect(markup).toContain('Paramètres');
+  expect(markup).toContain('Mode lent');
+  expect(markup).toContain('role="switch"');
+  expect(markup).toContain('Diagnostics');
+  expect(markup).toContain('Tout tester');
+  expect(markup).toContain('Journaux et erreurs');
+  expect(markup).toContain('Capture et analyse IA réelles');
   expect(markup).toContain('Éclairage du tunnel');
   expect(markup).toContain('Éteindre');
   expect(markup).toContain('color_cycle');

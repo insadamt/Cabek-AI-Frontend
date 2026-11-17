@@ -1,6 +1,6 @@
 /**
- * Prepares fresh visits while restoring Back/internal returns immediately without a loading screen or entrance.
- * Depends on stagePreparation, stageVisit, CSS completion and reduced motion; guards late async work.
+ * Coordinates stage entrance while allowing startup-prepared routes to open immediately.
+ * Depends on application startup readiness, stagePreparation, stageVisit and reduced motion.
  */
 import { useEffect, useState, type AnimationEvent } from 'react';
 import { observeReducedMotion, prefersReducedMotion } from '../lib/motion';
@@ -10,10 +10,10 @@ import { rememberStageVisit, shouldRestoreStageVisit } from '../lib/stageVisit';
 export type StageEntrancePhase = 'preparing' | 'entering' | 'ready';
 export type StageSceneStatus = 'loading' | 'ready' | 'failed';
 
-export function useStageEntrance() {
+export function useStageEntrance(assetsPrepared = false) {
   const [restoreSettledView] = useState(shouldRestoreStageVisit);
   const [phase, setPhase] = useState<StageEntrancePhase>(
-    restoreSettledView ? 'ready' : 'preparing',
+    assetsPrepared || restoreSettledView ? 'ready' : 'preparing',
   );
   const [sceneStatus, setSceneStatus] = useState<StageSceneStatus>('loading');
   const [identityReady, setIdentityReady] = useState(false);
@@ -27,7 +27,7 @@ export function useStageEntrance() {
     //
     // Return navigation must not flash the preparation page while the parked scene reloads in the background.
     //
-    if (restoreSettledView) return;
+    if (assetsPrepared || restoreSettledView) return;
     let cancelled = false;
     void prepareStageIdentity().then(() => {
       if (!cancelled) setIdentityReady(true);
@@ -35,7 +35,7 @@ export function useStageEntrance() {
     return () => {
       cancelled = true;
     };
-  }, [restoreSettledView]);
+  }, [assetsPrepared, restoreSettledView]);
 
   useEffect(() => {
     if (!identityReady || sceneStatus === 'loading') return;

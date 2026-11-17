@@ -8,6 +8,7 @@ import type { BayVisualSettings } from './bayControls';
 export interface BayCaptureLight {
   status: CaptureStatus['status'];
   changedAt?: number;
+  sweeping?: boolean;
 }
 
 export const standbyLight: BayCaptureLight = { status: 'not_started' };
@@ -51,7 +52,7 @@ export function createCapturePresentation() {
     const cue = sampleCaptureLight(light, now);
     const style = cue.standby ? (settings.exteriorColor ?? cue.color) : cue.color;
     const intensity = settings.exteriorBrightness ?? 1;
-    const capturing = light.status === 'capturing';
+    const capturing = light.status === 'capturing' && light.sweeping !== false;
     if (style !== targetStyle || intensity !== targetBrightness) {
       // Restart from the displayed mix so an interrupted fade never flashes its previous endpoint.
       start.copy(color);

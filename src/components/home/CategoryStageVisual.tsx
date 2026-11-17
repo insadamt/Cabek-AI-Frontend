@@ -65,6 +65,8 @@ interface CategoryStageVisualProps {
   onStatusChange: (status: StageSceneStatus) => void;
   captureStatus?: CaptureStatus['status'];
   captureChangedAt?: number;
+  lightStatus?: CaptureStatus['status'];
+  lightChangedAt?: number;
   finishing?: boolean;
   onParked?: (parked: boolean) => void;
 }
@@ -79,6 +81,8 @@ export function CategoryStageVisual({
   onStatusChange,
   captureStatus = 'not_started',
   captureChangedAt,
+  lightStatus = captureStatus,
+  lightChangedAt = captureChangedAt,
   finishing = false,
   onParked,
 }: CategoryStageVisualProps) {
@@ -152,8 +156,15 @@ export function CategoryStageVisual({
   }, [cameraInteractive, attempt]);
 
   useEffect(() => {
-    connectionRef.current?.setCaptureLight({ status: captureStatus, changedAt: captureChangedAt });
-  }, [captureStatus, captureChangedAt, attempt]);
+    //
+    // AI can retain the busy light after photo capture; only photo capture moves the scan frame.
+    //
+    connectionRef.current?.setCaptureLight({
+      status: lightStatus,
+      changedAt: lightChangedAt,
+      sweeping: capturing && !waitingOutside && !entering,
+    });
+  }, [lightStatus, lightChangedAt, capturing, waitingOutside, entering, attempt]);
   useEffect(() => {
     connectionRef.current?.setVisualSettings(visualSettings);
   }, [visualSettings, attempt]);

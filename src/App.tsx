@@ -2,6 +2,7 @@
  * Routes category/dossier screens while retaining one cached studio across navigation.
  * Depends on navigation, route motion and BayRuntimeCacheProvider; page frames remain route-owned.
  */
+import { ApplicationStartup } from './components/ApplicationStartup';
 import { Settings } from './pages/Settings';
 import { Categories } from './pages/Categories';
 import { CreateDossier } from './pages/CreateDossier';
@@ -16,11 +17,15 @@ import { useRouteMotion } from './hooks/useRouteMotion';
 import { ScannerPreview } from './pages/ScannerPreview';
 import { BayRuntimeCacheProvider } from './components/home/BayRuntimeCacheProvider';
 import { TunnelCaptureProvider } from './hooks/useTunnelCapture';
+import { recordBrowserLog } from './lib/browserLogs';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  componentDidCatch(error: Error) {
+    recordBrowserLog('react.boundary', error.message);
   }
   render() {
     if (this.state.failed)
@@ -32,6 +37,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
             onRetry={() => window.location.reload()}
             actionLabel="Recharger l’application"
           />
+          <a href="/settings">Ouvrir les diagnostics</a>
         </div>
       );
     return this.props.children;
@@ -53,36 +59,41 @@ export default function App() {
     <ErrorBoundary>
       <TunnelCaptureProvider>
         <BayRuntimeCacheProvider>
-          <div ref={routeRef} className="route-viewport">
-            {pathname === '/settings' ? (
-              <HomeFrame>
-                <Settings />
-              </HomeFrame>
-            ) : pathname === '/' ? (
-              <Categories />
-            ) : pathname === '/preview/expertise' ? (
-              <ScannerPreview />
-            ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
-              <CreateDossier key={workflowRoute.category.type} type={workflowRoute.category.type} />
-            ) : workflowRoute ? (
-              <Home key={workflowRoute.category.type} category={workflowRoute.category} />
-            ) : dossierId ? (
-              <HomeFrame variant="dossier">
-                <Dossier key={dossierId} dossierId={dossierId} />
-              </HomeFrame>
-            ) : (
-              <HomeFrame>
-                <div className="home-state">
-                  <EmptyState
-                    title="Cette page est introuvable"
-                    description="Retrouvez vos expertises depuis l’accueil."
-                    onRetry={() => navigate('/')}
-                    actionLabel="Retour à l’accueil"
-                  />
-                </div>
-              </HomeFrame>
-            )}
-          </div>
+          <ApplicationStartup>
+            <div ref={routeRef} className="route-viewport">
+              {pathname === '/settings' ? (
+                <HomeFrame>
+                  <Settings />
+                </HomeFrame>
+              ) : pathname === '/' ? (
+                <Categories />
+              ) : pathname === '/preview/expertise' ? (
+                <ScannerPreview />
+              ) : workflowRoute?.creating && workflowRoute.category.type !== 'forfait_expertise' ? (
+                <CreateDossier
+                  key={workflowRoute.category.type}
+                  type={workflowRoute.category.type}
+                />
+              ) : workflowRoute ? (
+                <Home key={workflowRoute.category.type} category={workflowRoute.category} />
+              ) : dossierId ? (
+                <HomeFrame variant="dossier">
+                  <Dossier key={dossierId} dossierId={dossierId} />
+                </HomeFrame>
+              ) : (
+                <HomeFrame>
+                  <div className="home-state">
+                    <EmptyState
+                      title="Cette page est introuvable"
+                      description="Retrouvez vos expertises depuis l’accueil."
+                      onRetry={() => navigate('/')}
+                      actionLabel="Retour à l’accueil"
+                    />
+                  </div>
+                </HomeFrame>
+              )}
+            </div>
+          </ApplicationStartup>
         </BayRuntimeCacheProvider>
       </TunnelCaptureProvider>
     </ErrorBoundary>

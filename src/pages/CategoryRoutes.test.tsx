@@ -1,10 +1,15 @@
 /**
- * Verifies the preparation screen, hidden unfinished controls and stable workflow destinations.
+ * Verifies immediately usable capture routes after startup and stable workflow destinations.
  * Depends on server-rendered React markup, the real scene host and mocked navigation/data services.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
+
+// Route assertions start after the separately tested application preparation gate.
+vi.mock('../components/ApplicationStartup', () => ({
+  ApplicationStartup: ({ children }: { children: import('react').ReactNode }) => <>{children}</>,
+}));
 
 const route = vi.hoisted(() => ({ pathname: '/', search: '', restoring: false }));
 vi.mock('../lib/stageVisit', () => ({
@@ -71,8 +76,10 @@ describe('category-first application routes', () => {
       expect(markup).toContain('FICHE VÉHICULE');
       expect(markup).not.toMatch(/>SCANNER<\/span>/);
       expect(markup.match(/class="scanning-bay-canvas-host"/g)).toHaveLength(1);
-      expect(markup).toContain('data-entrance-phase="preparing"');
-      expect(markup).toContain('class="stage-loading-screen"');
+      expect(markup).toContain('data-entrance-phase="ready"');
+      expect(markup).not.toContain('stage-loading-screen');
+      expect(markup).toContain('<div class="category-stage-content">');
+      expect(markup).toContain('<div class="capture-controls" data-analysis-active="false">');
       expect(markup).not.toContain('data-category-folder=');
     },
   );
@@ -93,6 +100,8 @@ describe('category-first application routes', () => {
     expect(markup).not.toContain('FICHE VÉHICULE');
     expect(markup).not.toContain('Nouveau dossier');
     expect(markup).not.toContain('category-folder-grid');
+    expect(markup).toContain('data-entrance-phase="ready"');
+    expect(markup).not.toContain('stage-loading-screen');
   });
   it('keeps the existing preview URL available with the new selector', () => {
     expect(render('/preview/expertise')).toContain('category-stage');
@@ -101,7 +110,10 @@ describe('category-first application routes', () => {
     'opens the %s collection and creation screens directly',
     (slug) => {
       expect(render(`/categories/${slug}`)).toContain('Nouveau dossier');
-      expect(render(`/categories/${slug}/new`)).toContain('class="tunnel-stage"');
+      const creation = render(`/categories/${slug}/new`);
+      expect(creation).toContain('class="tunnel-stage"');
+      expect(creation).toContain('data-entrance-phase="ready"');
+      expect(creation).not.toContain('stage-loading-screen');
     },
   );
   it('keeps expertise externally created and rejects its creation route', () => {

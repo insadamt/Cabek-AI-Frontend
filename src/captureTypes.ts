@@ -11,6 +11,7 @@ export interface CaptureStatus {
   saved_count: number;
   photos: (OriginalPhoto & { status: 'saved' })[];
   error_code: string | null;
+  slow_mode?: boolean;
   analysis_error: string | null;
 }
 
@@ -22,8 +23,18 @@ export type MetadataPatch = Partial<
 >;
 
 export type CaptureIdentity =
-  | { type: 'forfait_expertise'; dossierId: string; phase?: never; creationKey: string }
-  | { type: CreatableDossierType; dossierId?: string; phase?: PhotoPhase; creationKey: string };
+  | {
+      type: 'forfait_expertise';
+      dossierId: string;
+      phase?: never;
+      creationKey: string;
+    }
+  | {
+      type: CreatableDossierType;
+      dossierId?: string;
+      phase?: PhotoPhase;
+      creationKey: string;
+    };
 
 export interface CaptureSession {
   identity: CaptureIdentity;
@@ -31,6 +42,7 @@ export interface CaptureSession {
   capture?: CaptureStatus;
   /** Wall time of a witnessed backend status change, stable across polls and route visits. */
   captureChangedAt?: number;
+  analysisCompletedAt?: number;
   synchronized: boolean;
   pending: boolean;
   saving?: boolean;

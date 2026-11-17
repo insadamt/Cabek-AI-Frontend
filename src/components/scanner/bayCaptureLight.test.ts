@@ -59,3 +59,12 @@ it('keeps the sweep phase through duplicate polls and fades away at its last end
   expect(steady.animate).toBe(false);
   sweep.dispose();
 });
+
+it('fades out the scan frame after photo capture while AI keeps the busy light red', () => {
+  const present = createCapturePresentation();
+  present({ status: 'capturing' }, 0, 1, false, settings);
+  const frame = present({ status: 'capturing', sweeping: false }, 1000, 1, false, settings);
+  expect(frame.color.getHexString()).toBe('ff0000');
+  expect(frame.sweepOpacity).toBe(0);
+  expect(frame.animate).toBe(false);
+});

@@ -1,6 +1,6 @@
 /**
  * Connects the retained studio, metadata-first capture controls and persisted-dossier finale.
- * Depends on useStageEntrance and the app capture store; only the scan action admits the waiting vehicle.
+ * Depends on application startup preparation and the app capture store; only the scan action admits the waiting vehicle.
  */
 import '../../styles/stage-entrance.css';
 import '../../styles/cinematic-capture.css';
@@ -8,7 +8,6 @@ import '../../styles/capture-preparation.css';
 import { useEffect, useRef, useState } from 'react';
 import { FolderOpen, LogOut, Plus } from 'lucide-react';
 import { CategoryStageVisual, type ScannerPlayback } from './CategoryStageVisual';
-import { StageLoadingScreen } from './StageLoadingScreen';
 import { CaptureMetadataDrawer } from './CaptureMetadataDrawer';
 import { AfterCapturePicker } from './AfterCapturePicker';
 import { ExpertiseDossierPicker } from './ExpertiseDossierPicker';
@@ -24,10 +23,13 @@ import { useNavigation } from '../../hooks/useNavigation';
 import { categoryPath, type Category } from '../../lib/workflows';
 import { captureLabel, captureReady, hasVehicleMetadata } from '../../lib/tunnelCapture';
 import { describeError, failureMessage, isPreview } from '../../lib/api';
+import { getCaptureLight } from '../../lib/captureLighting';
+import { expertiseCaptureNeedsRestart } from '../../lib/expertiseCapture';
 import { useCollectionNavigation } from '../../hooks/useCollectionNavigation';
 
 export function TunnelStage({ category, onBack }: { category: Category; onBack: () => void }) {
-  const entrance = useStageEntrance();
+  // ApplicationStartup prepares the retained studio before this route mounts.
+  const entrance = useStageEntrance(true);
   const { session, store } = useTunnelCapture(category.type);
   const expertise = category.type === 'forfait_expertise';
   const expertiseSelection = useExpertiseDossierSelection(expertise, store);
@@ -64,8 +66,8 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
   const phase =
     category.type === 'verification' ? (current?.identity.phase ?? 'before') : undefined;
   const capture = current?.capture;
-  const captureNeedsRestart =
-    expertise && capture?.status === 'completed' && current?.response?.photos.length === 0;
+  const light = getCaptureLight(current);
+  const captureNeedsRestart = expertiseCaptureNeedsRestart(current);
   // Keep saved identity visible while refresh temporarily blocks scan admission.
 
   const metadataSaved = expertise ? !!current?.response : hasVehicleMetadata(current?.response);
@@ -232,7 +234,6 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
       data-analysis-stage={analysisStage}
       onAnimationEnd={entrance.handleEntranceEnd}
     >
-      {entrance.phase !== 'ready' && <StageLoadingScreen />}
       <div
         className="category-stage-content"
         inert={!ready || finale}
@@ -248,7 +249,8 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
           onStatusChange={entrance.setSceneStatus}
           onParked={setParked}
           captureStatus={capture?.status}
-          captureChangedAt={current?.captureChangedAt}
+          lightStatus={light.status}
+          lightChangedAt={light.changedAt}
           finishing={finale || analysisStage}
         />
       </div>

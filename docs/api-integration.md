@@ -61,7 +61,8 @@ Suggested commits:
 
 CABEK AI sends direct `POST /api/lights/set` commands at startup, after application
 startup completes, and around captures. It sends red repeating pulses during
-capture, green `mission_complete` on success, then solid white ten seconds later.
+capture. Normal mode switches to green when photographs finish; Slow mode waits
+for validated AI completion. Green returns to white ten seconds later.
 A new capture cancels that countdown. Failure selects `warning`; shutdown sends
 bodyless `POST /api/lights/off`. A single background HTTP worker keeps lighting
 outages outside capture requests. The Blender twin uses confirmed capture status to display solid red, green on
@@ -92,3 +93,33 @@ Hardware settings require local access. Vite rejects LAN requests to the setting
 API before proxying, including encoded separators; the backend checks loopback
 clients too. Preserve that boundary in a production reverse proxy. Five clicks
 are a navigation shortcut, not an authentication mechanism.
+
+### Operating mode, diagnostics and local logs
+
+Settings now includes a backend-confirmed **Mode lent** switch. It defaults to OFF
+and applies to the next capture. Normal mode turns interior lights OFF and exterior
+green after photo delivery. Slow mode retains interior ON, exterior red and tunnel
+ownership through analysis, metadata waiting and pricing. Verification remains
+capture-driven. The 3D exterior cue uses the capture response's `slow_mode` snapshot.
+
+The diagnostics section reads cached status on entry; **Tout tester** runs only safe
+browser/backend checks. Individual checks cover browser assets/WebGL, API, storage,
+mock capture readiness, model dependencies, AutoEstimate and the lighting services.
+Device reachability, disabled services and untested physical output are distinguished.
+Manual sections separately offer exterior effects, Shelly status/ON/OFF, a real price
+lookup and capture/AI actions against an explicitly selected test dossier. Backend
+eligibility and tunnel ownership remain authoritative; a reserved tunnel rejects
+manual lighting changes.
+
+Logs record errors across the app, including before Settings opens. Browser history
+is capped at 1,000 entries / 1 MiB and survives reloads when localStorage works.
+Server logs rotate independently. The viewer filters by severity, component, text,
+time, dossier or AI run; worker logs require selecting a dossier. Refresh can pause,
+older server entries can load, and visible filtered events plus the latest diagnostic
+snapshot can be copied/exported. Browser history remains available when the API is
+offline. Sensitive credentials are redacted, and raw request bodies are never logged.
+
+The local-only maintenance routes are `/api/settings/operation`,
+`/api/settings/diagnostics`, `/api/settings/diagnostics/run`,
+`/api/settings/diagnostics/pricing`, and `/api/settings/logs`. Existing interior and
+exterior maintenance endpoints are reused. The browser never calls device URLs.

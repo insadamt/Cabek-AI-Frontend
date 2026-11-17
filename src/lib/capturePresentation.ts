@@ -5,6 +5,7 @@
 import type { CaptureSession } from '../captureTypes';
 import { categoryForType, categoryPath } from './workflows';
 import { captureReady } from './tunnelCapture';
+import { expertiseCaptureNeedsRestart } from './expertiseCapture';
 
 export function getCapturePresentation(session: CaptureSession | null, location: string) {
   if (!session) return null;
@@ -26,6 +27,7 @@ export function getCapturePresentation(session: CaptureSession | null, location:
   if (session.pending || session.capture?.status === 'capturing') return 'capture';
   if (session.response?.status === 'processing' || session.response?.status === 'queued')
     return 'analysis';
+  if (expertiseCaptureNeedsRestart(session)) return null;
   if (onTunnel && session.identity.dossierId) {
     if (!session.synchronized) return 'recovery';
     if (session.capture?.status === 'completed')

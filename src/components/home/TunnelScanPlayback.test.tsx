@@ -151,6 +151,8 @@ it('waits for entry when expertise has a completed capture but no photographs', 
   };
   const playback = setup(categories.find((category) => category.type === 'forfait_expertise')!);
   expect(playback.scene.props.waitingOutside).toBe(true);
+  expect(playback.scene.props.lightStatus).toBe('not_started');
+  expect(playback.scene.props.finishing).toBe(false);
   playback.scan();
   expect(state.start).not.toHaveBeenCalled();
   playback.arrive();
