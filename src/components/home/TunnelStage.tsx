@@ -5,8 +5,9 @@
 import '../../styles/stage-entrance.css';
 import '../../styles/cinematic-capture.css';
 import '../../styles/capture-preparation.css';
+import '../../styles/capture-footer.css';
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, LogOut, Plus } from 'lucide-react';
+import { ArrowRight, CarFront, FolderOpen, LogOut, Plus } from 'lucide-react';
 import { CategoryStageVisual, type ScannerPlayback } from './CategoryStageVisual';
 import { CaptureMetadataDrawer } from './CaptureMetadataDrawer';
 import { AfterCapturePicker } from './AfterCapturePicker';
@@ -14,6 +15,8 @@ import { ExpertiseDossierPicker } from './ExpertiseDossierPicker';
 import { useExpertiseDossierSelection } from '../../hooks/useExpertiseDossierSelection';
 import { CaptureFinale } from './CaptureFinale';
 import { CapturePreparationHeader } from './CapturePreparationHeader';
+import { CameraScanAction } from './CameraScanAction';
+import { captureScannerLabel } from '../../lib/captureScannerLabel';
 import { DossierActions } from '../dossier/DossierActions';
 import { DossierActionMenu } from '../dossier/DossierActionMenu';
 import { AnimatedText } from '../AnimatedText';
@@ -46,6 +49,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
   const enteredSession = useRef<string | null>(null);
   useEffect(() => () => entryOperation.current?.abort(), []);
   const [parked, setParked] = useState(entrance.restoreSettledView);
+  const [cameraToolbarHost, setCameraToolbarHost] = useState<HTMLDivElement | null>(null);
   const current = session?.identity.type === category.type ? session : null;
   const sessionBeforeEditing = useRef(session);
   const presentedSession = drawer ? sessionBeforeEditing.current : session;
@@ -142,6 +146,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
     collectionNavigation.error ||
     expertiseSelection.error ||
     error ||
+    current?.capture?.error_message ||
     current?.error ||
     (expertise && capture?.status === 'failed'
       ? 'La capture a échoué. Relancez le scan pour reprendre toutes les photos depuis le début.'
@@ -149,7 +154,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
         ? failureMessage(backendError)
         : '');
 
-  async function scan() {
+  async function scan(zoomChannels?: number[]) {
     if (!metadataReady) {
       openMetadata();
       return;
@@ -170,7 +175,14 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
         if (store.getSnapshot()?.identity.creationKey !== current.identity.creationKey) return;
         enteredSession.current = current.identity.creationKey;
       }
-      if (expertise) await store.start(category.type, phase, current?.identity.dossierId);
+      if (zoomChannels !== undefined)
+        await store.start(
+          category.type,
+          phase,
+          expertise ? current?.identity.dossierId : undefined,
+          zoomChannels,
+        );
+      else if (expertise) await store.start(category.type, phase, current?.identity.dossierId);
       else await store.start(category.type, phase);
     } catch (failure) {
       if (!controller.signal.aborted) {
@@ -242,6 +254,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
         <CategoryStageVisual
           category={category}
           playbackRef={playbackRef}
+          toolbarHost={cameraToolbarHost}
           entering={vehicleEntering}
           waitingOutside={!vehicleEntering && waitingForScan}
           initiallyParked={entrance.restoreSettledView || !!current}
@@ -294,6 +307,7 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
           inert={!ready || finale || collectionNavigation.pending}
           aria-hidden={!ready || finale || undefined}
         >
+          <div className="capture-camera-controls" ref={setCameraToolbarHost} />
           <CapturePreparationHeader
             metadataReady={metadataShown}
             vehicle={presentedDossier?.vehicle}
@@ -321,44 +335,37 @@ export function TunnelStage({ category, onBack }: { category: Category; onBack: 
                       !!current?.saving
                     }
                     onClick={openMetadata}
-                    aria-label={expertise ? 'Choisir un dossier' : 'FICHE VÉHICULE'}
+                    aria-label={expertise ? 'Choisir un dossier' : 'Fiche véhicule'}
                   >
-                    <AnimatedText text={expertise ? 'CHOISIR UN DOSSIER' : 'FICHE VÉHICULE'} />
+                    {expertise ? (
+                      <FolderOpen size={17} strokeWidth={1.6} aria-hidden="true" />
+                    ) : (
+                      <CarFront size={17} strokeWidth={1.6} aria-hidden="true" />
+                    )}
+                    <AnimatedText text={expertise ? 'Choisir un dossier' : 'Fiche véhicule'} />
+                    <ArrowRight size={15} aria-hidden="true" />
                   </button>
                 ) : (
-                  <button
-                    ref={scannerRef}
-                    className="capture-scanner"
-                    type="button"
+                  <CameraScanAction
+                    key={`${current?.identity.dossierId}-${phase}`}
+                    buttonRef={scannerRef}
+                    dossierId={current?.identity.dossierId}
+                    phase={phase}
+                    needsCapture={capture?.status !== 'completed' || captureNeedsRestart}
                     disabled={disabled || isPreview}
-                    onClick={() => {
-                      void scan();
+                    onScan={(channels) => {
+                      void scan(channels);
                     }}
-                  >
-                    <AnimatedText
-                      text={
-                        vehicleEntering
-                          ? 'ENTRÉE DU VÉHICULE'
-                          : current?.pending
-                            ? 'CONNEXION…'
-                            : capture?.status === 'capturing'
-                              ? 'CAPTURE EN COURS'
-                              : processing
-                                ? 'ANALYSE EN COURS'
-                                : capture?.status === 'failed'
-                                  ? expertise
-                                    ? 'RECOMMENCER LE SCAN'
-                                    : 'RÉESSAYER LA CAPTURE'
-                                  : capture?.status === 'completed'
-                                    ? captureNeedsRestart
-                                      ? 'SCANNER'
-                                      : category.type === 'verification'
-                                        ? 'SYNCHRONISATION…'
-                                        : 'RELANCER L’ANALYSE'
-                                    : 'SCANNER'
-                      }
-                    />
-                  </button>
+                    label={captureScannerLabel({
+                      vehicleEntering,
+                      pending: !!current?.pending,
+                      processing,
+                      expertise,
+                      needsRestart: captureNeedsRestart,
+                      verification: category.type === 'verification',
+                      status: capture?.status,
+                    })}
+                  />
                 )}
                 <div
                   className="capture-metadata-slot"

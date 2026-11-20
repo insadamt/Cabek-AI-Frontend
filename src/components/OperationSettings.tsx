@@ -45,23 +45,50 @@ export function OperationSettings() {
           className="settings-switch"
           role="switch"
           aria-checked={mode === true}
-          aria-label="Activer le mode lent"
+          aria-label="Mode lent"
+          aria-busy={busy || (!isPreview && mode === null && !error)}
           disabled={isPreview || mode === null || busy}
           onClick={() => void toggle()}
         >
           <span />
-          {mode ? 'Activé' : 'Désactivé'}
+          {busy
+            ? 'Sauvegarde…'
+            : mode === null
+              ? isPreview
+                ? 'Aperçu'
+                : error
+                  ? 'Indisponible'
+                  : 'Chargement…'
+              : mode
+                ? 'Activé'
+                : 'Désactivé'}
         </button>
       </header>
       <p className="settings-description">
-        Le mode lent conserve l’éclairage extérieur rouge et les lumières intérieures allumées
-        jusqu’à la fin de l’analyse IA. Le tunnel reste réservé pendant ce temps.
+        Choisissez à quel moment libérer le tunnel et terminer la séquence d’éclairage.
       </p>
-      <p className="settings-description">
-        En mode normal, l’extérieur devient vert et l’intérieur s’éteint dès la fin de la capture.
-        Les captures avant / après terminent toujours leur séquence à la fin des photographies.
-      </p>
+      <dl className="settings-mode-comparison">
+        <div className={mode === false ? 'is-selected' : undefined}>
+          <dt>
+            <span className="settings-mode-dot" />
+            Mode normal
+          </dt>
+          <dd>Extérieur vert et intérieur éteint dès la fin des photographies.</dd>
+        </div>
+        <div className={mode === true ? 'is-selected' : undefined}>
+          <dt>
+            <span className="settings-mode-dot" />
+            Mode lent
+          </dt>
+          <dd>
+            Extérieur rouge, intérieur allumé et tunnel réservé jusqu’à la fin de l’analyse IA.
+          </dd>
+        </div>
+      </dl>
       <p className="settings-note">Toute modification s’applique à la prochaine capture.</p>
+      <a className="settings-inline-help" href="#settings-guide-title">
+        Comprendre les modes et les parcours avant / après
+      </a>
       {isPreview && <p role="status">Mode aperçu · connectez l’API pour modifier ce paramètre.</p>}
       {saved && (
         <p className="settings-feedback" role="status">

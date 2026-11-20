@@ -1,0 +1,108 @@
+/* Style the built-in operator guide for quick reading; depends on settings.css and native details. */
+.settings-guide > header > svg {
+  color: var(--settings-accent);
+}
+.settings-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+  padding: 0;
+  list-style: none;
+}
+.settings-guide-steps li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafafa;
+}
+.settings-guide-steps svg {
+  color: var(--settings-accent);
+}
+.settings-guide-steps strong {
+  font-size: 12px;
+}
+.settings-guide-steps p {
+  color: var(--settings-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.settings-guide a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--settings-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+.settings-guide a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.settings-guide-steps a {
+  margin-top: auto;
+}
+.settings-guide-topics details {
+  border-top: 1px solid var(--border);
+}
+.settings-guide-topics summary {
+  padding: 20px 4px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.7;
+}
+.settings-guide-topics summary::marker {
+  color: var(--settings-accent);
+}
+.settings-guide-topics summary:hover {
+  color: var(--settings-accent);
+}
+.settings-guide-topics details > div {
+  padding: 0 4px 20px;
+  color: var(--settings-muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.settings-guide-topics p + p {
+  margin-top: 12px;
+}
+.settings-guide-topics strong {
+  color: var(--ink);
+}
+.settings-guide-topics ol {
+  padding-left: 22px;
+  margin: 0 0 16px;
+}
+.settings-guide-topics li + li {
+  margin-top: 8px;
+}
+.settings-guide-statuses {
+  margin: 16px 0;
+}
+.settings-guide-statuses > div {
+  padding: 12px 14px;
+  border-left: 2px solid #d4d4d4;
+  background: #f7f7f7;
+}
+.settings-guide-statuses > div + div {
+  margin-top: 8px;
+}
+.settings-guide-statuses dt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.settings-guide-statuses dd {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+@media (max-width: 1000px) {
+  .settings-guide-steps {
+    grid-template-columns: 1fr;
+  }
+}

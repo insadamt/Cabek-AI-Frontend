@@ -318,7 +318,12 @@ export function createTunnelCaptureStore(
     );
   }
 
-  async function start(type: DossierType, phase?: PhotoPhase, dossierId?: string) {
+  async function start(
+    type: DossierType,
+    phase?: PhotoPhase,
+    dossierId?: string,
+    zoomChannels?: number[],
+  ) {
     if (starting) return;
     starting = true;
     const controller = new AbortController();
@@ -370,7 +375,12 @@ export function createTunnelCaptureStore(
         return;
       }
       publish({
-        capture: await service.startCapture(id, phase, controller.signal),
+        capture: await service.startCapture(
+          id,
+          phase,
+          controller.signal,
+          ...(zoomChannels === undefined ? [] : [zoomChannels]),
+        ),
         synchronized: false,
       });
     } catch (error) {

@@ -1,5 +1,5 @@
 /** Verify the imported material/visibility contract and exactly-once release on actual Three.js objects. */
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, ShadowMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
 import { bindBayTunnel } from './bayTunnel';
 import { defaultBayVisualSettings, normalizeBayVisualSettings } from './bayControls';
@@ -52,6 +52,25 @@ it('rejects an export with aliased RGB and white materials and releases it', () 
   const dispose = vi.spyOn(f.inspection, 'dispose');
   expect(() => bindBayTunnel(f.root)).toThrow('independent');
   expect(dispose).toHaveBeenCalledOnce();
+});
+
+it('retains floor contact shadows without an opaque studio surface and releases both materials', () => {
+  const f = fixture();
+  const originalFloor = new MeshStandardMaterial({ color: '#d4d5d3' });
+  const slab = new Mesh(f.geometry, originalFloor);
+  slab.name = 'Studio_slab';
+  f.root.add(slab);
+  const originalDisposal = vi.spyOn(originalFloor, 'dispose');
+  const tunnel = bindBayTunnel(f.root);
+  expect(slab.material).toBeInstanceOf(ShadowMaterial);
+  expect(slab.material.transparent).toBe(true);
+  expect(slab.receiveShadow).toBe(true);
+  expect(slab.castShadow).toBe(false);
+  const shadowDisposal = vi.spyOn(slab.material, 'dispose');
+  tunnel.dispose();
+  tunnel.dispose();
+  expect(originalDisposal).toHaveBeenCalledOnce();
+  expect(shadowDisposal).toHaveBeenCalledOnce();
 });
 
 it.each([

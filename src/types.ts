@@ -112,6 +112,11 @@ export interface Detection {
 }
 
 export interface OriginalPhoto {
+  camera_channel?: number | null;
+  camera_name?: string | null;
+  camera_role?: string | null;
+  capture_source?: 'demo' | 'tiandy' | null;
+  frame_id?: string | null;
   uploaded_at?: string | null;
   side?: PhotoSide;
   phase?: PhotoPhase | null;

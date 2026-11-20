@@ -65,8 +65,13 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     public status?: number,
+    cameraMessage?: string,
   ) {
-    super(errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.');
+    super(
+      cameraMessage && (code.startsWith('camera_') || code === 'demo_camera_unavailable')
+        ? cameraMessage
+        : (errorMessages[code] ?? 'La demande n’a pas abouti. Veuillez réessayer.'),
+    );
   }
 }
 

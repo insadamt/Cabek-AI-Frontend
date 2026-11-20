@@ -1,0 +1,139 @@
+/* Camera preparation and read-only settings, using the existing neutral drawer and settings surfaces. */
+.camera-picker {
+  width: min(860px, 100vw);
+}
+.camera-source {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #48622e;
+}
+.camera-essentials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+.camera-essentials span {
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: #f0f2ed;
+  font-size: 0.78rem;
+}
+.camera-essentials [data-online='false'],
+.camera-status-list [data-online='false'] {
+  color: #a14025;
+}
+.camera-zoom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.camera-zoom-card {
+  border: 1px solid #dfe3dc;
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.camera-zoom-card label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  min-height: 44px;
+  cursor: pointer;
+}
+.camera-zoom-card input {
+  width: 18px;
+  height: 18px;
+  accent-color: #526d35;
+  flex-shrink: 0;
+}
+.camera-zoom-card small {
+  display: block;
+  font-size: 0.7rem;
+  color: #687260;
+  margin-top: 4px;
+}
+.camera-zoom-card button,
+.camera-picker-footer button,
+.camera-preview button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #cfd6c7;
+  background: #f5f7f2;
+  color: #27351b;
+  cursor: pointer;
+}
+.camera-zoom-card button[aria-pressed='true'] {
+  background: #e1ebd5;
+}
+.camera-preview {
+  margin: 18px 0;
+}
+.camera-preview p {
+  font-size: 0.85rem;
+}
+.camera-preview img,
+.camera-preview-empty {
+  width: 100%;
+  height: 260px;
+  object-fit: contain;
+  background: #12190e;
+  border-radius: 14px;
+}
+.camera-preview-empty {
+  display: grid;
+  place-items: center;
+  color: #eef3e7;
+}
+.camera-picker-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  bottom: 0;
+  padding: 16px 0;
+  background: #fff;
+}
+.camera-picker-footer button:last-child {
+  background: #283a1a;
+  color: #fff;
+}
+.camera-picker-footer button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.camera-status-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+}
+.camera-status-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e4e8df;
+  font-size: 0.8rem;
+}
+.camera-status-list li strong {
+  min-width: 130px;
+}
+.camera-picker :focus-visible {
+  outline: 2px solid #526d35;
+  outline-offset: 3px;
+}
+@media (max-width: 540px) {
+  .camera-zoom-grid {
+    grid-template-columns: 1fr;
+  }
+  .camera-preview img,
+  .camera-preview-empty {
+    height: 190px;
+  }
+}

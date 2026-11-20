@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('react', async (original) => ({
   ...(await original<typeof import('react')>()),
+  useId: () => 'vehicle-sheet',
   useState: (initial: unknown) => {
     const index = state.hookIndex++;
     return [index === 3 ? '12345-A-678' : initial, vi.fn()];

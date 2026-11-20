@@ -1,6 +1,7 @@
 /** Present manual RGB tests inside settings; depends on backend-owned settings actions.
  * No hardware requests run on mount and OFF remains available during a pending test. */
 import { useRef, useState } from 'react';
+import { isPreview } from '../lib/api';
 import {
   lightingEffects,
   testLights,
@@ -8,6 +9,29 @@ import {
   type LightTest,
   type LightTestResult,
 } from '../lib/settingsApi';
+
+const effectLabels: Record<LightingEffect, string> = {
+  solid: 'Couleur fixe',
+  fade_in: 'Allumage progressif',
+  fade_out: 'Extinction progressive',
+  breathing: 'Respiration',
+  pulse: 'Pulsation',
+  transition: 'Transition de couleurs',
+  color_cycle: 'Cycle de couleurs',
+  cyber_morph: 'Métamorphose',
+  system_awakening: 'Démarrage du système',
+  target_lock: 'Verrouillage de cible',
+  mission_complete: 'Mission terminée',
+  warning: 'Avertissement',
+  shutdown: 'Arrêt du système',
+  police: 'Gyrophare',
+};
+const easingLabels: Record<string, string> = {
+  linear: 'Linéaire',
+  ease_in: 'Accélération progressive',
+  ease_out: 'Décélération progressive',
+  ease_in_out: 'Accélération et décélération',
+};
 
 export function LightingSettings() {
   const [effect, setEffect] = useState<LightingEffect>('solid');
@@ -61,7 +85,7 @@ export function LightingSettings() {
           <span className="eyebrow">MATÉRIEL</span>
           <h2 id="lighting-settings-title">Éclairage du tunnel</h2>
         </div>
-        <button className="settings-off" onClick={() => void sendTest(true)}>
+        <button className="settings-off" disabled={isPreview} onClick={() => void sendTest(true)}>
           Éteindre
         </button>
       </header>
@@ -69,6 +93,10 @@ export function LightingSettings() {
         Testez le ruban RGB depuis ce PC. Chaque test remplace l’effet actuel jusqu’à la prochaine
         commande. Les séquences de capture restent pilotées par CABEK AI.
       </p>
+      {isPreview && (
+        <p className="settings-note">Mode aperçu · connectez l’API pour commander l’éclairage.</p>
+      )}
+      <p className="settings-field-heading">Appliquer une couleur · intensité 100 %</p>
       <div className="settings-presets" aria-label="Couleurs de test">
         {[
           ['Rouge', '#FF0000'],
@@ -76,12 +104,17 @@ export function LightingSettings() {
           ['Vert', '#00FF00'],
           ['Blanc', '#FFFFFF'],
         ].map(([label, value]) => (
-          <button key={value} disabled={busy} onClick={() => void sendTest(false, value)}>
+          <button
+            key={value}
+            disabled={isPreview || busy}
+            onClick={() => void sendTest(false, value)}
+          >
             <span className="settings-color-dot" style={{ backgroundColor: value }} />
             {label}
           </button>
         ))}
       </div>
+      <p className="settings-field-heading">Personnaliser un test</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -97,7 +130,7 @@ export function LightingSettings() {
             >
               {lightingEffects.map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {effectLabels[name]}
                 </option>
               ))}
             </select>
@@ -148,10 +181,14 @@ export function LightingSettings() {
               </label>
               <label>
                 Courbe
-                <select disabled={effect === 'police'} value={easing} onChange={(event) => setEasing(event.target.value)}>
+                <select
+                  disabled={effect === 'police'}
+                  value={easing}
+                  onChange={(event) => setEasing(event.target.value)}
+                >
                   {['linear', 'ease_in', 'ease_out', 'ease_in_out'].map((name) => (
                     <option key={name} value={name}>
-                      {name}
+                      {easingLabels[name]}
                     </option>
                   ))}
                 </select>
@@ -179,10 +216,10 @@ export function LightingSettings() {
         </div>
         <footer className="settings-test-footer">
           <p>
-            Les animations nécessitent le firmware RGB. Les tests répétés continuent après avoir
-            quitté cette page.
+            Les animations nécessitent le firmware RGB. Quitter les paramètres demande le retour à
+            l’éclairage par défaut.
           </p>
-          <button type="submit" className="button button-primary" disabled={busy}>
+          <button type="submit" className="button button-primary" disabled={isPreview || busy}>
             {busy ? 'Envoi…' : 'Tester l’éclairage'}
           </button>
         </footer>

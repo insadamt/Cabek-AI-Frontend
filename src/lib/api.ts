@@ -104,12 +104,21 @@ export function startCapture(
   id: string,
   phase?: PhotoPhase,
   signal?: AbortSignal,
+  zoomChannels?: number[],
 ): Promise<CaptureStatus> {
   if (isPreview) return Promise.reject(new ApiError('preview_only'));
   return request(() =>
-    client.post(`/api/dossiers/${encodeURIComponent(id)}/capture`, phase ? { phase } : undefined, {
-      signal,
-    }),
+    client.post(
+      `/api/dossiers/${encodeURIComponent(id)}/capture`,
+      zoomChannels === undefined
+        ? phase
+          ? { phase }
+          : undefined
+        : { ...(phase ? { phase } : {}), zoom_channels: zoomChannels },
+      {
+        signal,
+      },
+    ),
   );
 }
 
@@ -161,10 +170,14 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
   } catch (error) {
     if (axios.isCancel(error)) throw error;
     if (axios.isAxiosError(error)) {
-      recordBrowserLog('api.http', error.response?.data?.error?.code ?? 'Connexion API interrompue', {
-        code: String(error.response?.status ?? 'network_error'),
-        request_id: error.response?.headers?.['x-request-id'],
-      });
+      recordBrowserLog(
+        'api.http',
+        error.response?.data?.error?.code ?? 'Connexion API interrompue',
+        {
+          code: String(error.response?.status ?? 'network_error'),
+          request_id: error.response?.headers?.['x-request-id'],
+        },
+      );
       if (!error.response)
         throw new Error(
           'Connexion au service interrompue. Vérifiez votre connexion ou réessayez dans un instant.',
@@ -172,6 +185,9 @@ async function request<T>(operation: () => Promise<{ data: T }>): Promise<T> {
       throw new ApiError(
         error.response.data?.error?.code ?? 'unknown_error',
         error.response.status,
+        typeof error.response.data?.error?.message === 'string'
+          ? error.response.data.error.message
+          : undefined,
       );
     }
     throw error;

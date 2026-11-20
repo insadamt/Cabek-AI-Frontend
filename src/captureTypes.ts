@@ -12,6 +12,10 @@ export interface CaptureStatus {
   photos: (OriginalPhoto & { status: 'saved' })[];
   error_code: string | null;
   slow_mode?: boolean;
+  capture_source?: 'demo' | 'tiandy' | null;
+  zoom_channels?: number[];
+  stage?: string | null;
+  error_message?: string | null;
   analysis_error: string | null;
 }
 

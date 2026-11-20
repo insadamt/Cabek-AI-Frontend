@@ -39,9 +39,12 @@ export type LogFilters = {
   until?: string;
 };
 
-export const readOperation = () => settingsRequest<{ slow_mode: boolean }>('/operation');
+export type OperationPreferences = { slow_mode: boolean; demo_mode: boolean };
+export const readOperation = () => settingsRequest<OperationPreferences>('/operation');
 export const saveOperation = (slow_mode: boolean) =>
-  settingsRequest<{ slow_mode: boolean }>('/operation', 'PATCH', { slow_mode });
+  settingsRequest<OperationPreferences>('/operation', 'PATCH', { slow_mode });
+export const saveDemoMode = (demo_mode: boolean) =>
+  settingsRequest<OperationPreferences>('/operation', 'PATCH', { demo_mode });
 export const readDiagnostics = () => settingsRequest<DiagnosticSnapshot>('/diagnostics');
 export const runDiagnostics = (checks?: string[]) =>
   settingsRequest<DiagnosticSnapshot>('/diagnostics/run', 'POST', checks ? { checks } : {});

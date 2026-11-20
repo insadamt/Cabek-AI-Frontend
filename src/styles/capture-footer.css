@@ -1,0 +1,75 @@
+/*
+ * Aligns the live 3D controls and vehicle actions on one footer row instead of overlaying the canvas.
+ * Depends on TunnelStage's toolbar portal and capture-preparation; narrow screens wrap controls below the action.
+ */
+
+/* ============================================================
+   Shared action row and stable vehicle identity slot
+   ============================================================ */
+
+.tunnel-stage .capture-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 24px;
+  row-gap: 10px;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+}
+.capture-controls > .capture-preparation-header {
+  grid-column: 2;
+  grid-row: 1;
+}
+.capture-controls > .capture-actions {
+  grid-column: 2;
+  grid-row: 2;
+}
+.capture-controls > p {
+  grid-column: 2;
+}
+.capture-camera-controls {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  justify-self: start;
+}
+.capture-camera-controls .bay-camera-toolbar {
+  position: static;
+  max-width: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.capture-camera-controls .bay-camera-toolbar :is(button, summary) {
+  min-height: 48px;
+}
+
+/* ============================================================
+   Give the controls room before stacking the phone footer
+   ============================================================ */
+
+@media (min-width: 901px) and (max-width: 1400px) {
+  .tunnel-stage .capture-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  }
+}
+@media (max-width: 900px), (max-height: 550px) and (min-width: 651px) {
+  .tunnel-stage .capture-controls {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 16px;
+  }
+  .capture-controls > :is(.capture-preparation-header, .capture-actions, p),
+  .capture-camera-controls {
+    grid-column: 1;
+    justify-self: center;
+  }
+  .capture-camera-controls {
+    grid-row: 3;
+    width: 100%;
+  }
+  .capture-camera-controls .bay-camera-toolbar {
+    justify-content: center;
+  }
+}

@@ -3,7 +3,7 @@
 .application-startup {
   position: fixed;
   inset: 0;
-  background: #f2f4f4;
+  background: var(--studio-background, #fafafa);
 }
 .application-startup-scene {
   position: absolute;

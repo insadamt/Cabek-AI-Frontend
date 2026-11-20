@@ -4,6 +4,7 @@
  */
 import type { CaptureStatus } from '../../captureTypes';
 import { BayVisualControls } from './BayVisualControls';
+import { createPortal } from 'react-dom';
 import { Lock, Unlock, RotateCcw } from 'lucide-react';
 import {
   useEffect,
@@ -57,6 +58,7 @@ export interface ScannerPlayback {
 
 interface CategoryStageVisualProps {
   playbackRef?: RefObject<ScannerPlayback | null>;
+  toolbarHost?: HTMLElement | null;
   entering?: boolean;
   waitingOutside?: boolean;
   category: Category;
@@ -74,6 +76,7 @@ interface CategoryStageVisualProps {
 export function CategoryStageVisual({
   category,
   playbackRef,
+  toolbarHost,
   entering = false,
   waitingOutside = false,
   initiallyParked,
@@ -208,6 +211,59 @@ export function CategoryStageVisual({
     setAttempt((value) => value + 1);
   }
 
+  const toolbar = (
+    <div className="bay-camera-toolbar">
+      {controlsAvailable && (
+        <BayVisualControls
+          settings={visualSettings}
+          onChange={setVisualSettings}
+          disabled={false}
+        />
+      )}
+      {controlsAvailable && (
+        <button
+          type="button"
+          className="bay-rotation-lock"
+          aria-label="Verrouillage de la rotation"
+          aria-pressed={rotationLocked}
+          onClick={() => setRotationLocked((locked) => !locked)}
+        >
+          {rotationLocked ? (
+            <Lock size={14} aria-hidden="true" />
+          ) : (
+            <Unlock size={14} aria-hidden="true" />
+          )}
+          {rotationLocked ? 'Déverrouiller la rotation' : 'Verrouiller la rotation'}
+        </button>
+      )}
+      {controlsAvailable && !introComplete && !waitingOutside && (
+        <button
+          className="bay-skip-intro"
+          type="button"
+          onClick={() => connectionRef.current?.skipIntro()}
+        >
+          Passer l’introduction <span aria-hidden="true">↗</span>
+        </button>
+      )}
+      {controlsAvailable && (introComplete || waitingOutside) && (
+        <button
+          className="bay-reset-camera"
+          type="button"
+          onClick={() => connectionRef.current?.resetCamera()}
+        >
+          <RotateCcw size={14} strokeWidth={1.6} aria-hidden="true" />
+          Réinitialiser la vue
+        </button>
+      )}
+      <p
+        id="bay-camera-help"
+        className={cameraInteractive && introComplete ? 'bay-camera-help' : 'visually-hidden'}
+      >
+        Glisser pour explorer · Molette pour zoomer · Flèches et + / − au clavier
+      </p>
+    </div>
+  );
+
   return (
     <div
       className={`category-stage-visual scanning-bay is-${status}`}
@@ -218,56 +274,7 @@ export function CategoryStageVisual({
       data-entrance={waitingOutside ? 'waiting' : introComplete ? 'settled' : 'playing'}
     >
       <div ref={canvasHostRef} className="scanning-bay-canvas-host" />
-      <div className="bay-camera-toolbar">
-        {controlsAvailable && (
-          <BayVisualControls
-            settings={visualSettings}
-            onChange={setVisualSettings}
-            disabled={false}
-          />
-        )}
-        {controlsAvailable && (
-          <button
-            type="button"
-            className="bay-rotation-lock"
-            aria-label="Verrouillage de la rotation"
-            aria-pressed={rotationLocked}
-            onClick={() => setRotationLocked((locked) => !locked)}
-          >
-            {rotationLocked ? (
-              <Lock size={14} aria-hidden="true" />
-            ) : (
-              <Unlock size={14} aria-hidden="true" />
-            )}
-            {rotationLocked ? 'Déverrouiller la rotation' : 'Verrouiller la rotation'}
-          </button>
-        )}
-        {controlsAvailable && !introComplete && !waitingOutside && (
-          <button
-            className="bay-skip-intro"
-            type="button"
-            onClick={() => connectionRef.current?.skipIntro()}
-          >
-            Passer l’introduction <span aria-hidden="true">↗</span>
-          </button>
-        )}
-        {controlsAvailable && (introComplete || waitingOutside) && (
-          <button
-            className="bay-reset-camera"
-            type="button"
-            onClick={() => connectionRef.current?.resetCamera()}
-          >
-            <RotateCcw size={14} strokeWidth={1.6} aria-hidden="true" />
-            Réinitialiser la vue
-          </button>
-        )}
-        <p
-          id="bay-camera-help"
-          className={cameraInteractive && introComplete ? 'bay-camera-help' : 'visually-hidden'}
-        >
-          Glisser pour explorer · Molette pour zoomer · Flèches et + / − au clavier
-        </p>
-      </div>
+      {toolbarHost ? createPortal(toolbar, toolbarHost) : toolbar}
       {status === 'loading' && !initiallyParked && (
         <p className="scanning-bay-loading" role="status">
           Préparation de la scène 3D…

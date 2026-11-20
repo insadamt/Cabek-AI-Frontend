@@ -1,3 +1,4 @@
+/** Browse saved analysis photographs with camera/source labels; depends on immutable result DTOs and comparison controls. */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Photo } from '../types';
@@ -88,7 +89,10 @@ export function ImageViewer({
       <PhotoComparison photo={photo} mode={mode} split={split} onSplitChange={setSplit} />
       <div className="viewer-footer">
         <div>
-          <strong>{photo.photo_id.replaceAll('_', ' ')}</strong>
+          <strong>
+            {photo.capture_source === 'demo' ? 'Démonstration · ' : ''}
+            {photo.camera_name ?? photo.photo_id.replaceAll('_', ' ')}
+          </strong>
           <span>
             Photo {index + 1} sur {photos.length}
           </span>

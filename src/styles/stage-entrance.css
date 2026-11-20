@@ -3,7 +3,7 @@
  * Depends on HomeFrame/useStageEntrance phase attributes; reduced motion reveals the complete interface immediately.
  */
 :is(.category-stage, .tunnel-stage)[data-entrance-phase] {
-  background: #f2f4f4;
+  background: var(--studio-background, #fafafa);
 }
 .stage-loading-screen {
   position: absolute;
@@ -11,7 +11,7 @@
   z-index: 5;
   display: grid;
   place-items: center;
-  background: #f2f4f4;
+  background: var(--studio-background, #fafafa);
   color: #30372d;
 }
 .stage-loading-content {

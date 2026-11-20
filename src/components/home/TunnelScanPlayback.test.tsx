@@ -28,6 +28,7 @@ vi.mock('../../hooks/useStageEntrance', () => ({
   useStageEntrance: () => ({ phase: 'ready', restoreSettledView: true }),
 }));
 import { TunnelStage } from './TunnelStage';
+import { CameraScanAction } from './CameraScanAction';
 import { CategoryStageVisual } from './CategoryStageVisual';
 import { categories, type Category } from '../../lib/workflows';
 import { getPreviewResult, previewDossiers } from '../../preview/data';
@@ -53,7 +54,7 @@ function setup(category: Category = categories[1]) {
     scene,
     arrive,
     playEntrance,
-    scan: find(tree, (element) => element.props.className === 'capture-scanner').props.onClick,
+    scan: find(tree, (element) => element.type === CameraScanAction).props.onScan,
     reset: find(tree, (element) =>
       Children.toArray(element.props.children).includes('Nouveau dossier'),
     )?.props.onClick,

@@ -1,3 +1,4 @@
+/** Display immutable originals with camera/source attribution; depends on saved photo DTOs and shared media routing. */
 import { Images, LoaderCircle, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import type { OriginalPhoto } from '../../types';
@@ -22,13 +23,16 @@ export function OriginalPhotoPreview({ photo }: { photo: OriginalPhoto }) {
           <img
             key={attempt}
             src={resolveMediaUrl(getOriginalPhotoDisplayUrl(photo))}
-            alt={`Photographie originale — ${photo.photo_id}`}
+            alt={`Photographie originale — ${photo.camera_name ?? photo.photo_id}${photo.capture_source === 'demo' ? ' · Démonstration' : ''}`}
             onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
           />
         )}
       </div>
-      <span className="comparison-label comparison-right">Original</span>
+      <span className="comparison-label comparison-right">
+        {photo.capture_source === 'demo' ? 'Démonstration' : 'Original'}
+        {photo.camera_name ? ` · ${photo.camera_name}` : ''}
+      </span>
       {!loaded && !failed && (
         <div className="image-loading" role="status">
           <LoaderCircle size={26} className="spin" />

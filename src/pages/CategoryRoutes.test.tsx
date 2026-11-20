@@ -73,7 +73,7 @@ describe('category-first application routes', () => {
       const markup = render('/', `parcours=${slug}&scene=1`);
       expect(markup).toContain(`href="/categories/${slug}"`);
       expect(markup).toContain('Voir les dossiers');
-      expect(markup).toContain('FICHE VÉHICULE');
+      expect(markup).toContain('Fiche véhicule');
       expect(markup).not.toMatch(/>SCANNER<\/span>/);
       expect(markup.match(/class="scanning-bay-canvas-host"/g)).toHaveLength(1);
       expect(markup).toContain('data-entrance-phase="ready"');
@@ -95,9 +95,9 @@ describe('category-first application routes', () => {
   });
   it('opens expertise capture with dossier selection and no creation or metadata form', () => {
     const markup = render('/', 'parcours=forfait-expertise&scene=1');
-    expect(markup).toContain('CHOISIR UN DOSSIER');
+    expect(markup).toContain('Choisir un dossier');
     expect(markup).toContain('href="/categories/forfait-expertise"');
-    expect(markup).not.toContain('FICHE VÉHICULE');
+    expect(markup).not.toContain('Fiche véhicule');
     expect(markup).not.toContain('Nouveau dossier');
     expect(markup).not.toContain('category-folder-grid');
     expect(markup).toContain('data-entrance-phase="ready"');

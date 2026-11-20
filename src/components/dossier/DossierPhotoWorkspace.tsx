@@ -145,6 +145,12 @@ export function DossierPhotoWorkspace({
             )}
             <div className="inspection-photo-navigation">
               <p role="status">
+                {photo.camera_name && (
+                  <span>
+                    {photo.capture_source === 'demo' ? 'Démonstration · ' : ''}
+                    {photo.camera_name} ·{' '}
+                  </span>
+                )}
                 Photo <strong>{String(selectedIndex + 1).padStart(2, '0')}</strong>
                 <span> / {String(photos.length).padStart(2, '0')}</span>
               </p>

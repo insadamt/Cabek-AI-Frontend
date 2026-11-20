@@ -1,0 +1,250 @@
+/*
+ * Gives the vehicle editor grouped fields, readable registration hints and a persistent save footer.
+ * Depends on DetailsDrawer's modal lifecycle and existing workflow inputs; styles apply only to this editor.
+ */
+
+/* ============================================================
+   Vehicle drawer identity and scrolling form
+   ============================================================ */
+
+.capture-metadata-drawer {
+  --control-focus: #333;
+  --control-focus-halo: #0000000d;
+  width: min(620px, 100vw);
+}
+.capture-metadata-drawer .details-drawer-header {
+  align-items: center;
+  padding: 28px;
+  background: #fff;
+}
+.capture-metadata-drawer .details-drawer-header .eyebrow {
+  color: #737373;
+  font-size: 10px;
+  font-weight: 550;
+  letter-spacing: 1px;
+}
+.capture-metadata-drawer .details-drawer-header h2 {
+  margin-top: 6px;
+  font-size: 28px;
+  letter-spacing: -0.9px;
+}
+.capture-metadata-drawer .details-drawer-header .icon-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  background: #fafafa;
+}
+.capture-metadata-drawer .details-drawer-content {
+  padding: 0;
+  background: #fafafa;
+}
+.capture-metadata-drawer .capture-metadata-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 0;
+}
+.capture-metadata-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+}
+.capture-metadata-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.capture-metadata-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e4e4e4;
+  border-radius: 14px;
+  background: #fff;
+  color: #555;
+}
+.capture-metadata-intro strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.capture-metadata-intro p {
+  margin-top: 5px;
+  color: #737373;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.capture-metadata-body .capture-required-note {
+  margin-top: -10px;
+  color: #737373;
+  font-size: 11px;
+}
+
+/* ============================================================
+   Two concise field groups with visible label hierarchy
+   ============================================================ */
+
+.capture-form-section {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #e4e4e4;
+  border-radius: 16px;
+  background: #fff;
+}
+.capture-form-section legend {
+  padding-inline: 8px;
+  color: #282828;
+  font-size: 12px;
+  font-weight: 600;
+}
+.capture-form-section legend > span {
+  margin-right: 8px;
+  color: #8a8a8a;
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.capture-metadata-form .capture-form-section .workflow-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 16px;
+}
+.capture-form-section .workflow-fields label {
+  gap: 9px;
+  color: #454545;
+  font-size: 12px;
+  font-weight: 550;
+}
+.capture-form-section .workflow-fields small {
+  color: #858585;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.capture-form-section label > span > small {
+  display: block;
+}
+.capture-form-section .workflow-fields :is(input, select) {
+  min-height: 48px;
+  padding: 12px;
+  border-color: #e0e0e0;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #282828;
+  font-size: 13px;
+  font-weight: 450;
+}
+.capture-form-section .workflow-fields :is(input, select):disabled {
+  background: #f4f4f4;
+  color: #999;
+}
+.capture-form-section .workflow-fields :is(input, select):focus-visible {
+  outline: none;
+  border-color: #777;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--control-focus-halo);
+}
+.capture-form-section .workflow-fields input::placeholder {
+  color: #9a9a9a;
+}
+.capture-field-wide {
+  grid-column: 1 / -1;
+}
+.capture-catalogue-error,
+.capture-metadata-success {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.capture-catalogue-error {
+  border-color: #ead5d2;
+  color: #954a40;
+}
+.capture-catalogue-error .text-link {
+  font-size: 12px;
+}
+
+/* ============================================================
+   Save stays visible while fields scroll inside the native dialog
+   ============================================================ */
+
+.capture-metadata-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid #e4e4e4;
+  background: #fff;
+}
+.capture-metadata-footer .button {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.capture-metadata-footer .workflow-primary {
+  flex: 1;
+  justify-content: center;
+  background: #222;
+  color: #fff;
+}
+.capture-metadata-footer .workflow-primary:hover:not(:disabled) {
+  background: #3b3b3b;
+  box-shadow: 0 3px 12px #00000014;
+}
+.capture-metadata-footer .workflow-primary:disabled {
+  opacity: 1;
+  background: #e8e8e8;
+  color: #919191;
+}
+.capture-metadata-footer .button-secondary {
+  padding-inline: 20px;
+  border-color: #dedede;
+  background: #fff;
+}
+@media (max-width: 767px), (max-width: 950px) and (max-height: 520px) {
+  .capture-metadata-drawer {
+    width: 100%;
+  }
+  .capture-metadata-drawer .details-drawer-header {
+    padding: 20px;
+  }
+  .capture-metadata-body {
+    gap: 20px;
+    padding: 20px;
+  }
+  .capture-metadata-footer {
+    gap: 10px;
+    padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+  }
+  .capture-form-section .workflow-fields :is(input, select) {
+    font-size: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .capture-metadata-form .capture-form-section .workflow-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .capture-form-section {
+    padding: 16px;
+  }
+  .capture-metadata-footer .button {
+    padding-inline: 14px;
+    font-size: 12px;
+  }
+}

@@ -34,8 +34,12 @@ export function createBayScene(canvas: HTMLCanvasElement) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
-  scene.background = new THREE.Color('#f2f4f4');
-  scene.fog = new THREE.Fog('#f2f4f4', 30, 75);
+  // Resolve the same surface as the loading screen and page instead of maintaining a separate tint.
+
+  const studioBackground =
+    getComputedStyle(canvas).getPropertyValue('--studio-background').trim() || '#fafafa';
+  scene.background = new THREE.Color(studioBackground);
+  scene.fog = new THREE.Fog(studioBackground, 30, 75);
 
   const key = new THREE.DirectionalLight('#ffffff', 2.6);
   key.position.set(-5, 10, 7);

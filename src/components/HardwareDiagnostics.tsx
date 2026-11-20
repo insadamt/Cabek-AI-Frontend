@@ -50,6 +50,12 @@ export function HardwareDiagnostics() {
           <h2 id="hardware-diagnostics-title">Matériel et parcours</h2>
         </div>
       </header>
+      <p className="settings-description">
+        Vérifiez un composant précis ou un parcours complet avec les données de votre installation.
+      </p>
+      {isPreview && (
+        <p className="settings-note">Mode aperçu · connectez l’API pour exécuter ces tests.</p>
+      )}
       <div className="settings-subsection">
         <h3>Éclairage intérieur · Shelly</h3>
         <p className="settings-description">

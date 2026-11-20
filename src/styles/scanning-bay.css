@@ -3,7 +3,7 @@
  * Depends on CategoryStageVisual, its cached canvas host and HomeFrame; toolbar placement leaves workflows clear.
  */
 .scanning-bay {
-  background: #f3f4f0;
+  background: var(--studio-background, #fafafa);
 }
 .scanning-bay-canvas-host,
 .scanning-bay-canvas {
@@ -15,12 +15,24 @@
   outline: none;
   touch-action: none;
   cursor: grab;
+  /* Fade only the outer floor/shadow margin so the studio has no hard rectangular crop. */
+
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      #000 clamp(6px, 1vw, 20px),
+      #000 calc(100% - clamp(6px, 1vw, 20px)),
+      transparent
+    ),
+    linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-composite: intersect;
 }
 .scanning-bay-canvas:active {
   cursor: grabbing;
 }
 .scanning-bay-canvas:focus-visible {
-  outline: 1px solid #7a8c5e;
+  outline: 1px solid #737373;
   outline-offset: -5px;
 }
 .scanning-bay.is-loading .scanning-bay-canvas {
@@ -30,7 +42,7 @@
   position: absolute;
   left: clamp(22px, 3vw, 48px);
   bottom: 28px;
-  color: #66705f;
+  color: var(--secondary);
   font-size: 11px;
   letter-spacing: 0.015em;
 }
@@ -42,17 +54,17 @@
   align-items: center;
   justify-content: center;
   gap: 15px;
-  color: #556050;
+  color: var(--secondary);
   font-size: 12px;
   pointer-events: auto;
 }
 .scanning-bay-error button {
   min-height: 44px;
   padding: 10px 20px;
-  border: 1px solid #a9b8a4;
-  border-radius: 4px;
-  background: #f6f8f2;
-  font-size: 11px;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 12px;
 }
 .scanning-bay.is-failed .scanning-bay-canvas {
   opacity: 0.12;
@@ -79,11 +91,11 @@
   gap: 9px;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid #cfd5c6;
+  border: 1px solid #dedede;
   border-radius: 4px;
-  background: #f7f8f2df;
-  color: #59634f;
-  font-size: 11px;
+  background: #ffffffeb;
+  color: #555;
+  font-size: 12px;
   font-weight: 500;
   pointer-events: auto;
   transition:
@@ -91,11 +103,11 @@
     border-color 180ms;
 }
 .bay-camera-toolbar button:hover {
-  background: #e8eddf;
-  border-color: #78866b;
+  background: #f4f4f4;
+  border-color: #b8b8b8;
 }
 .bay-camera-toolbar button:focus-visible {
-  outline: 2px solid #576a3b;
+  outline: 2px solid #333;
   outline-offset: 3px;
 }
 .bay-camera-help {
@@ -140,8 +152,8 @@
 .bay-visual-controls {
   position: relative;
   pointer-events: auto;
-  font-size: 11px;
-  color: #536158;
+  font-size: 12px;
+  color: #555;
 }
 .bay-visual-controls summary {
   display: flex;
@@ -150,9 +162,9 @@
   padding: 8px 12px;
   min-height: 44px;
   box-sizing: border-box;
-  border: 1px solid #cbd4cc;
+  border: 1px solid #dedede;
   border-radius: 28px;
-  background: #f5f7f3e6;
+  background: #ffffffeb;
   cursor: pointer;
 }
 .bay-visual-controls fieldset {
@@ -164,9 +176,9 @@
   gap: 8px;
   margin: 0 0 4px;
   padding: 12px;
-  border: 1px solid #cbd4cc;
-  border-radius: 10px;
-  background: #f5f7f3;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  background: #fff;
 }
 .bay-visual-illumination,
 .bay-visual-switch {

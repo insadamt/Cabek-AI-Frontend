@@ -1,5 +1,9 @@
-/** Requires a complete saved vehicle sheet before tunnel capture; depends on the shared drawer, catalogue and metadata API. */
-import { useState, type FormEvent } from 'react';
+/**
+ * Edits vehicle identity in a grouped form with a persistent save action before tunnel capture.
+ * Depends on DetailsDrawer, the vehicle catalogue and metadata API; saving retains the existing validation and exit lifecycle.
+ */
+import { useId, useState, type FormEvent } from 'react';
+import { CarFront, Check, Save } from 'lucide-react';
 import { DetailsDrawer } from '../dossier/DetailsDrawer';
 import { useResource } from '../../hooks/useResource';
 import { useTunnelCapture } from '../../hooks/useTunnelCapture';
@@ -9,6 +13,7 @@ import type { CreatableDossierType, PhotoPhase } from '../../workflowTypes';
 import type { MetadataPatch } from '../../captureTypes';
 import type { DossierResponse } from '../../types';
 import { completeCaptureVehicle, validMoroccanPlate } from '../../lib/captureMetadata';
+import '../../styles/capture-metadata.css';
 
 interface CaptureMetadataDrawerProps {
   type: CreatableDossierType;
@@ -46,6 +51,7 @@ export function CaptureMetadataDrawer({
     brandId ? listModels(Number(brandId), signal) : Promise.resolve([]),
   );
 
+  const fieldId = useId();
   const catalogueUnavailable = brands.loading || models.loading || !!brands.error || !!models.error;
   const complete =
     !catalogueUnavailable &&
@@ -138,7 +144,9 @@ export function CaptureMetadataDrawer({
   return (
     <DetailsDrawer
       title="Fiche véhicule"
-      subtitle="Informations enregistrées dans le dossier"
+      subtitle="Identification du véhicule"
+      className="capture-metadata-drawer"
+      closeLabel="Fermer la fiche véhicule"
       onClose={onClose}
     >
       {(requestClose) => (
@@ -147,108 +155,161 @@ export function CaptureMetadataDrawer({
           onSubmit={(event) => submit(event, requestClose)}
           aria-busy={saving}
         >
-          <p className="workflow-note">
-            {requireComplete
-              ? 'Renseignez la marque, le modèle, le matricule et la date de mise en circulation. Enregistrez la fiche pour accéder au bouton SCANNER.'
-              : 'Complétez la fiche véhicule pour permettre le chiffrage. Les photographies restent consultables pendant la saisie.'}
-          </p>
-          <div className="workflow-fields">
-            <label>
-              Marque
-              <select
-                value={brandId}
-                required={requireComplete}
-                disabled={saving || brands.loading}
-                onChange={(event) => {
-                  setBrandId(event.target.value);
-                  setModelId('');
-                }}
-              >
-                <option value="">Choisir une marque</option>
-                {brands.data?.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.libelle}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Modèle
-              <select
-                value={modelId}
-                required={requireComplete}
-                disabled={saving || !brandId || models.loading}
-                onChange={(event) => setModelId(event.target.value)}
-              >
-                <option value="">Choisir un modèle</option>
-                {models.data?.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.libelle}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Matricule
-              <input
-                dir="auto"
-                autoComplete="off"
-                value={plate}
-                required={requireComplete}
-                disabled={saving}
-                onChange={(event) => setPlate(event.target.value)}
-                placeholder="84654-ب-454"
-              />
-            </label>
-            <label>
-              Date de mise en circulation
-              <input
-                type="date"
-                value={date}
-                required={requireComplete}
-                disabled={saving}
-                onChange={(event) => setDate(event.target.value)}
-              />
-            </label>
-            <label>
-              Date de sinistre (facultative)
-              <input
-                type="date"
-                value={incidentDate}
-                disabled={saving}
-                onChange={(event) => setIncidentDate(event.target.value)}
-              />
-            </label>
+          <div className="capture-metadata-body">
+            <div className="capture-metadata-intro">
+              <span className="capture-metadata-icon" aria-hidden="true">
+                <CarFront size={24} strokeWidth={1.5} />
+              </span>
+              <div>
+                <strong>Le véhicule à inspecter</strong>
+                <p>
+                  {requireComplete
+                    ? 'Complétez les informations du véhicule pour préparer la capture.'
+                    : 'Mettez à jour les informations associées à ce dossier.'}
+                </p>
+              </div>
+            </div>
+            {requireComplete && <p className="capture-required-note">* Champs obligatoires</p>}
+            <fieldset className="capture-form-section">
+              <legend>
+                <span aria-hidden="true">01</span> Véhicule
+              </legend>
+              <div className="workflow-fields">
+                <label>
+                  <span>Marque {requireComplete && <span aria-hidden="true">*</span>}</span>
+                  <select
+                    value={brandId}
+                    required={requireComplete}
+                    disabled={saving || brands.loading}
+                    onChange={(event) => {
+                      setBrandId(event.target.value);
+                      setModelId('');
+                    }}
+                  >
+                    <option value="">
+                      {brands.loading ? 'Chargement des marques…' : 'Choisir une marque'}
+                    </option>
+                    {brands.data?.map((brand) => (
+                      <option key={brand.id} value={brand.id}>
+                        {brand.libelle}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Modèle {requireComplete && <span aria-hidden="true">*</span>}</span>
+                  <select
+                    value={modelId}
+                    required={requireComplete}
+                    disabled={saving || !brandId || models.loading}
+                    onChange={(event) => setModelId(event.target.value)}
+                  >
+                    <option value="">
+                      {!brandId
+                        ? 'Choisir d’abord une marque'
+                        : models.loading
+                          ? 'Chargement des modèles…'
+                          : 'Choisir un modèle'}
+                    </option>
+                    {models.data?.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.libelle}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset className="capture-form-section">
+              <legend>
+                <span aria-hidden="true">02</span> Immatriculation et dates
+              </legend>
+              <div className="workflow-fields">
+                <label className="capture-field-wide">
+                  <span>Matricule {requireComplete && <span aria-hidden="true">*</span>}</span>
+                  <input
+                    dir="auto"
+                    autoComplete="off"
+                    value={plate}
+                    required={requireComplete}
+                    disabled={saving}
+                    onChange={(event) => setPlate(event.target.value)}
+                    placeholder="14554-B-4578"
+                    aria-describedby={`${fieldId}-plate-format`}
+                  />
+                  <small id={`${fieldId}-plate-format`}>
+                    Exemples : <bdi>14554-B-4578</bdi> ou <bdi>84654-ب-454</bdi>
+                  </small>
+                </label>
+                <label>
+                  <span>
+                    Mise en circulation {requireComplete && <span aria-hidden="true">*</span>}
+                  </span>
+                  <input
+                    type="date"
+                    value={date}
+                    required={requireComplete}
+                    disabled={saving}
+                    onChange={(event) => setDate(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>
+                    Date de sinistre <small>Facultative</small>
+                  </span>
+                  <input
+                    type="date"
+                    value={incidentDate}
+                    disabled={saving}
+                    onChange={(event) => setIncidentDate(event.target.value)}
+                  />
+                </label>
+              </div>
+            </fieldset>
+            {(brands.error || models.error) != null && (
+              <p role="alert" className="capture-catalogue-error">
+                Le catalogue AutoEstimate est indisponible. Réessayez pour sélectionner le véhicule.
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => {
+                    brands.refresh();
+                    models.refresh();
+                  }}
+                >
+                  Recharger le catalogue
+                </button>
+              </p>
+            )}
+            {error && (
+              <p role="alert" className="inline-error">
+                {error}
+              </p>
+            )}
+            {message && (
+              <p role="status" className="capture-metadata-success">
+                <Check size={16} aria-hidden="true" />
+                {message}
+              </p>
+            )}
           </div>
-          {(brands.error || models.error) != null && (
-            <p role="alert">
-              Le catalogue AutoEstimate est indisponible. Réessayez pour sélectionner le véhicule
-              avant de scanner.{' '}
-              <button
-                type="button"
-                className="text-link"
-                onClick={() => {
-                  brands.refresh();
-                  models.refresh();
-                }}
-              >
-                Recharger le catalogue
-              </button>
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="inline-error">
-              {error}
-            </p>
-          )}
-          <p role="status">{message}</p>
-          <button
-            className="button workflow-primary"
-            type="submit"
-            disabled={saving || (requireComplete && !complete)}
-          >
-            {saving ? 'Enregistrement…' : 'Enregistrer la fiche'}
-          </button>
+          <footer className="capture-metadata-footer">
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => requestClose()}
+            >
+              Annuler
+            </button>
+            <button
+              className="button workflow-primary"
+              type="submit"
+              disabled={saving || (requireComplete && !complete)}
+            >
+              <Save size={16} strokeWidth={1.6} aria-hidden="true" />
+              {saving ? 'Enregistrement…' : 'Enregistrer la fiche'}
+            </button>
+          </footer>
         </form>
       )}
     </DetailsDrawer>

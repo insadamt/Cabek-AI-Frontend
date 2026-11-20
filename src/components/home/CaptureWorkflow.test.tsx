@@ -108,7 +108,7 @@ describe('capture presentation', () => {
   it('keeps vehicle entry and navigation controls available on a fresh tunnel', () => {
     state.session = null;
     const markup = stage();
-    expect(markup).toContain('FICHE VÉHICULE');
+    expect(markup).toContain('Fiche véhicule');
     expect(markup).toContain('Tous les parcours');
     expect(markup).toContain('Voir les dossiers');
     const controls = markup.match(/class="capture-controls"[^>]*>/)?.[0];
@@ -137,7 +137,7 @@ describe('capture presentation', () => {
   it('offers complete fiche once photos finish without required metadata', () => {
     state.session!.capture!.status = 'completed';
     state.session!.response!.vehicle = { marque: '', modele: '', matricule: '' };
-    expect(stage()).toContain('FICHE VÉHICULE');
+    expect(stage()).toContain('Fiche véhicule');
     expect(stage()).not.toMatch(/>SCANNER<\/span>/);
     expect(stage()).not.toContain('Ouverture automatique');
   });
@@ -285,7 +285,7 @@ it('loads the vehicle sheet from the open dossier independently of a retained tu
 
 it('makes the vehicle sheet primary for a fresh session and hides SCANNER', () => {
   state.session = null;
-  expect(stage()).toContain('FICHE VÉHICULE');
+  expect(stage()).toContain('Fiche véhicule');
   expect(stage()).not.toMatch(/>SCANNER<\/span>/);
 });
 
@@ -299,7 +299,7 @@ it('keeps saved scanner controls visible but disabled while metadata synchronize
   expect(markup).toMatch(/class="capture-scanner"[^>]*disabled[^>]*>.*SCANNER/);
   expect(markup).toContain('Modifier la fiche');
   expect(markup).toContain('capture-vehicle-summary');
-  expect(markup).not.toContain('FICHE VÉHICULE');
+  expect(markup).not.toContain('Fiche véhicule');
 });
 
 it('blocks incomplete forms and explains catalogue failures before scanning', () => {
@@ -321,8 +321,8 @@ describe('expertise tunnel controls', () => {
   it('requires choosing an imported dossier before presenting scan controls', () => {
     state.session = null;
     const markup = expertise();
-    expect(markup).toContain('CHOISIR UN DOSSIER');
-    expect(markup).not.toContain('FICHE VÉHICULE');
+    expect(markup).toContain('Choisir un dossier');
+    expect(markup).not.toContain('Fiche véhicule');
     expect(markup).not.toContain('Nouveau dossier');
   });
   it('shows the imported reference and enables scanning with legacy vehicle metadata', () => {

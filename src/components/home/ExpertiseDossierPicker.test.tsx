@@ -55,7 +55,7 @@ describe('expertise dossier picker', () => {
     expect(markup).not.toContain('Capture à reprendre');
     expect(markup).not.toContain('État de la capture');
     expect(markup).not.toContain('Nouveau dossier');
-    expect(markup).not.toContain('FICHE VÉHICULE');
+    expect(markup).not.toContain('Fiche véhicule');
   });
   it('identifies each dossier by reference, vehicle, and registration', () => {
     state.data = {

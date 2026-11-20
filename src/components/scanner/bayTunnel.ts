@@ -6,6 +6,7 @@ import {
   Group,
   Mesh,
   MeshStandardMaterial,
+  ShadowMaterial,
   type ColorRepresentation,
   type Object3D,
 } from 'three';
@@ -35,6 +36,12 @@ export function bindBayTunnel(root: Group, maxAnisotropy = 1) {
       if (object instanceof Mesh) {
         object.castShadow = object.name !== 'Studio_slab';
         object.receiveShadow = true;
+        if (object.name === 'Studio_slab') {
+          // Receive contact shadows without a lit floor color exposing the canvas boundary.
+
+          object.material = new ShadowMaterial({ color: '#000', opacity: 0.1, depthWrite: false });
+          resources.rememberMaterial(object.material);
+        }
         for (const material of Array.isArray(object.material)
           ? object.material
           : [object.material]) {
